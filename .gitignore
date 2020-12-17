@@ -1,2 +1,8 @@
 *.o
 src/client/engine-1
+Makefile
+config.log
+config.status
+.deps
+stamp-h1
+config.h
