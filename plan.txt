@@ -1,0 +1,77 @@
+
+Engine is the main game. It runs a secure VM and provides acceleration for slow operations and I/O.
+Mod loader finds and selects resources and resolves conflicts. The final mod is placed in the main game directory.
+Server browser finds servers and sends the selected one to the engine.
+Supervisor runs each application and moves the necessary data between them.
+
+Order of implementation:
+    Engine - Game
+    Mod loader
+    Server browser
+    Supervisor
+
+VM
+    What we want to avoid:
+        Access to the file system
+        Access to external programs
+        Access to the internet
+        Spyware
+    Languages
+        QVM
+            Works, but is binary, uses a niche compiler, and doesn't allow stacked mods.
+        Java
+            ?
+        Python
+            Not easily sandboxed? I should learn Python.
+        LLVM
+            Not easily sandboxed?
+        Custom bytecode
+            GCC/LLVM -> bytecode -> safe interpreter
+        ECMAScript
+            Every number is a float. I don't like it.
+
+Pre-game
+    Restricted variables can be set using pipe.
+    Game code is loaded.
+In-game
+    Nearly any variable can be set and read.
+
+Server will know the whole game state. Client will (ideally) only know what it can see. As much client information as practically possible should be presented to the player. This is an anti-cheat measure.
+
+The client will setup the I/O, and then run the game script. The script will periodically call functions that the client provides.
+The server will run the game script. The script will periodically call functions that the server provides.
+The script is somewhat in charge of the framerate. I may or may not change that in the future. We don't want people mining Bitcoin in other people's game.
+
+Client system calls
+    get_user_input
+        Keyboard, mouse, and joystick
+    add_entity
+        Tell renderer to try drawing this entity.
+    render_scene
+    get_server_state
+        Get the server state from the network, named pipe, or carrier pigeon.
+    send_client state
+        Send the client state using the network, named pipe, or carrier pigeon.
+Server systems calls
+    get_client_state
+        Get the client state from the network, named pipe, or carrier pigeon.
+    send_server_state
+        Send the server state using the network, named pipe, or carrier pigeon.
+    load_map
+        Load the map into the given entity tree.
+
+[/] (Client) Get something on the screen using SDL
+[ ] (Client) Call C functions from Lua
+[ ] (Server) Call C functions from Lua
+[ ] (Server) Create entity tree from file, and write to file
+[ ] (Client) Load entity tree from file
+[ ] (Client) Render entity tree in basic 3D using OpenGL
+[ ] (Client) Pass entity tree through VM and back to renderer
+[ ] (Server) Send entity tree every second
+[ ] (Client) Render tree every time it is received
+[ ] (Client) Get keyboard input
+[/] (Client) Get mouse input
+[ ] (Client) Send input
+[ ] (Server) Receive input
+[ ] (Server) Make an entity move based on input
+[ ] (Client) Attach camera to moving entity

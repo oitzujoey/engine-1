@@ -1,0 +1,11 @@
+
+Honestly, I have no idea what this is going to be yet.
+Here is what I do know:
+
+Written in C
+Client-server
+Moddable through Lua
+
+Dependencies:
+    SDL2
+    Lua
