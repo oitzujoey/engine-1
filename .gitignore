@@ -1,8 +1,5 @@
 *.o
-src/client/engine-1
-Makefile
-config.log
-config.status
-.deps
-stamp-h1
-config.h
+sengine-1
+cengine-1
+sengine-1-debug
+cengine-1-debug

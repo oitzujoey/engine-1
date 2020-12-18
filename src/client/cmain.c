@@ -1,5 +1,4 @@
 
-#include <config.h>
 #include <stdio.h>
 #include <lua.h>
 #include <lauxlib.h>
@@ -7,12 +6,14 @@
 
 #include "render.h"
 #include "input.h"
+#include "../common/common.h"
+#include "lua_client.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
-extern SDL_Window* window;
-extern SDL_Surface* screenSurface;
+extern SDL_Window *window;
+extern SDL_Surface *screenSurface;
 
 int windowInit() {
 
@@ -48,40 +49,33 @@ int windowQuit() {
 }
 
 int
-main (int argc, char* argv[])
+main (int argc, char *argv[])
 {
 
 	int error = 0;
-	SDL_Event event;
 	
-	puts("Starting " PACKAGE_NAME " v" PACKAGE_VERSION " (Client)");
+	puts("Starting engine-1 v0.0 (Client)");
 	
 	if (error = windowInit()) {
 		fprintf(stderr, "Error: windowInit returned %i | Cannot continue\n", error);
 		return 0;
 	}
 	
-	render();
+	lua_State *Lua;
 	
-	while(!getInput(&event)) {
-		SDL_Delay(10);
+	if (argc != 2) {
+		fprintf(stderr, "Error: engine-1 must have one argument\n");
+		return 0;
 	}
 	
+	printf("%s\n", argv[1]);
+	
+	luaInit(&Lua, argv[1]);
+	
+	luaQuit(&Lua);
+
 	windowQuit();
 
-	lua_State* Lua;
-	Lua = luaL_newstate();
-	luaL_openlibs(Lua);
-	luaL_loadfile(Lua, "src/server/main.lua");
-	lua_pcall(
-		Lua,
-		0,
-		0,
-		0
-	);
-	lua_close(Lua);
-	/* lua_dofile(Lua, "src/server/main.lua") */
-	
 	puts("Shutdown successfully");
 	
 	return 0;

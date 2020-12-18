@@ -1,13 +1,16 @@
 
 #include "input.h"
 
-int getInput(SDL_Event* event) {
+int getInput(lua_State *luaState) {
     
-    if (SDL_PollEvent(event)) {
-        if (event->type == SDL_QUIT) {
-            return 1;
-        }
+	SDL_Event event;
+    
+    if (SDL_PollEvent(&event)) {
+        lua_pushinteger(luaState, event.type);
+        lua_pushinteger(luaState, event.key.keysym.mod);
+        return 2;
     }
+    
     return 0;
 }
 

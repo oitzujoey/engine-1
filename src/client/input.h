@@ -3,7 +3,8 @@
 #define INPUT_H
 
 #include <SDL2/SDL.h>
+#include <lua.h>
 
-int getInput(SDL_Event*);
+int getInput(lua_State*);
 
 #endif

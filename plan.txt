@@ -61,7 +61,7 @@ Server systems calls
         Load the map into the given entity tree.
 
 [/] (Client) Get something on the screen using SDL
-[ ] (Client) Call C functions from Lua
+[*] (Client) Call C functions from Lua
 [ ] (Server) Call C functions from Lua
 [ ] (Server) Create entity tree from file, and write to file
 [ ] (Client) Load entity tree from file
