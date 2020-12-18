@@ -61,17 +61,26 @@ Server systems calls
         Load the map into the given entity tree.
 
 [/] (Client) Get something on the screen using SDL
+--------------------------------------------------
 [*] (Client) Call C functions from Lua
-[ ] (Server) Call C functions from Lua
-[ ] (Server) Create entity tree from file, and write to file
+[*] (Server) Call C functions from Lua
+-----------------------------------------------
+[/] (Common) Load and parse Wavefront OBJ files
+[ ] (Common) Create entity tree from file
+[ ] (Server) Write entity tree to file
 [ ] (Client) Load entity tree from file
 [ ] (Client) Render entity tree in basic 3D using OpenGL
+-------------------------------------------------------------
 [ ] (Client) Pass entity tree through VM and back to renderer
 [ ] (Server) Send entity tree every second
+[ ] (Server) Animate entity tree
 [ ] (Client) Render tree every time it is received
-[ ] (Client) Get keyboard input
+--------------------------------------------------
+[/] (Client) Get keyboard input
 [/] (Client) Get mouse input
 [ ] (Client) Send input
 [ ] (Server) Receive input
 [ ] (Server) Make an entity move based on input
+-----------------------------------------------
 [ ] (Client) Attach camera to moving entity
+-------------------------------------------

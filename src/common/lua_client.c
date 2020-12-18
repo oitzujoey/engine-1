@@ -3,8 +3,6 @@
 #include <lauxlib.h>
 #include "lua_client.h"
 #include "../common/common.h"
-#include "render.h"
-#include "input.h"
 
 const char *luaError[] = {
     "LUA_OK",

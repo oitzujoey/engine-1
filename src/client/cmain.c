@@ -7,7 +7,7 @@
 #include "render.h"
 #include "input.h"
 #include "../common/common.h"
-#include "lua_client.h"
+#include "../common/lua_client.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -16,7 +16,7 @@ extern SDL_Window *window;
 extern SDL_Surface *screenSurface;
 
 luaCFunc_t luaCFunctions[] = {
-	{.func = com_puts,  .name = "puts"      },
+	{.func = l_puts,  .name = "puts"      },
 	{.func = render,    .name = "render"    },
 	{.func = getInput,  .name = "getInput"  },
 	{.func = NULL,      .name = NULL        }
@@ -56,10 +56,10 @@ int windowQuit() {
 }
 
 int
-main (int argc, char *argv[])
-{
+main (int argc, char *argv[]) {
 
 	int error = 0;
+	lua_State *Lua;
 	
 	puts("Starting engine-1 v0.0 (Client)");
 	
@@ -68,22 +68,18 @@ main (int argc, char *argv[])
 		return 0;
 	}
 	
-	lua_State *Lua;
-	
 	if (argc != 2) {
 		fprintf(stderr, "Error: engine-1 must have one argument\n");
 		return 0;
 	}
-	
-	printf("%s\n", argv[1]);
-	
+
 	luaInit(&Lua, luaCFunctions, argv[1]);
 	
 	luaQuit(&Lua);
 
 	windowQuit();
 
-	puts("Shutdown successfully");
+	puts("Client quit");
 	
 	return 0;
 }

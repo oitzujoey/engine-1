@@ -4,6 +4,6 @@
 
 #include <lua.h>
 
-int com_puts(lua_State*);
+int l_puts(lua_State*);
 
 #endif
