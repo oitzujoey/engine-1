@@ -7,19 +7,19 @@ puts("Lua start");
 
 while true do
 
-	puts("Lua render")
+	-- puts("Lua render")
 	render()
 
-	puts("Lua getInput")
+	-- puts("Lua getInput")
 	input = (getInput())
 	if input then
-		puts("Lua got input");
+		-- puts("Lua got input");
 		if input == 256 then
 			break
 		end
 	end
 	
-	puts("Lua looping")
+	-- puts("Lua looping")
 end
 
 puts("Lua end")

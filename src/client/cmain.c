@@ -15,6 +15,13 @@ const int SCREEN_HEIGHT = 480;
 extern SDL_Window *window;
 extern SDL_Surface *screenSurface;
 
+luaCFunc_t luaCFunctions[] = {
+	{.func = com_puts,  .name = "puts"      },
+	{.func = render,    .name = "render"    },
+	{.func = getInput,  .name = "getInput"  },
+	{.func = NULL,      .name = NULL        }
+};
+
 int windowInit() {
 
 	window = NULL;
@@ -70,7 +77,7 @@ main (int argc, char *argv[])
 	
 	printf("%s\n", argv[1]);
 	
-	luaInit(&Lua, argv[1]);
+	luaInit(&Lua, luaCFunctions, argv[1]);
 	
 	luaQuit(&Lua);
 

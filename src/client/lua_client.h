@@ -6,7 +6,12 @@
 
 extern const char *luaError[];
 
-int luaInit(lua_State **Lua, const char *filename);
+typedef struct {
+    lua_CFunction func;
+    char *name;
+} luaCFunc_t;
+
+int luaInit(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename);
 int luaQuit(lua_State **Lua);
 
 #endif

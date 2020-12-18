@@ -3,3 +3,5 @@ sengine-1
 cengine-1
 sengine-1-debug
 cengine-1-debug
+valgrind.log
+vgcore.*

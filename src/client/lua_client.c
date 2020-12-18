@@ -16,12 +16,14 @@ const char *luaError[] = {
 };
 
 static const luaL_Reg luaLibs[] = {
+    // {LUA_GNAME, luaopen_base},
     {NULL, NULL}
 };
 
-int luaInit(lua_State **Lua, const char *filename) {
+int luaInit(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename) {
     
     int error = 0;
+    int i;
     
     *Lua = luaL_newstate();
     /* Only include this if you are insane. */
@@ -29,19 +31,16 @@ int luaInit(lua_State **Lua, const char *filename) {
     
     const luaL_Reg *lib;
     for (lib = luaLibs; lib->func; lib++) {
-        luaL_requiref(*Lua, LUA_GNAME, luaopen_base, 1);
+        luaL_requiref(*Lua, lib->name, lib->func, 1);
         lua_pop(*Lua, 1);
     }
 
     lua_pushnil(*Lua);
-    lua_setglobal(*Lua, "print");
     
-    lua_pushcfunction(*Lua, com_puts);
-    lua_setglobal(*Lua, "puts");
-    lua_pushcfunction(*Lua, render);
-    lua_setglobal(*Lua, "render");
-    lua_pushcfunction(*Lua, getInput);
-    lua_setglobal(*Lua, "getInput");
+    for (i = 0; cfuncs[i].name != NULL; i++) {
+        lua_pushcfunction(*Lua, cfuncs[i].func);
+        lua_setglobal(*Lua, cfuncs[i].name);
+    }
     
     error = luaL_loadfile(*Lua, filename);
     if (error) {
