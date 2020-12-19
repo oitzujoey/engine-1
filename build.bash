@@ -28,11 +28,24 @@ else
     DEBUG=''
 fi
 
+# @TODO: When a .h file is modified, only rebuild .o files that include that file.
 function compile_directory {
+    
+    FORCECOMPILE=false
+    
     for CFILE in $1/*.c
     do
         OFILE=`echo $CFILE | sed 's/\.c/.o/'`
-        if [ $CFILE -nt $OFILE ]
+        
+        for HFILE in $1/*.h
+        do
+            if [ $HFILE -nt $OFILE ]
+            then
+                FORCECOMPILE=true;
+            fi
+        done
+    
+        if [ $CFILE -nt $OFILE ] || $FORCECOMPILE
         then
             echo "$CFILE -> $OFILE"
             $CC $CFLAGS -c -o $OFILE $CFILE
