@@ -42,6 +42,8 @@ The client will setup the I/O, and then run the game script. The script will per
 The server will run the game script. The script will periodically call functions that the server provides.
 The script is somewhat in charge of the framerate. I may or may not change that in the future. We don't want people mining Bitcoin in other people's game.
 
+I'm thinking of keeping all geometry inside the engine. I don't think the game code needs it, and it would be a hassle to transfer it to Lua. If the game code needs a normal, I'll let it have the normal. It doesn't need any more than that though. All collision detection will be done in the engine itself.
+
 Client system calls
     get_user_input
         Keyboard, mouse, and joystick
@@ -65,7 +67,7 @@ Server systems calls
 [*] (Client) Call C functions from Lua
 [*] (Server) Call C functions from Lua
 -----------------------------------------------
-[/] (Common) Load and parse Wavefront OBJ files
+[*] (Common) Load and parse Wavefront OBJ files
 [ ] (Common) Create entity tree from file
 [ ] (Server) Write entity tree to file
 [ ] (Client) Load entity tree from file
