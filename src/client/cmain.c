@@ -7,7 +7,7 @@
 #include "render.h"
 #include "input.h"
 #include "../common/common.h"
-#include "../common/lua_client.h"
+#include "../common/lua_sandbox.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -73,9 +73,9 @@ main (int argc, char *argv[]) {
 		return 0;
 	}
 
-	luaInit(&Lua, luaCFunctions, argv[1]);
+	lua_sandbox_init(&Lua, luaCFunctions, argv[1]);
 	
-	luaQuit(&Lua);
+	lua_sandbox_quit(&Lua);
 
 	windowQuit();
 

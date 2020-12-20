@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
+#include <ctype.h>
 
 static int getMSB(unsigned int n) {
 	int i;
@@ -13,7 +15,7 @@ static int getMSB(unsigned int n) {
 }
 
 /* @TODO: Make more efficient. Can probably do it without loops. */
-static int string_realloc_grow(string_t *s) {
+int string_realloc_grow(string_t *s) {
 	
 	while (s->length+1 > (1<<s->memsize)) {
 		
@@ -28,7 +30,7 @@ static int string_realloc_grow(string_t *s) {
 }
 
 /* @TODO: Make more efficient. Can probably do it without loops. */
-static int string_realloc_shrink(string_t *s) {
+int string_realloc_shrink(string_t *s) {
 	
 	while (s->length+1 <= (1<<(s->memsize-1))) {
 		if (s->memsize <= 0)
@@ -45,7 +47,7 @@ static int string_realloc_shrink(string_t *s) {
 }
 
 /* @TODO: Make more efficient. Can probably do it without loops. */
-static int string_realloc(string_t *s) {
+int string_realloc(string_t *s) {
 
 	while (s->length+1 > (1<<s->memsize)) {
 
@@ -71,17 +73,14 @@ static int string_realloc(string_t *s) {
 }
 
 int string_append_char(string_t *s, char c) {
-	if (s->length+1 == (1<<s->memsize)) {
-		s->memsize++;
-		s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
 
-		if (s->value == NULL)
-			return 1;
-	}
 	s->value[s->length] = c;
 	s->length++;
+	if (string_realloc_grow(s)) {
+		return 1;
+	}
 	s->value[s->length] = '\0';
-	
+
 	return 0;
 }
 
@@ -145,7 +144,7 @@ int string_copy_length_c(string_t *destination, const char *source, int length) 
 	destination->value[destination->length] = '\0';
 }
 
-int string_index_of(string_t *s, const int index, const char c) {
+int string_index_of(const string_t *s, const int index, const char c) {
 
 	int charcount = 0;
 	
@@ -218,4 +217,99 @@ int string_count(const string_t *s, const char c) {
 		}
 	}
 	return count;
+}
+
+/* Remove comments */
+int string_removeLineComments(string_t *line, const char linecomment) {
+
+	int error = 0;
+
+	/* Remove comments. */
+	error = string_substring(line, line, 0, string_index_of(line, 0, linecomment));
+	if (error > 2) {
+		return error;
+	}
+
+	return 0;
+}
+
+/* Remove whitespace */
+int string_removeWhitespace(string_t *line, const char *config) {
+
+	int error = 0;
+	int gap;
+	const bool leading = strchr(config, 'l') != NULL;
+	const bool middle = strchr(config, 'm') != NULL;
+	const bool trailing = strchr(config, 't') != NULL;
+	const bool extra = strchr(config, 'e') != NULL;
+	int startindex = 0;
+	int endlength = line->length;
+	bool deletespaces;
+	bool sawspace = false;
+
+	/* Remove leading space. */
+	gap = 0;
+	deletespaces = true;
+	for (int i = 0; i < line->length; i++) {
+		if (isspace(line->value[i]) && deletespaces) {
+			gap++;
+		}
+		else {
+			deletespaces = false;
+			if (leading) {
+				line->value[i - gap] = line->value[i];
+			}
+		}
+	}
+	if (leading) {
+		endlength -= gap;
+	}
+	else {
+		startindex = gap;
+	}
+	
+	/* Remove end whitespace. */
+	gap = 0;
+	deletespaces = true;
+	for (int i = endlength-1; i >= 0; --i) {
+		if (isspace(line->value[i]) && deletespaces) {
+			gap++;
+		}
+		else if (trailing) {
+			deletespaces = false;
+			line->value[i + gap] = line->value[i];
+		}
+	}
+	if (!trailing) {
+		endlength = line->length - gap;
+	}
+
+	/* Remove middle whitespace. */
+	gap = 0;
+	if (middle) {
+		for (int i = startindex; i < endlength; i++) {
+			if (isspace(line->value[i])) {
+				if (sawspace || !extra) {
+					gap++;
+				}
+				else {
+					sawspace = true;
+				}
+			}
+			else {
+				line->value[i - gap] = line->value[i];
+				sawspace = false;
+			}
+		}
+	}
+	
+	/* Normalize the resulting string since we did a major surgery on it. */
+	line->value[endlength] = '\0';
+	error = string_normalize(line);
+	if (error)
+		return error;		
+}
+
+int string_print(string_t *s) {
+	printf("string: length %i, memsize %i, value \"%s\"\n", s->length, s->memsize, s->value);
 }

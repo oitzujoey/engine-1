@@ -3,7 +3,7 @@
 #include "common.h"
 
 int l_puts(lua_State *Lua) {
-    puts(lua_tostring(Lua, 1));
+    printf(COLOR_CYAN"Lua "COLOR_NORMAL"%s\n", lua_tostring(Lua, 1));
     return 0;
 }
 

@@ -11,6 +11,9 @@ CLIBS='-lSDL2 -llua'
 DEBUG='-debug'
 DIDSTUFF=false
 
+
+FORCECOMPILE=false
+
 # build clean
 if [ "$1" == "clean" ]
 then
@@ -31,8 +34,6 @@ fi
 # @TODO: When a .h file is modified, only rebuild .o files that include that file.
 function compile_directory {
     
-    FORCECOMPILE=false
-    
     for CFILE in $1/*.c
     do
         OFILE=`echo $CFILE | sed 's/\.c/.o/'`
@@ -52,6 +53,8 @@ function compile_directory {
             DIDSTUFF=true
         fi
     done
+    
+    FORCECOMPILE=false
 }
 
 function final_compile {
@@ -71,13 +74,16 @@ function final_compile {
     done
 }
 
-# Compile all C files to object files
-compile_directory src/client
-compile_directory src/server
 compile_directory src/common
 
-# And now to the final executable
+# TEMPCFLAGS=$CFLAGS
+# CFLAGS+=' -DCLIENT'
+compile_directory src/client
 final_compile cengine-1 src/client/*.o src/common/*.o
+
+# CFLAGS=$TEMPCFLAGS
+# CFLAGS+=' -DSERVER'
+compile_directory src/server
 final_compile sengine-1 src/server/*.o src/common/*.o
 
 if ! $DIDSTUFF

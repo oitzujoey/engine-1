@@ -24,15 +24,23 @@ printf("String \"%s\" is %i characters long.\n", s.value, s.length);
 string_free(&s);
 */
 
+int string_realloc_grow(string_t *s);
+int string_realloc_shrink(string_t *s);
+int string_realloc(string_t *s);
 int string_append_char(string_t *s, char c);
 int string_init(string_t *s);
 void string_free(string_t *s);
 int string_copy_c(string_t *destination, const char *source);
 int string_copy(string_t *destination, const string_t *source);
 int string_copy_length_c(string_t *destination, const char *source, int length);
-int string_index_of(string_t *s, const int index, const char c);
+/* index is the n-th character index starting at zero. */
+int string_index_of(const string_t *s, const int index, const char c);
 int string_substring(string_t *destination, const string_t *source, const int index, const int length);
+/* Set the value, then call this to adjust the rest. */
 int string_normalize(string_t *s);
 int string_count(const string_t *s, const char c);
+int string_removeLineComments(string_t *line, const char linecomment);
+int string_removeWhitespace(string_t *line, const char *config);
+int string_print(string_t *s);
 
 #endif

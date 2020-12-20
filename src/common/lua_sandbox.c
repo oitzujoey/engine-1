@@ -1,8 +1,10 @@
 
 #include <lualib.h>
 #include <lauxlib.h>
-#include "lua_client.h"
-#include "../common/common.h"
+#include "lua_sandbox.h"
+#include "common.h"
+#include "log.h"
+#include "file.h"
 
 const char *luaError[] = {
     "LUA_OK",
@@ -18,7 +20,7 @@ static const luaL_Reg luaLibs[] = {
     {NULL, NULL}
 };
 
-int luaInit(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename) {
+int lua_sandbox_init(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename) {
     
     int error = 0;
     int i;
@@ -40,20 +42,31 @@ int luaInit(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename) {
         lua_setglobal(*Lua, cfuncs[i].name);
     }
     
+    if (!file_exists(filename)) {
+        log_error(__func__, "File \"%s\" does not exist", filename, luaError[error]);
+        return ERR_GENERIC;
+    }
+    
     error = luaL_loadfile(*Lua, filename);
     if (error) {
-        fprintf(stderr, "Error: Could not load lua file %s due to error %s\n", filename, luaError[error]);
+        log_error(__func__, "Could not load lua file %s due to error %s", filename, luaError[error]);
         return 1;
     }
     
     error = lua_pcall(*Lua, 0, 0, 0);
     if (error) {
-        fprintf(stderr, "Error: Lua script %s exited with error %s\n", filename, luaError[error]);
+        log_error(__func__, "Lua script %s exited with error %s", filename, luaError[error]);
         return 1;
     }
-    
 }
 
-int luaQuit(lua_State **Lua) {
+int lua_sandbox_quit(lua_State **Lua) {
     lua_close(*Lua);
+}
+
+int lua_sandbox_sanitizeFilepath(string_t *filepath) {
+    
+    
+    
+    return 0;
 }

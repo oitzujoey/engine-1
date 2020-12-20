@@ -1,5 +1,14 @@
 {
     "files.associations": {
-        "cstdio": "cpp"
+        "cstdio": "cpp",
+        "typeindex": "c",
+        "typeinfo": "c",
+        "*.tcc": "cpp",
+        "bitset": "cpp",
+        "istream": "cpp",
+        "mutex": "cpp",
+        "variant": "cpp",
+        "*.def": "cpp",
+        "*.t": "cpp"
     }
 }

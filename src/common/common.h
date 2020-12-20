@@ -4,6 +4,9 @@
 
 #include <lua.h>
 
+#define ERR_OK          0
+#define ERR_GENERIC     1
+#define ERR_OUTOFMEMORY 2
 
 #define COLOR_NORMAL    "\x1B[0m"
 #define COLOR_RED       "\x1B[31m"
@@ -14,6 +17,7 @@
 #define COLOR_CYAN      "\x1B[36m"
 #define COLOR_WHITE     "\x1B[37m"
 
+#define AUTOEXEC    "autoexec.cfg"
 
 #ifdef DOUBLE_VEC
 typedef double vec_t;

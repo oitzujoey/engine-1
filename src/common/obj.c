@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include "log.h"
+#include "file.h"
 
 static const char *getExt(const char *filename) {
 	
@@ -19,67 +20,6 @@ static const char *getExt(const char *filename) {
 		return NULL;
 	
 	return dot+1;
-}
-
-static char *getFileText(const char *filename) {
-	
-	FILE *file = fopen(filename, "r");
-	char c;
-	string_t str;
-	string_init(&str);
-	
-	while (1) {
-		c = fgetc(file);
-		if (c == EOF)
-			break;
-		string_append_char(&str, c);
-	}
-	
-	fclose(file);
-	
-	return str.value;
-}
-
-/* Remove comments and unnecessary whitespace */
-int string_beautify(string_t *line, const char linecomment) {
-
-	int error = 0;
-	bool sawspace;
-	int gap;
-
-	/* Remove comments. */
-	error = string_substring(line, line, 0, string_index_of(line, 0, linecomment));
-	if (error > 2)
-		return error;
-	
-	/* Remove leading space. */
-	sawspace = true;
-	/* Remove unnecessary middle whitespace. */
-	gap = 0;
-        for (int i = 0; i < line->length; i++) {
-            if (isspace(line->value[i])) {
-                if (sawspace) {
-                    gap++;
-                }
-                else {
-                    line->value[i-gap] = ' ';
-                    sawspace = true;
-                }
-            }
-            else {
-                line->value[i-gap] = line->value[i];
-                sawspace = false;
-            }
-        }
-	/* Remove trailing space. */
-        if ((line->length+gap > 0) && isspace(line->value[line->length-gap-1]))
-            gap++;
-        /* Normalize the resulting string since we did a major surgery on it. */
-        line->value[line->length-gap] = '\0';
-	error = string_normalize(line);
-	if (error)
-		return error;
-		
 }
 
 int obj_parsestring(obj_t *obj, const char *string) {
@@ -132,11 +72,17 @@ int obj_parsestring(obj_t *obj, const char *string) {
 		line = newline+1;
 
 		/* Clean line. */
-		error = string_beautify(&linecopy, '#');
-		if (error) {
-			break;
-		}
 		
+		/* Remove comments and unnecessary whitespace. */
+		string_removeLineComments(&linecopy, '#');
+		string_removeWhitespace(&linecopy, "melt");
+		/* Convert remaining whitespace to spaces */
+		for (int i = 0; i < linecopy.length; i++) {
+			if (isspace(linecopy.value[i])) {
+				linecopy.value[i] = ' ';
+			}
+		}
+
 		/* Ignore empty lines */
 		if (linecopy.length == 0) {
 			continue;
@@ -407,13 +353,18 @@ int obj_parsestring(obj_t *obj, const char *string) {
 		return error;
 	}
 	
-	if (success)
+	if (success) {
 		return 0;
-	else
+	}
+	else {
+		log_error(__func__, "Parsing failed");
 		return 1;
+	}
 }
 
 int print_obj(obj_t *obj) {
+
+	log_info(__func__, "Dumping object \"%s\"", (obj->object_name.value == NULL) ? "(null)" : obj->object_name.value);
 
 	if (obj->material_library.value != NULL) {
 		printf("Material library "COLOR_BLUE"[mtllib] "COLOR_CYAN"%s"COLOR_NORMAL"\n", obj->material_library.value);
@@ -498,12 +449,12 @@ int l_loadObj(lua_State *Lua) {
 		return 0;
 	}
 	
-	filetext = getFileText(filename);
+	filetext = file_getText(filename);
 	
 	log_info(__func__, "Parsing file \"%s\"", filename);
 	error = obj_parsestring(&obj, filetext);
 	if (error) {
-		log_error(__func__, "Could not load file \"%s\" as OBJ. (string_to_obj) returned %i\n", filename, error);
+		log_error(__func__, "Could not load file \"%s\" as OBJ. (string_to_obj) returned %i", filename, error);
 		free(filetext);
 		obj_free(&obj);
 		return 0;
