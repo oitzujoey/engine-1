@@ -1,0 +1,29 @@
+
+#ifndef VFS_H
+#define VFS_H
+
+#include "str.h"
+
+// typedef struct {
+
+// } vfs_file_t;
+
+typedef enum vfs_type_e {
+	vfs_type_directory,
+	vfs_type_zip
+} vfs_type_t;
+
+// typedef struct {
+	
+// } vfs_file_t;
+
+typedef struct {
+	string_t path;
+	vfs_type_t workspace_type;
+} vfs_t;
+
+int vfs_getFileText(vfs_t *vfs, string_t *fileText, const string_t *workspace_path);
+int vfs_init(vfs_t *vfs, const string_t *path);
+int vfs_free(vfs_t *vfs);
+
+#endif

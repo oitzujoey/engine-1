@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include "common.h"
+#include "insane.h"
 
 static int getMSB(unsigned int n) {
 	int i;
@@ -14,62 +16,51 @@ static int getMSB(unsigned int n) {
 	return i-1;
 }
 
-/* @TODO: Make more efficient. Can probably do it without loops. */
 int string_realloc_grow(string_t *s) {
 	
 	while (s->length+1 > (1<<s->memsize)) {
 		
 		s->memsize++;
-		s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
-		
-		if (s->value == NULL)
-			return 1;
 	}
 	
-	return 0;
+	s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
+	if (s->value == NULL)
+		return ERR_OUTOFMEMORY;
+	return ERR_OK;
 }
 
-/* @TODO: Make more efficient. Can probably do it without loops. */
 int string_realloc_shrink(string_t *s) {
 	
 	while (s->length+1 <= (1<<(s->memsize-1))) {
 		if (s->memsize <= 0)
 			break;
-
 		--s->memsize;
-		s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
-		
-		if (s->value == NULL)
-			return 2;
 	}
 	
-	return 0;
+	s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
+	if (s->value == NULL) {
+		return ERR_OUTOFMEMORY;
+	}
+	return ERR_OK;
 }
 
-/* @TODO: Make more efficient. Can probably do it without loops. */
 int string_realloc(string_t *s) {
 
 	while (s->length+1 > (1<<s->memsize)) {
-
 		s->memsize++;
-		s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
-		
-		if (s->value == NULL)
-			return 1;
 	}
-	
+
 	while (s->length+1 <= (1<<(s->memsize-1))) {
 		if (s->memsize <= 0)
 			break;
-
 		--s->memsize;
-		s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
-		
-		if (s->value == NULL)
-			return 2;
 	}
 	
-	return 0;
+	s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
+	if (s->value == NULL) {
+		return ERR_OUTOFMEMORY;
+	}
+	return ERR_OK;
 }
 
 int string_append_char(string_t *s, char c) {
@@ -89,14 +80,15 @@ int string_init(string_t *s) {
 	s->length = 0;
 	s->memsize = 0;
 	s->value = malloc((1<<s->memsize) * sizeof(char));
-	if (s->value == NULL)
-		return 2;
+	if (s->value == NULL) {
+		return ERR_OUTOFMEMORY;
+	}
 	s->value[0] = '\0';
 	return 0;
 }
 
 void string_free(string_t *s) {
-	free(s->value);
+	insane_free(s->value);
 }
 
 int string_copy_c(string_t *destination, const char *source) {
@@ -120,11 +112,43 @@ int string_copy(string_t *destination, const string_t *source) {
 
 	destination->value = realloc(destination->value, (1<<destination->memsize) * sizeof(char));
 	if (destination->value == NULL)
-		return 1;
+		return ERR_OUTOFMEMORY;
 
 	strcpy(destination->value, source->value);
 
+	return ERR_OK;
+}
+
+int string_concatenate_c(string_t *destination, const char *source) {
+	
+	int error = 0;
+
+	destination->length += strlen(source);
+	error = string_realloc(destination);
+
+	if (error)
+		return error;
+
+	strcat(destination->value, source);
 	return 0;
+}
+
+int string_concatenate(string_t *destination, const string_t *source) {
+
+	destination->length += source->length;
+
+	// destination->value = realloc(destination->value, (1<<destination->memsize) * sizeof(char));
+	// if (destination->value == NULL)
+	// 	return ERR_OUTOFMEMORY;
+	error = string_realloc_grow(destination);
+	if (error) {
+		error = ERR_OUTOFMEMORY;
+		return ERR_OUTOFMEMORY;
+	}
+
+	strcat(destination->value, source->value);
+
+	return ERR_OK;
 }
 
 int string_copy_length_c(string_t *destination, const char *source, int length) {
@@ -311,5 +335,55 @@ int string_removeWhitespace(string_t *line, const char *config) {
 }
 
 int string_print(string_t *s) {
-	printf("string: length %i, memsize %i, value \"%s\"\n", s->length, s->memsize, s->value);
+	printf(COLOR_CYAN"string: "
+	       COLOR_BLUE"[length] "COLOR_CYAN"%i"COLOR_NORMAL" ; "
+	       COLOR_BLUE"[memsize] "COLOR_CYAN"%i"COLOR_NORMAL" ; "
+	       COLOR_BLUE"[value] "COLOR_CYAN"\"%s\"\n",
+	       s->length, s->memsize, s->value);
 }
+
+// /*
+// Copied from insane.h and modified by Joey.
+// */
+// int string_vasprintf(string_t **strp, const char *fmt, va_list ap)
+// {
+//   int r = -1, size;
+
+//   va_list ap2;
+//   va_copy(ap2, ap);
+
+//   size = vsnprintf(0, 0, fmt, ap2);
+
+//   if ((size >= 0) && (size < INT_MAX))
+//   {
+//     *(strp)->value = (char *)malloc(size+1); //+1 for null
+//     if (*strp)
+//     {
+//       r = vsnprintf(*strp, size+1, fmt, ap);  //+1 for null
+//       if ((r < 0) || (r > size))
+//       {
+//         insane_free(*strp);
+//         r = -1;
+//       }
+//     }
+//   }
+//   else { *strp = 0; }
+
+//   va_end(ap2);
+
+//   return(r);
+// }
+
+// /*
+// The va_list is the single worst hack in all of C. I literally cannot implement
+// this function with format as string_t because of this terrible hack. I find it
+// very difficult to call it a feature. I almost wish it never existed in the first
+// place.
+// */
+// void string_format(string_t *out, const char *format, ...) {
+	
+// 	va_list args;
+// 	va_start(args, format);
+// 	error = string_vasprintf(&out, format, args);
+// 	va_end(args);
+// }

@@ -1,0 +1,54 @@
+
+Commands given to build will create those variables. If an argument is
+provided to the variable, then it will be set to that value as well.
+
+build [
+debug
+'example 1'
+]
+
+Assignment: <variable>:<value>
+Assignment with concatenation: <variable>:<value0>:<value1>
+Clearing: <variable>:
+Printing: <variable>
+Execution: :<variable>
+A identifier an argument sets it to that value.
+A identifier with no arguments clears that variable to "".
+A identifier on it's own prints it.
+Literal values are specified with quotes.
+Quotes can be escaped when inside quotes.
+When the "" variable is set, the command it is set to is executed. It's value
+is then cleared.
+Key variables: binary, dirs, "", compiler flags, compiler, language
+Key "" commands: build ifdef
+
+build.txt {
+# Set the compiler to GCC. Extra compilers have to be added in the build system
+# binary.
+compiler:GCC
+# Set the language. Same comment as above.
+language:C
+# Set the include directories.
+includes:
+
+debug flags: -g -O1 -DDEBUG
+common flags: -llua
+# If debug was defined, then add in the debug flags.
+:ifdef debug:"common flags:common flags:debug flags"
+client flags:
+server flags: -lSDL2
+
+# Set the name of the final binary.
+binary:cengine-1
+# Tell the build system where to find the .c files.
+dirs:src/client src/common
+# Equivalent to setting CFLAGS.
+compiler flags:client flags:common flags
+# BUILD!!!
+:build
+
+binary:sengine-1
+dirs:src/client src/common
+compiler flags:server flags:common flags
+:build
+}

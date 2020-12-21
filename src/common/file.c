@@ -1,5 +1,10 @@
 
 #include "file.h"
+#include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include "common.h"
 
 char *file_getText(const char *filename) {
 	
@@ -54,4 +59,30 @@ int file_exists(const char *filename) {
 	
 	fclose(file);
 	return 1;
+}
+
+const char *file_getExtension(const char *filename) {
+	
+	const char *dot = &filename[strlen(filename)];
+	
+	do {
+		--dot;
+	} while ((*dot != '.') && (dot > filename));
+	
+	if (dot == filename)
+		return NULL;
+	
+	return dot+1;
+}
+
+int file_isRegularFile(const char *path) {
+	struct stat path_stat;
+	stat(path, &path_stat);
+	return S_ISREG(path_stat.st_mode);
+}
+
+int file_isDirectory(const char *path) {
+	struct stat path_stat;
+	stat(path, &path_stat);
+	return S_ISDIR(path_stat.st_mode);
 }

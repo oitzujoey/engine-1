@@ -71,20 +71,27 @@ Server systems calls
 -----------------------------------------------
 [*] (Common) Load and parse Wavefront OBJ files
 [*] (Common) Load and parse config files
+[*] (All)    Get on those TODOs (ugly ones)
+[/] (Common) Create virtual file system
+    [ ] (Common) Create file_concatenatePath()
+    [ ] (Common) Only allow file paths that remain in the workspace
 [ ] (Common) Load and parse Wavefront MTL files
 [ ] (Common) Create entity tree from file
 [ ] (Server) Write entity tree to file
 [ ] (Client) Load entity tree from file
+[ ] (All)    Get on those TODOs (ugly ones)
 [ ] (Client) Render entity tree in basic 3D using OpenGL
 -------------------------------------------------------------
 [ ] (Client) Pass entity tree through VM and back to renderer
 [ ] (Server) Send entity tree every second
 [ ] (Server) Animate entity tree
+[ ] (All)    Get on those TODOs (ugly ones)
 [ ] (Client) Render tree every time it is received
 --------------------------------------------------
 [/] (Client) Get keyboard input
 [/] (Client) Get mouse input
 [ ] (Client) Send input
+[ ] (All)    Get on those TODOs (ugly ones)
 [ ] (Server) Receive input
 [ ] (Server) Make an entity move based on input
 -----------------------------------------------

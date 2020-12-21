@@ -1,0 +1,62 @@
+
+#define EXPRESSION  (0)
+#define BLOCK       EXPRESSION; EXPRESSION; EXPRESSION;
+
+/*
+Functions with no arguments must be declared with "void" as the only argument.
+*/
+int main(void) {
+	/*
+	If statements shall take this form.
+	*/
+	if (EXPRESSION) {
+		BLOCK
+	}
+	else if (EXPRESSION) {
+		BLOCK
+	}
+	else {
+		BLOCK
+	}
+	
+	/*
+	If statements formatted like this are disallowed.
+	*/
+	if (EXPRESSION)
+		EXPRESSION;
+	else if (EXPRESSION)
+		EXPRESSION;
+	else
+		EXPRESSION;
+	
+	/*
+	A global error variable shall be declared. All errors will set this
+	variable. The name does not matter. serious errors will not be directly
+	returned to a function.
+	*/
+	
+	/*
+	When practical, the string type should be used exclusively.
+	*/
+	
+	/*
+	If a function is defined in a header file, then it is usually best to
+	define it as "<headerfile>_<functionName>"
+	*/
+	
+	/*
+	Functions that create something should be named "something_create*".
+	Functions that setup something that exists should be named
+	"something_init*".
+	Functions that destroy something should be named "something_delete*".
+	Functions that decommission something should be named "something_quit*".
+	Functions that free something should be named "something_free*".
+	*/
+	
+	/*
+	Struct definitions must be of the form "<structname>_s".
+	Type definitions must be of the form "<typename>_t".
+	Enum definitions must be of the form "<enumname>_e".
+	Labels must be of the form "<label>_l".
+	*/
+}

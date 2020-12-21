@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include "file.h"
 #include "log.h"
+#include "insane.h"
 
 cfg_t cfg;
 
@@ -29,7 +30,8 @@ cfg_var_t *cfg_addVarNone(const char *name) {
 	}
 	strcpy(cfg.vars[cfg.vars_length - 1].name, name);
 	
-	cfg.vars[cfg.vars_length - 1].string = NULL;
+	cfg.vars[cfg.vars_length - 1].string.value = NULL;
+	string_normalize(&cfg.vars[cfg.vars_length - 1].string);
 	cfg.vars[cfg.vars_length - 1].vector = 0;
 	cfg.vars[cfg.vars_length - 1].integer = 0;
 	
@@ -55,7 +57,8 @@ cfg_var_t *cfg_addVarVector(const char *name, const vec_t value) {
 	}
 	strcpy(cfg.vars[cfg.vars_length - 1].name, name);
 	
-	cfg.vars[cfg.vars_length - 1].string = NULL;
+	cfg.vars[cfg.vars_length - 1].string.value = NULL;
+	string_normalize(&cfg.vars[cfg.vars_length - 1].string);
 	cfg.vars[cfg.vars_length - 1].vector = value;
 	cfg.vars[cfg.vars_length - 1].integer = 0;
 	
@@ -81,7 +84,8 @@ cfg_var_t *cfg_addVarInt(const char *name, const int value) {
 	}
 	strcpy(cfg.vars[cfg.vars_length - 1].name, name);
 	
-	cfg.vars[cfg.vars_length - 1].string = NULL;
+	cfg.vars[cfg.vars_length - 1].string.value = NULL;
+	string_normalize(&cfg.vars[cfg.vars_length - 1].string);
 	cfg.vars[cfg.vars_length - 1].vector = value;
 	cfg.vars[cfg.vars_length - 1].integer = 0;
 	
@@ -107,12 +111,13 @@ cfg_var_t *cfg_addVarString(const char *name, const char *value) {
 	}
 	strcpy(cfg.vars[cfg.vars_length - 1].name, name);
 
-	cfg.vars[cfg.vars_length - 1].string = malloc((strlen(value) + 1) * sizeof(char));
-	if (cfg.vars[cfg.vars_length - 1].string == NULL) {
-		log_critical_error(__func__, "Out of memory");
-		return NULL;
-	}
-	strcpy(cfg.vars[cfg.vars_length - 1].string, value);
+	// cfg.vars[cfg.vars_length - 1].string = malloc((strlen(value) + 1) * sizeof(char));
+	// if (cfg.vars[cfg.vars_length - 1].string == NULL) {
+	// 	log_critical_error(__func__, "Out of memory");
+	// 	return NULL;
+	// }
+	// strcpy(cfg.vars[cfg.vars_length - 1].string, value);
+	string_copy_c(&cfg.vars[cfg.vars_length - 1].string, value);
 	
 	cfg.vars[cfg.vars_length - 1].vector = 0;
 	cfg.vars[cfg.vars_length - 1].integer = 0;
@@ -144,12 +149,13 @@ int cfg_setVarInt(cfg_var_t *var, const int value) {
 int cfg_setVarString(cfg_var_t *var, const char *value) {
 
 	if (!cfg.lock || (var->permissions & CFG_VAR_PERMISSION_WRITE)) {
-		var->string = realloc(var->string, (strlen(value) + 1) * sizeof(char));
-		if (var->string == NULL) {
-			log_critical_error(__func__, "Out of memory");
-			return ERR_OUTOFMEMORY;
-		}
-		strcpy(var->string, value);
+		// var->string = realloc(var->string, (strlen(value) + 1) * sizeof(char));
+		// if (var->string == NULL) {
+		// 	log_critical_error(__func__, "Out of memory");
+		// 	return ERR_OUTOFMEMORY;
+		// }
+		// strcpy(var->string, value);
+		string_copy_c(&var->string, value);
 		return ERR_OK;
 	}
 
@@ -174,10 +180,11 @@ int cfg_getVarInt(cfg_var_t *var, int *value) {
 	return ERR_GENERIC;
 }
 
-int cfg_getVarString(cfg_var_t *var, char **value) {
+/* This returns the original, not a copy. */
+int cfg_getVarString(cfg_var_t *var, string_t **value) {
 
 	if (!cfg.lock || (var->permissions & CFG_VAR_PERMISSION_READ)) {
-		*value = var->string;
+		*value = &var->string;
 		return ERR_OK;
 	}
 
@@ -200,8 +207,8 @@ int cfg_deleteVar(cfg_var_t *var) {
 	if (!cfg.lock || (var->permissions & CFG_VAR_PERMISSION_DELETE)) {
 		index = var - cfg.vars;
 		
-		free(var->name);
-		free(var->string);
+		insane_free(var->name);
+		string_free(&var->string);
 		
 		--cfg.vars_length;
 		for (int i = index; i < cfg.vars_length; i++) {
@@ -212,7 +219,7 @@ int cfg_deleteVar(cfg_var_t *var) {
 	return ERR_GENERIC;
 }
 
-int cfg_initVars(const cfg_var_t *initCfgList) {
+int cfg_initVars(const cfg_var_init_t *initCfgList) {
 
 	if (initCfgList == NULL) {
 		return ERR_GENERIC;
@@ -238,15 +245,19 @@ int cfg_initVars(const cfg_var_t *initCfgList) {
 		cfg.vars[i].vector = initCfgList[i].vector;
 		cfg.vars[i].integer = initCfgList[i].integer;
 		
+		if (string_init(&cfg.vars[i].string)) {
+			return ERR_OUTOFMEMORY;
+		}
 		if (initCfgList[i].string != NULL) {
-			cfg.vars[i].string = malloc((strlen(initCfgList[i].string) + 1) * sizeof(char));
-			if (cfg.vars[i].string == NULL) {
-				return ERR_OUTOFMEMORY;
-			}
-			strcpy(cfg.vars[i].string, initCfgList[i].string);
+			// cfg.vars[i].string = malloc((strlen(initCfgList[i].string) + 1) * sizeof(char));
+			// if (cfg.vars[i].string == NULL) {
+			// 	return ERR_OUTOFMEMORY;
+			// }
+			// strcpy(cfg.vars[i].string, initCfgList[i].string);
+			string_copy_c(&cfg.vars[i].string, initCfgList[i].string);
 		}
 		else {
-			cfg.vars[i].string = NULL;
+			// cfg.vars[i].string.v = NULL;
 		}
 		
 		cfg.vars[i].type = initCfgList[i].type;
@@ -256,22 +267,22 @@ int cfg_initVars(const cfg_var_t *initCfgList) {
 	return ERR_OK;
 }
 
-int cfg_printVar(cfg_var_t *var) {
+int cfg_printVar(cfg_var_t *var, const char *tag) {
 	string_t value;
 
 	if (!cfg.lock || (var->permissions & CFG_VAR_PERMISSION_READ)) {
 		switch (var->type) {
 			case none:
-				printf(COLOR_CYAN"cfg: "COLOR_BLUE"[%s]"COLOR_NORMAL"\n", var->name);
+				printf(COLOR_CYAN"%s: "COLOR_BLUE"[%s]"COLOR_NORMAL"\n", tag, var->name);
 				break;
 			case vector:
-				printf(COLOR_CYAN"cfg: "COLOR_BLUE"[%s]"COLOR_CYAN" %f"COLOR_NORMAL"\n", var->name, var->vector);
+				printf(COLOR_CYAN"%s: "COLOR_BLUE"[%s]"COLOR_CYAN" %f"COLOR_NORMAL"\n", tag, var->name, var->vector);
 				break;
 			case integer:
-				printf(COLOR_CYAN"cfg: "COLOR_BLUE"[%s]"COLOR_CYAN" %i"COLOR_NORMAL"\n", var->name, var->integer);
+				printf(COLOR_CYAN"%s: "COLOR_BLUE"[%s]"COLOR_CYAN" %i"COLOR_NORMAL"\n", tag, var->name, var->integer);
 				break;
 			case string:
-				printf(COLOR_CYAN"cfg: "COLOR_BLUE"[%s]"COLOR_CYAN" \"%s\""COLOR_NORMAL"\n", var->name, var->string);
+				printf(COLOR_CYAN"%s: "COLOR_BLUE"[%s]"COLOR_CYAN" \"%s\""COLOR_NORMAL"\n", tag, var->name, var->string);
 				break;
 			default:
 				log_error(__func__, "Can't happen");
@@ -288,10 +299,10 @@ int cfg_printVar(cfg_var_t *var) {
 void cfg_free(void) {
 	
 	for (int i = 0; i < cfg.vars_length; i++) {
-		free(cfg.vars[i].name);
-		free(cfg.vars[i].string);
+		insane_free(cfg.vars[i].name);
+		string_free(&cfg.vars[i].string);
 	}
-	free(cfg.vars);
+	insane_free(cfg.vars);
 	cfg.vars_length = 0;
 }
 
@@ -299,7 +310,7 @@ void cfg_free(void) {
 /* ========= */
 
 /* Execute a single line of the config file. */
-int cfg_execString(const string_t *line) {
+int cfg_execString(const string_t *line, const char *tag) {
 
 	int tempIndex;
 	string_t command;
@@ -337,7 +348,7 @@ int cfg_execString(const string_t *line) {
 
 		/* The var exists. Execute the rest of the command. */
 		string_substring(&arg0, line, string_index_of(line, 1, ' ') + 1, -1);
-		cfg_execString(&arg0);
+		cfg_execString(&arg0, tag);
 	}
 	else if (!strcmp(command.value, "ifndef")) {
 		if (argc < 3) {
@@ -358,7 +369,7 @@ int cfg_execString(const string_t *line) {
 
 		/* The var exists. Execute the rest of the command. */
 		string_substring(&arg0, line, string_index_of(line, 1, ' ') + 1, -1);
-		cfg_execString(&arg0);
+		cfg_execString(&arg0, tag);
 	}
 	else if (!strcmp(command.value, "set")) {
 		if (argc < 2) {
@@ -444,7 +455,7 @@ int cfg_execString(const string_t *line) {
 		
 		string_substring(&arg0, line, string_index_of(line, 0, ' ') + 1, -1);
 		
-		printf(COLOR_CYAN"cfg: "COLOR_NORMAL"%s\n", arg0.value);
+		printf(COLOR_CYAN"%s: "COLOR_NORMAL"%s\n", tag, arg0.value);
 	}
 	else if (!strcmp(command.value, "exec")) {
 		if (argc < 1) {
@@ -463,7 +474,7 @@ int cfg_execString(const string_t *line) {
 			tempCfgVar = cfg_findVar(command.value);
 			/* Doubtful */
 			if (tempCfgVar != NULL) {
-				cfg_printVar(tempCfgVar);
+				cfg_printVar(tempCfgVar, tag);
 				error = 0;
 				goto end_l;
 			}
@@ -523,7 +534,7 @@ int cfg_execFile(const char *filepath) {
 			continue;
 		}
 		
-		error = cfg_execString(&line);
+		error = cfg_execString(&line, filepath);
 		if (error) {
 			log_error(__func__, "Syntax error on line %i", linenumber);
 			// break;

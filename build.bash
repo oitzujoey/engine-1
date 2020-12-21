@@ -4,8 +4,8 @@ SERVER=sengine-1
 CLIENT=cengine-1
 
 CC=gcc
-CFLAGS=
-CLIBS='-lSDL2 -llua'
+CFLAGS='-std=c99 -pedantic-errors -Werror'
+CLIBS='-lSDL2 -llua -lzip'
 
 # Not a command line argument
 DEBUG='-debug'

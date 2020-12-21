@@ -6,21 +6,10 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include "log.h"
+#include "vfs.h"
+#include "cfg.h"
+#include "common.h"
 #include "file.h"
-
-static const char *getExt(const char *filename) {
-	
-	const char *dot = &filename[strlen(filename)];
-	
-	do {
-		--dot;
-	} while ((*dot != '.') && (dot > filename));
-	
-	if (dot == filename)
-		return NULL;
-	
-	return dot+1;
-}
 
 int obj_parsestring(obj_t *obj, const char *string) {
 	
@@ -59,7 +48,7 @@ int obj_parsestring(obj_t *obj, const char *string) {
 	for (int linenumber = 0;; linenumber++) {
 	
 		/* Create line. */
-	
+
 		/* Copy a line of text into a new string. */
 		newline = strchr(line, '\n');
 		if (newline == NULL) {
@@ -130,7 +119,6 @@ int obj_parsestring(obj_t *obj, const char *string) {
 			string_substring(&argv, &linecopy, tempindex+1, -1);
 
 			string_copy(&obj->object_name, &argv);
-			
 		}
 		else if (!strcmp(command.value, "v")) {
 			argc = string_count(&linecopy, ' ');
@@ -426,45 +414,61 @@ int obj_free(obj_t *obj) {
 	}
 	free(obj->facesets);
 	
-	return 0;
+	return ERR_OK;
 }
 
 int l_loadObj(lua_State *Lua) {
 	
-	const char *filename = lua_tostring(Lua, 1);
+	string_t fileName;
 	const char *ext;
-	char *filetext;
+	string_t fileText;
 	obj_t obj;
 	int error = 0;
 	
-	ext = getExt(filename);
+	string_init(&fileText);
+	string_init(&fileName);
+	
+	string_copy_c(&fileName, lua_tostring(Lua, 1));
+	
+	/* Don't have to free "ext" because it is part of fileName.value */
+	ext = file_getExtension(fileName.value);
 	
 	if (ext == NULL) {
-		fprintf(stderr, "Error: (l_loadObj) Refusing to open file \"%s\" as Wavefront OBJ due to missing file extension. Should be .obj\n", filename);
-		return 0;
+		fprintf(stderr, "Error: (l_loadObj) Refusing to open file \"%s\" as Wavefront OBJ due to missing file extension. Should be .obj\n", fileName.value);
+		error = 0;
+		goto cleanup_l;
 	}
 	
 	if (strcmp(ext, "obj")) {
-		fprintf(stderr, "Error: (l_loadObj) Refusing to open file \"%s\" as Wavefront OBJ due to incorrect file extension. Should be .obj\n", filename);
-		return 0;
+		fprintf(stderr, "Error: (l_loadObj) Refusing to open file \"%s\" as Wavefront OBJ due to incorrect file extension. Should be .obj\n", fileName.value);
+		error = 0;
+		goto cleanup_l;
 	}
-	
-	filetext = file_getText(filename);
-	
-	log_info(__func__, "Parsing file \"%s\"", filename);
-	error = obj_parsestring(&obj, filetext);
+
+	vfs_getFileText(&vfs, &fileText, &fileName);
+
+	log_info(__func__, "Parsing file \"%s\"", fileName.value);
+	error = obj_parsestring(&obj, fileText.value);
 	if (error) {
-		log_error(__func__, "Could not load file \"%s\" as OBJ. (string_to_obj) returned %i", filename, error);
-		free(filetext);
-		obj_free(&obj);
-		return 0;
+		log_warning(__func__, "Could not load file \"%s\" as OBJ. (string_to_obj) returned %i", fileName.value, error);
+		error = 0;
+		goto cleanup_l;
 	}
 	print_obj(&obj);
 	
-	lua_pushstring(Lua, filetext);
-	free(filetext);
+	cleanup_l:
+	
+	if (!error) {
+		lua_pushstring(Lua, fileText.value);
+	}
+	
+	string_free(&fileText);
+	string_free(&fileName);
 	
 	obj_free(&obj);
 	
+	if (error) {
+		return 0;
+	}
 	return 1;
 }

@@ -3,6 +3,7 @@
 #define COMMON_H
 
 #include <lua.h>
+#include "vfs.h"
 
 #define ERR_OK          0
 #define ERR_GENERIC     1
@@ -28,6 +29,9 @@ typedef vec_t vec2_t[2];
 typedef vec_t vec3_t[3];
 typedef vec_t vec4_t[4];
 
+extern int error;
+
+extern vfs_t vfs;
 
 int l_puts(lua_State*);
 
