@@ -35,4 +35,6 @@ extern vfs_t vfs;
 
 int l_puts(lua_State*);
 
+int MSB(int n);
+
 #endif

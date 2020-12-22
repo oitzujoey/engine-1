@@ -15,40 +15,53 @@ Execution: :<variable>
 A identifier an argument sets it to that value.
 A identifier with no arguments clears that variable to "".
 A identifier on it's own prints it.
-Literal values are specified with quotes.
-Quotes can be escaped when inside quotes.
-When the "" variable is set, the command it is set to is executed. It's value
-is then cleared.
-Key variables: binary, dirs, "", compiler flags, compiler, language
-Key "" commands: build ifdef
+Variables can be specified with double quotes.
+Single/Double quotes can be escaped when inside single/double quotes.
+When the "" variable is set, the command it is set to is executed.
+Key variables: "binary" "dirs" "" "compiler" "flags" "compiler" "language"
+Read only variables: "build" "ifdef" "shell"
+
+The zeroth argument is always interpreted as a variable.
+The remaining arguments are concatenated together and assigned to the first
+variable.
+Literal values are specified with single quotes. Quotes are treated as part of
+the variable in argument zero.
+Variables can be specified with double quotes. Quotes are treated as part of
+the variable in argument zero.
 
 build.txt {
 # Set the compiler to GCC. Extra compilers have to be added in the build system
 # binary.
-compiler:GCC
+compiler:'GCC'
 # Set the language. Same comment as above.
-language:C
+language:'C'
 # Set the include directories.
-includes:
+includes:''
 
-debug flags: -g -O1 -DDEBUG
-common flags: -llua
+debug flags:' -g -O1 -DDEBUG'
+common flags:' -llua'
 # If debug was defined, then add in the debug flags.
-:ifdef debug:"common flags:common flags:debug flags"
-client flags:
-server flags: -lSDL2
+:ifdef:debug:'common flags:common flags:debug flags'
+client flags:''
+server flags:' -lSDL2'
+common dirs:' src/common'
+client dirs:' src/client'
+server dirs:' src/server'
+
+# Run a preprocessing script on the files.
+:shell:'bash preprocess.bash':common dirs:client dirs:server dirs
 
 # Set the name of the final binary.
-binary:cengine-1
+binary:'cengine-1'
 # Tell the build system where to find the .c files.
-dirs:src/client src/common
+dirs:common dirs:client dirs
 # Equivalent to setting CFLAGS.
 compiler flags:client flags:common flags
 # BUILD!!!
 :build
 
-binary:sengine-1
-dirs:src/client src/common
+binary:'sengine-1'
+dirs:common dirs:server dirs
 compiler flags:server flags:common flags
 :build
 }

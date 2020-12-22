@@ -11,6 +11,146 @@
 #include "common.h"
 #include "file.h"
 
+
+/* MTL */
+/* === */
+
+int mtl_parsestring(mtl_t *mtl, const char *string) {
+}
+
+int mtl_print(mtl_t *mtl) {
+}
+
+int mtl_init(mtl_t *mtl) {
+}
+
+int mtl_free(mtl_t *mtl) {
+}
+
+int obj_loadMTL(obj_t *obj) {
+	
+	string_t fileText;
+	cfg_var_t *modelPath;
+	string_t filePath;
+	int localError = 0;
+	int materialsInFile = 0;
+	/* This is not really a string. It should never be init or freed. */
+	string_t line;
+	int newlineIndex;
+	int tempIndex;
+	bool acceptCommands = false;
+	string_t command;
+	int argc;
+	const int maxArgs = 3;
+	string_t argv[maxArgs];
+	
+	string_init(&fileText);
+	string_init(&filePath);
+	string_init(&line);
+	string_init(&command);
+	for (int i = 0; i < maxArgs; i++) {
+		string_init(&argv[i]);
+	}
+	
+	if ((obj->material_name.length == 0) || (obj->material_library.length == 0)) {
+		return ERR_GENERIC;
+	}
+	
+	modelPath = cfg_findVar("models");
+	
+	string_copy(&filePath, &modelPath->string);
+	file_concatenatePath(&filePath, &obj->material_library);
+	
+	log_info(__func__, "Loading material \"%s\"", filePath.value);
+	
+	localError = vfs_getFileText(&vfs, &fileText, &filePath);
+	if (localError) {
+		log_error(__func__, "Could not open file \"%s\"", filePath.value);
+		goto cleanup_l;
+	}
+	
+	for (int lineNumber = 1;; lineNumber++) {
+		
+		tempIndex = string_index_of(&fileText, lineNumber - 1, '\n');
+		if (tempIndex == -1) {
+			break;
+		}
+		tempIndex++;
+			
+		string_substring(&line, &fileText, tempIndex, string_index_of(&fileText, lineNumber, '\n') - tempIndex);
+		
+		/* Remove comments and unnecessary whitespace. */
+		string_removeLineComments(&line, '#');
+		string_removeWhitespace(&line, "melt");
+		/* Convert remaining whitespace to spaces */
+		for (int i = 0; i < line.length; i++) {
+			if (isspace(line.value[i])) {
+				line.value[i] = ' ';
+			}
+		}
+
+		/* Ignore empty lines */
+		if (line.length == 0) {
+			continue;
+		}
+
+		argc = string_count_char(&line, ' ');
+		if (argc > maxArgs) {
+			log_critical_error(__func__, "Please reprimand the developer for writing such lousy code that it can only accept %i arguments.", maxArgs);
+			localError = 1;
+			break;
+		}
+		
+		string_substring(&command, &line, 0, string_index_of(&line, 0, ' '));
+		
+		for (int i = 0; i < argc; i++) {
+			tempIndex = string_index_of(&line, i, ' ');
+			if (tempIndex == -1) {
+				log_critical_error(__func__, "Can't happen");
+				localError = 1;
+				break;
+			}
+			string_substring(&argv[i], &line, tempIndex + 1, string_index_of(&line, i + 1, ' ') - tempIndex);
+		}
+		
+		if (!string_compare(&command, string_const("newmtl"))) {
+			/* We have finished loading the material. */
+			if (acceptCommands) {
+				break;
+			}
+			
+			if (argc != 1) {
+				log_error(__func__, "\"newmtl\" has wrong number of arguments. Should have 1. Line %i", lineNumber);
+				localError = 1;
+				goto cleanup_l;
+			}
+
+			if (!string_compare(&argv[0], &obj->material_name)) {
+				acceptCommands = true;
+				
+			}
+		}
+		
+		puts(line.value);
+	}
+	
+	cleanup_l:
+	
+	for (int i = 0; i < maxArgs; i++) {
+		string_free(&argv[i]);
+	}
+	string_free(&command);
+	string_free(&line);
+	string_free(&fileText);
+	string_free(&filePath);
+	
+	return localError;
+}
+
+
+/* OBJ */
+/* === */
+
 int obj_parsestring(obj_t *obj, const char *string) {
 	
 	unsigned int error = 0;
@@ -21,7 +161,6 @@ int obj_parsestring(obj_t *obj, const char *string) {
 	int tempindex = 0;
 	string_t argv;
 	int argc;
-	/* You know it's bad when: */
 	string_t argvv;
 	int argcc;
 	bool success = true;
@@ -31,21 +170,7 @@ int obj_parsestring(obj_t *obj, const char *string) {
 	string_init(&argv);
 	string_init(&argvv);
 	
-	/* Initialize obj */
-	string_init(&obj->material_library);
-	string_init(&obj->object_name);
-	string_init(&obj->material_name);
-	obj->geometric_vertices = NULL;
-	obj->geometric_vertices_length = 0;
-	obj->texture_vertices = NULL;
-	obj->texture_vertices_length = 0;
-	obj->vertex_normals = NULL;
-	obj->vertex_normals_length = 0;
-	obj->facesets = NULL;
-	obj->facesets_length = 0;
-	obj->smoothing_group = -1;
-	
-	for (int linenumber = 0;; linenumber++) {
+	for (int linenumber = 1;; linenumber++) {
 	
 		/* Create line. */
 
@@ -121,7 +246,7 @@ int obj_parsestring(obj_t *obj, const char *string) {
 			string_copy(&obj->object_name, &argv);
 		}
 		else if (!strcmp(command.value, "v")) {
-			argc = string_count(&linecopy, ' ');
+			argc = string_count_char(&linecopy, ' ');
 			
 			if (argc < 3) {
 				log_warning(__func__, "Too few arguments for command %s | Line %i", command.value, linenumber);
@@ -157,7 +282,7 @@ int obj_parsestring(obj_t *obj, const char *string) {
 			obj->geometric_vertices_length++;
 		}
 		else if (!strcmp(command.value, "vt")) {
-			argc = string_count(&linecopy, ' ');
+			argc = string_count_char(&linecopy, ' ');
 			
 			if (argc < 1) {
 				log_warning(__func__, "Too few arguments for command %s | Line %i", command.value, linenumber);
@@ -197,7 +322,7 @@ int obj_parsestring(obj_t *obj, const char *string) {
 			obj->texture_vertices_length++;
 		}
 		else if (!strcmp(command.value, "vn")) {
-			argc = string_count(&linecopy, ' ');
+			argc = string_count_char(&linecopy, ' ');
 			
 			if (argc < 1) {
 				log_warning(__func__, "Too few arguments for command %s | Line %i", command.value, linenumber);
@@ -274,7 +399,7 @@ int obj_parsestring(obj_t *obj, const char *string) {
 			}
 		}
 		else if (!strcmp(command.value, "f")) {
-			argc = string_count(&linecopy, ' ');
+			argc = string_count_char(&linecopy, ' ');
 			
 			if (argc < 1) {
 				log_warning(__func__, "Too few arguments for command %s | Line %i", command.value, linenumber);
@@ -296,7 +421,7 @@ int obj_parsestring(obj_t *obj, const char *string) {
 				tempindex = string_index_of(&linecopy, i, ' ')+1;
 				string_substring(&argv, &linecopy, tempindex, string_index_of(&linecopy, i+1, ' ') - tempindex);
 				
-				argcc = string_count(&argv, '/') + 1;
+				argcc = string_count_char(&argv, '/') + 1;
 				for (int j = 0; j < argcc; j++) {
 					tempindex = string_index_of(&argv, j, '/')+1;
 					string_substring(&argvv, &argv, tempindex, string_index_of(&argv, j+1, '/') - tempindex);
@@ -342,6 +467,13 @@ int obj_parsestring(obj_t *obj, const char *string) {
 	}
 	
 	if (success) {
+		
+		/* All well and good. Now let's load the material. */
+		// if ((obj->material_name.length != 0) && (obj->material_library.length != 0)) {
+		// 	obj_loadMTL(obj);
+		// }
+		obj_loadMTL(obj);
+	
 		return 0;
 	}
 	else {
@@ -350,7 +482,7 @@ int obj_parsestring(obj_t *obj, const char *string) {
 	}
 }
 
-int print_obj(obj_t *obj) {
+int obj_print(obj_t *obj) {
 
 	log_info(__func__, "Dumping object \"%s\"", (obj->object_name.value == NULL) ? "(null)" : obj->object_name.value);
 
@@ -402,6 +534,21 @@ int print_obj(obj_t *obj) {
 	}
 }
 
+int obj_init(obj_t *obj) {
+	string_init(&obj->material_library);
+	string_init(&obj->object_name);
+	string_init(&obj->material_name);
+	obj->geometric_vertices = NULL;
+	obj->geometric_vertices_length = 0;
+	obj->texture_vertices = NULL;
+	obj->texture_vertices_length = 0;
+	obj->vertex_normals = NULL;
+	obj->vertex_normals_length = 0;
+	obj->facesets = NULL;
+	obj->facesets_length = 0;
+	obj->smoothing_group = -1;
+}
+
 int obj_free(obj_t *obj) {
 	string_free(&obj->material_library);
 	string_free(&obj->object_name);
@@ -420,54 +567,75 @@ int obj_free(obj_t *obj) {
 int l_loadObj(lua_State *Lua) {
 	
 	string_t fileName;
+	string_t filePath;
 	const char *ext;
 	string_t fileText;
 	obj_t obj;
-	int error = 0;
+	int localError = 0;
+	cfg_var_t *modelsPath;
+	
+	obj_init(&obj);
 	
 	string_init(&fileText);
 	string_init(&fileName);
+	string_init(&filePath);
 	
 	string_copy_c(&fileName, lua_tostring(Lua, 1));
 	
 	/* Don't have to free "ext" because it is part of fileName.value */
 	ext = file_getExtension(fileName.value);
-	
 	if (ext == NULL) {
 		fprintf(stderr, "Error: (l_loadObj) Refusing to open file \"%s\" as Wavefront OBJ due to missing file extension. Should be .obj\n", fileName.value);
-		error = 0;
+		localError = 0;
+		goto cleanup_l;
+	}
+	if (strcmp(ext, "obj")) {
+		fprintf(stderr, "Error: (l_loadObj) Refusing to open file \"%s\" as Wavefront OBJ due to incorrect file extension. Should be .obj\n", fileName.value);
+		localError = 0;
 		goto cleanup_l;
 	}
 	
-	if (strcmp(ext, "obj")) {
-		fprintf(stderr, "Error: (l_loadObj) Refusing to open file \"%s\" as Wavefront OBJ due to incorrect file extension. Should be .obj\n", fileName.value);
-		error = 0;
+	modelsPath = cfg_findVar("models");
+	if (modelsPath == NULL) {
+		log_critical_error(__func__, "Config variable \"models\" not defined");
+		localError = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	if (modelsPath->string.length == 0) {
+		log_critical_error(__func__, "\"models\" not set");
+		localError = ERR_GENERIC;
 		goto cleanup_l;
 	}
 
-	vfs_getFileText(&vfs, &fileText, &fileName);
-
-	log_info(__func__, "Parsing file \"%s\"", fileName.value);
-	error = obj_parsestring(&obj, fileText.value);
-	if (error) {
-		log_warning(__func__, "Could not load file \"%s\" as OBJ. (string_to_obj) returned %i", fileName.value, error);
-		error = 0;
+	string_copy(&filePath, &modelsPath->string);
+	file_concatenatePath(&filePath, &fileName);
+	localError = vfs_getFileText(&vfs, &fileText, &filePath);
+	if (localError) {
 		goto cleanup_l;
 	}
-	print_obj(&obj);
+
+	log_info(__func__, "Parsing file \"%s\"", filePath.value);
+	localError = obj_parsestring(&obj, fileText.value);
+	if (localError) {
+		log_warning(__func__, "Could not load file \"%s\" as OBJ. (string_to_obj) returned %i", filePath.value, localError);
+		localError = 0;
+		goto cleanup_l;
+	}
+	// obj_print(&obj);
 	
 	cleanup_l:
 	
-	if (!error) {
+	if (!localError) {
 		lua_pushstring(Lua, fileText.value);
 	}
 	
 	string_free(&fileText);
 	string_free(&fileName);
+	string_free(&filePath);
 	
 	obj_free(&obj);
 	
-	if (error) {
+	if (localError) {
 		return 0;
 	}
 	return 1;

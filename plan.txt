@@ -64,6 +64,13 @@ Server systems calls
     load_map
         Load the map into the given entity tree.
 
+Files to rewrite when it is somewhat working:
+    obj
+    file
+    vfs
+    str
+    cfg (maybe)
+
 [/] (Client) Get something on the screen using SDL
 --------------------------------------------------
 [*] (Client) Call C functions from Lua
@@ -73,9 +80,9 @@ Server systems calls
 [*] (Common) Load and parse config files
 [*] (All)    Get on those TODOs (ugly ones)
 [/] (Common) Create virtual file system
-    [ ] (Common) Create file_concatenatePath()
-    [ ] (Common) Only allow file paths that remain in the workspace
-[ ] (Common) Load and parse Wavefront MTL files
+    [*] (Common) Create file_concatenatePath()
+    [*] (Common) Only allow file paths that remain in the workspace
+[/] (Common) Load and parse Wavefront MTL files
 [ ] (Common) Create entity tree from file
 [ ] (Server) Write entity tree to file
 [ ] (Client) Load entity tree from file

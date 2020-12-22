@@ -33,6 +33,8 @@ int main(void) {
 	A global error variable shall be declared. All errors will set this
 	variable. The name does not matter. serious errors will not be directly
 	returned to a function.
+	If a function only returns an error, then that function should be instead
+	declared as void and set the global error.
 	*/
 	
 	/*

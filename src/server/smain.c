@@ -17,7 +17,8 @@ luaCFunc_t luaCFunctions[] = {
 	{.func = l_log_warning,         .name = "l_log_warning"         },
 	{.func = l_log_error,           .name = "l_log_error"           },
 	{.func = l_log_critical_error,  .name = "l_log_critical_error"  },
-	{.func = NULL,                  .name = NULL        }
+	{.func = l_vfs_getFileText,     .name = "l_vfs_getFileText"     },
+	{.func = NULL,                  .name = NULL                    }
 };
 
 const cfg_var_init_t initialConfigVars[] = {
@@ -95,13 +96,12 @@ int main(int argc, char *argv[]) {
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
-	
+
 	/* @TODO: Do proper file path sanitization. */
-	string_concatenate(&luaFilePath, &workspace_v->string);
-	string_concatenate_c(&luaFilePath, "/");
-	string_concatenate(&luaFilePath, &lua_main_v->string);
-	string_concatenate_c(&luaFilePath, "/");
-	string_concatenate_c(&luaFilePath, luaFileName);
+	string_copy(&luaFilePath, &workspace_v->string);
+	file_concatenatePath(&luaFilePath, &lua_main_v->string);
+	file_concatenatePath(&luaFilePath, string_const(luaFileName));
+	// string_concatenate(&luaFilePath, &workspace_v->string);
 	// luaFilePath = malloc((strlen(workspace_v->string) + strlen(lua_main_v->string) + strlen(luaFileName) + strlen(".///") + 1) * sizeof(char));
 	// sprintf(luaFilePath, "%s/%s/%s", workspace_v->string, lua_main_v->string, luaFileName);
 	

@@ -8,54 +8,8 @@
 #include "common.h"
 #include "insane.h"
 
-static int getMSB(unsigned int n) {
-	int i;
-	
-	for (i = 0; (1<<i) <= n; i++);
-	
-	return i-1;
-}
-
-int string_realloc_grow(string_t *s) {
-	
-	while (s->length+1 > (1<<s->memsize)) {
-		
-		s->memsize++;
-	}
-	
-	s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
-	if (s->value == NULL)
-		return ERR_OUTOFMEMORY;
-	return ERR_OK;
-}
-
-int string_realloc_shrink(string_t *s) {
-	
-	while (s->length+1 <= (1<<(s->memsize-1))) {
-		if (s->memsize <= 0)
-			break;
-		--s->memsize;
-	}
-	
-	s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
-	if (s->value == NULL) {
-		return ERR_OUTOFMEMORY;
-	}
-	return ERR_OK;
-}
-
 int string_realloc(string_t *s) {
-
-	while (s->length+1 > (1<<s->memsize)) {
-		s->memsize++;
-	}
-
-	while (s->length+1 <= (1<<(s->memsize-1))) {
-		if (s->memsize <= 0)
-			break;
-		--s->memsize;
-	}
-	
+	s->memsize = MSB(s->length) + 1;
 	s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
 	if (s->value == NULL) {
 		return ERR_OUTOFMEMORY;
@@ -67,7 +21,7 @@ int string_append_char(string_t *s, char c) {
 
 	s->value[s->length] = c;
 	s->length++;
-	if (string_realloc_grow(s)) {
+	if (string_realloc(s)) {
 		return 1;
 	}
 	s->value[s->length] = '\0';
@@ -140,7 +94,7 @@ int string_concatenate(string_t *destination, const string_t *source) {
 	// destination->value = realloc(destination->value, (1<<destination->memsize) * sizeof(char));
 	// if (destination->value == NULL)
 	// 	return ERR_OUTOFMEMORY;
-	error = string_realloc_grow(destination);
+	error = string_realloc(destination);
 	if (error) {
 		error = ERR_OUTOFMEMORY;
 		return ERR_OUTOFMEMORY;
@@ -171,6 +125,10 @@ int string_copy_length_c(string_t *destination, const char *source, int length) 
 int string_index_of(const string_t *s, const int index, const char c) {
 
 	int charcount = 0;
+	
+	if (index < 0) {
+		return 0;
+	}
 	
 	for (int i = 0; i < s->length; i++) {
 		if (s->value[i] == c) {
@@ -204,7 +162,7 @@ int string_substring(string_t *destination, const string_t *source, const int in
 	/* If the destination string is too small, then grow it. */
 	if (destination->length < actuallength) {
 		destination->length = actuallength;
-		error = string_realloc_grow(destination);
+		error = string_realloc(destination);
 		if (error)
 			return 4;
 	}
@@ -217,7 +175,7 @@ int string_substring(string_t *destination, const string_t *source, const int in
 	/* If the destination string is too large, then shrink it. */
 	if (destination->length > actuallength) {
 		destination->length = actuallength;
-		error = string_realloc_shrink(destination);
+		error = string_realloc(destination);
 		if (error)
 			return 5;
 	}
@@ -232,11 +190,22 @@ int string_normalize(string_t *s) {
 	return string_realloc(s);
 }
 
-int string_count(const string_t *s, const char c) {
+int string_count_char(const string_t *s, const char c) {
 	int count = 0;
 	
 	for (int i = 0; i < s->length; i++) {
 		if (s->value[i] == c) {
+			count++;
+		}
+	}
+	return count;
+}
+
+int string_count_c(const string_t *s, const char *c) {
+	int count = 0;
+	
+	for (int i = 0; i < s->length; i++) {
+		if (!strcmp(s->value + i, c)) {
 			count++;
 		}
 	}
@@ -338,7 +307,7 @@ int string_print(string_t *s) {
 	printf(COLOR_CYAN"string: "
 	       COLOR_BLUE"[length] "COLOR_CYAN"%i"COLOR_NORMAL" ; "
 	       COLOR_BLUE"[memsize] "COLOR_CYAN"%i"COLOR_NORMAL" ; "
-	       COLOR_BLUE"[value] "COLOR_CYAN"\"%s\"\n",
+	       COLOR_BLUE"[value] "COLOR_CYAN"\"%s\""COLOR_NORMAL"\n",
 	       s->length, s->memsize, s->value);
 }
 
@@ -387,3 +356,31 @@ int string_print(string_t *s) {
 // 	error = string_vasprintf(&out, format, args);
 // 	va_end(args);
 // }
+
+/* Not the safest... */
+const string_t * const string_const(const char *char_array) {
+	static string_t string[5];
+	static int i = 0;
+	
+	i++;
+	if (i == 5) {
+		i = 0;
+	}
+	
+	string[i].length = strlen(char_array);
+	/* Dirty, but I don't know how else to do it. */
+	string[i].value = (char *) char_array;
+	string[i].memsize = MSB(string[i].length) + 1;
+	
+	return &string[i];
+}
+
+int string_compare(const string_t *left, const string_t *right) {
+	
+	int i;
+	int length = (left->length > right->length) ? right->length : left->length;
+
+	for (i = 0; (i < length) && ((left->value[i] - right->value[i]) == 0); i++);
+
+	return left->value[i] - right->value[i];
+}

@@ -8,24 +8,57 @@
 #include "file.h"
 #include "log.h"
 
-int vfs_getFileText(vfs_t *vfs, string_t *fileText, const string_t *workspace_path) {
+int vfs_getFileText(vfs_t *vfs, string_t *fileText, const string_t * const workspace_path) {
+	
+	int localError = ERR_OK;
 	
 	if (vfs->workspace_type == vfs_type_directory) {
 		string_t path;
 		string_init(&path);
-		string_concatenate(&path, &vfs->path);
-		string_concatenate_c(&path, "/");
-		string_concatenate(&path, workspace_path);
-		
-		free(fileText->value);
-		fileText->value = file_getText(path.value);
-		string_normalize(fileText);
+		string_copy(&path, &vfs->path);
+		file_concatenatePath(&path, workspace_path);
+
+		if (file_pathIsInDirectory(&path, &vfs->path)) {
+			free(fileText->value);
+			fileText->value = file_getText(path.value);
+			if (fileText->value == NULL) {
+				log_warning(__func__, "Could not open file \"%s\"", path.value);
+				localError = ERR_GENERIC;
+				goto dirCleanup_l;
+			}
+			string_normalize(fileText);
+		}
+		else {
+			log_error(__func__, "Path \"%s\" leads outside of workspace.", workspace_path->value);
+		}
+
+		dirCleanup_l:
 
 		string_free(&path);
 		
-		return ERR_OK;
+		return localError;
 	}
 	return ERR_GENERIC;
+}
+
+int l_vfs_getFileText(lua_State *luaState) {
+	
+	string_t fileText;
+	int localError = 0;
+	
+	string_init(&fileText);
+	
+	localError = vfs_getFileText(&vfs, &fileText, string_const(lua_tostring(luaState, 1)));
+	if (!localError) {
+		lua_pushstring(luaState, fileText.value);
+	}
+	
+	string_free(&fileText);
+	
+	if (localError) {
+		return 0;
+	}
+	return 1;
 }
 
 int vfs_init(vfs_t *vfs, const string_t *path) {

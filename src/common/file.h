@@ -12,5 +12,8 @@ int file_exists(const char *filename);
 const char *file_getExtension(const char *filename);
 int file_isRegularFile(const char *path);
 int file_isDirectory(const char *path);
+void file_concatenatePath(string_t *destination, const string_t * const source);
+int file_pathStandardize(string_t *filePath);
+int file_pathIsInDirectory(const string_t * const filePath, const string_t * const workspace);
 
 #endif

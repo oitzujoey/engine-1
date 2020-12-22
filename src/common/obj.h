@@ -42,6 +42,14 @@ typedef struct {
 } obj_t;
 
 
+/* Wavefront MTL structure */
+/* ======================= */
+
+typedef struct {
+    string_t material_name;
+} mtl_t;
+
+
 int l_loadObj(lua_State *Lua);
 
 #endif

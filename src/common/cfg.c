@@ -327,7 +327,7 @@ int cfg_execString(const string_t *line, const char *tag) {
 	tempIndex = string_index_of(line, 0, ' ');
 	string_substring(&command, line, 0, tempIndex);
 	
-	argc = string_count(line, ' ');
+	argc = string_count_char(line, ' ');
 
 	if (!strcmp(command.value, "ifdef")) {
 		if (argc < 3) {
