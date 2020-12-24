@@ -48,7 +48,7 @@ int l_vfs_getFileText(lua_State *luaState) {
 	
 	string_init(&fileText);
 	
-	localError = vfs_getFileText(&vfs, &fileText, string_const(lua_tostring(luaState, 1)));
+	localError = vfs_getFileText(&vfs_g, &fileText, string_const(lua_tostring(luaState, 1)));
 	if (!localError) {
 		lua_pushstring(luaState, fileText.value);
 	}

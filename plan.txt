@@ -64,6 +64,74 @@ Server systems calls
     load_map
         Load the map into the given entity tree.
 
+Lua may not execute config scripts, however, it may set config variables that it has permissions for.
+
+Screenshots and videos both save as a dump of the game state. These game states can then be converted to images or videos.
+
+Console will be fully integrated into the engine. No part of it will be in Lua. Lua can access the variables, but it cannot run commands.
+
+Client config vars will be initialized to whatever is required, but the server will then send additional vars to create. If a var already exists, it will be overwritten.
+
+The entity tree is created not by the engine, but by the Lua script. This allows for the script to either load a map from a file, or do something fancier like procedurally generate the map.
+All objects are stored in a global array.
+All materials are stored in a global array.
+
+Required calls to manage the entity tree:
+    bool l_fileExists(string fileName)
+        Return true if file "fileName" exists.
+    string l_getFileContents(string fileName)
+        Return the contents of file "fileName".
+    {int objectIndex, string objectName} l_loadOBJ(string fileName)
+        Load OBJ file into engine. Returns the object array index and the object name. Index is -1 on error.
+        MTL is loaded automatically if one is requested and exists.
+    int l_entity_create(string name, int type)
+        Adds an entity of name "name" and type "type". Returns the index.
+    bool l_entity_delete(int index)
+        Returns true if entity at index was successfully deleted.
+    bool l_entity_addChild(int parent, int child)
+        The index "child" will refer to the appropriate list based on the type of the parent entity.
+        If entities can be linked and the operation is successful, then this function returns true.
+        If the entities cannot be linked (possibly because of a hirarchy loop), this function returns false.
+    bool l_entity_removeChild(int parent, int child)
+        If entities can be unlinked and the operation is successful, then this function returns true.
+        If entities cannot be unlinked (possibly because they weren't linked in the first place), then this function returns false.
+    int l_loadOoliteModel(string fileName)
+
+entity {
+    int type
+    void *children
+    int children_length
+    string_t name
+    vec3_t origin
+    vec4_t orientation
+}
+
+Communicating the game state must be fast. All other communications can occur slowly.
+
+Server → client gamestate commands
+    Create entity
+    Delete entity
+    Set entity
+
+The above command list will be implemented in Lua. Determining what to send the client will be Lua's job. The packaging of it will be the engine's job.
+
+After a map is loaded, the game state of both the client and the server should be the same. Diffs will then be sent to the client when appropriate.
+
+I need to use UDP because it is real time, while TCP may do weird things with time. I'm essentially going to write my own ripped-off version of Carmack's protocol.
+
+Server send
+    C: Subtract most recently acknowledged state from current state.
+    C: Place current state in queue.
+    C: Compress difference.
+    C: Send compressed difference.
+Server receive
+    C: Receive compressed difference.
+    C: Inflate difference.
+    C: Place difference in queue.
+    C: Add current state to 
+
+
+
 Files to rewrite when it is somewhat working:
     obj
     file
@@ -83,9 +151,10 @@ Files to rewrite when it is somewhat working:
     [*] (Common) Create file_concatenatePath()
     [*] (Common) Only allow file paths that remain in the workspace
 [/] (Common) Load and parse Wavefront MTL files
-[ ] (Common) Create entity tree from file
-[ ] (Server) Write entity tree to file
-[ ] (Client) Load entity tree from file
+[ ] (Common) Create entity tree from Lua
+[ ] (Server) Send entity tree over the network
+    [ ] (All) Decide on network protocol
+[ ] (Client) Receive entity tree from the network
 [ ] (All)    Get on those TODOs (ugly ones)
 [ ] (Client) Render entity tree in basic 3D using OpenGL
 -------------------------------------------------------------

@@ -330,7 +330,7 @@ int cfg_execString(const string_t *line, const char *tag) {
 	argc = string_count_char(line, ' ');
 
 	if (!strcmp(command.value, "ifdef")) {
-		if (argc < 3) {
+		if (argc < 2) {
 			log_error(__func__, "Command \"%s\" has too few arguments. Requires a variable and a command.", command.value);
 			error = ERR_GENERIC;
 			goto end_l;
@@ -351,7 +351,7 @@ int cfg_execString(const string_t *line, const char *tag) {
 		cfg_execString(&arg0, tag);
 	}
 	else if (!strcmp(command.value, "ifndef")) {
-		if (argc < 3) {
+		if (argc < 2) {
 			log_error(__func__, "Command \"%s\" has too few arguments. Requires a variable and a command.", command.value);
 			error = ERR_GENERIC;
 			goto end_l;
@@ -395,7 +395,19 @@ int cfg_execString(const string_t *line, const char *tag) {
 		
 		string_substring(&arg0, line, string_index_of(line, 1, ' ') + 1, -1);
 		
-		cfg_setVarString(tempCfgVar, arg0.value);
+		switch (tempCfgVar->type) {
+			case string:
+				cfg_setVarString(tempCfgVar, arg0.value);
+				break;
+			case integer:
+				cfg_setVarInt(tempCfgVar, strtol(arg0.value, NULL, 10));
+				break;
+			case vector:
+				cfg_setVarVector(tempCfgVar, strtof(arg0.value, NULL));
+				break;
+			default:
+				log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", tempCfgVar->type, tempCfgVar->name);
+		}
 	}
 	else if (!strcmp(command.value, "create")) {
 		if (argc < 2) {

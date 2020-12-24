@@ -58,6 +58,7 @@ int lua_sandbox_init(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename) 
         log_error(__func__, "Lua script %s exited with error %s", filename, luaError[error]);
         return 1;
     }
+    return 0;
 }
 
 int lua_sandbox_quit(lua_State **Lua) {

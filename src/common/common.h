@@ -7,7 +7,8 @@
 
 #define ERR_OK          0
 #define ERR_GENERIC     1
-#define ERR_OUTOFMEMORY 2
+#define ERR_CRITICAL    2
+#define ERR_OUTOFMEMORY 3
 
 #define COLOR_NORMAL    "\x1B[0m"
 #define COLOR_RED       "\x1B[31m"
@@ -20,6 +21,8 @@
 
 #define AUTOEXEC    "autoexec.cfg"
 
+#define DEFAULT_PORT_NUMBER 8099
+
 #ifdef DOUBLE_VEC
 typedef double vec_t;
 #else
@@ -31,7 +34,7 @@ typedef vec_t vec4_t[4];
 
 extern int error;
 
-extern vfs_t vfs;
+extern vfs_t vfs_g;
 
 int l_puts(lua_State*);
 

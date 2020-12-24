@@ -8,6 +8,8 @@
 #include "input.h"
 #include "../common/common.h"
 #include "../common/lua_sandbox.h"
+#include "cnetwork.h"
+#include "../common/log.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -16,10 +18,11 @@ extern SDL_Window *window;
 extern SDL_Surface *screenSurface;
 
 luaCFunc_t luaCFunctions[] = {
-	{.func = l_puts,  .name = "puts"      },
-	{.func = render,    .name = "render"    },
-	{.func = getInput,  .name = "getInput"  },
-	{.func = NULL,      .name = NULL        }
+	{.func = l_puts,                .name = "puts"              },
+	{.func = render,                .name = "render"            },
+	{.func = getInput,              .name = "getInput"          },
+	// {.func = l_cnetwork_receive,    .name = "l_snetwork_receive"},
+	{.func = NULL,                  .name = NULL                }
 };
 
 int windowInit() {
@@ -55,29 +58,51 @@ int windowQuit() {
 	SDL_Quit();
 }
 
-int
-main (int argc, char *argv[]) {
+int main (int argc, char *argv[]) {
 
 	int error = 0;
 	lua_State *Lua;
+	string_t data;
 	
 	puts("Starting engine-1 v0.0 (Client)");
+	
+	string_init(&data);
 	
 	if (error = windowInit()) {
 		fprintf(stderr, "Error: windowInit returned %i | Cannot continue\n", error);
 		return 0;
 	}
 	
-	if (argc != 2) {
-		fprintf(stderr, "Error: engine-1 must have one argument\n");
-		return 0;
-	}
-
-	lua_sandbox_init(&Lua, luaCFunctions, argv[1]);
+	cnetwork_init("192.168.1.136");
 	
-	lua_sandbox_quit(&Lua);
+	do {
+		error = l_cnetwork_receive((Uint8 *) data.value, (int *) &data.length);
+	} while (!error && (data.length == 0));
+	
+	if (error) {
+		error("l_cnetwork_receive returned %i", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	string_print(&data);
+	
+	// if (argc != 2) {
+	// 	fprintf(stderr, "Error: engine-1 must have one argument\n");
+	// 	return 0;
+	// }
+
+	// lua_sandbox_init(&Lua, luaCFunctions, argv[1]);
+	
+	// lua_sandbox_quit(&Lua);
+
+	cleanup_l:
+
+	cnetwork_quit();
 
 	windowQuit();
+	
+	string_free(&data);
 
 	puts("Client quit");
 	

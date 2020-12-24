@@ -30,7 +30,6 @@ int mtl_free(mtl_t *mtl) {
 int obj_loadMTL(obj_t *obj) {
 	
 	string_t fileText;
-	cfg_var_t *modelPath;
 	string_t filePath;
 	int localError = 0;
 	int materialsInFile = 0;
@@ -56,14 +55,11 @@ int obj_loadMTL(obj_t *obj) {
 		return ERR_GENERIC;
 	}
 	
-	modelPath = cfg_findVar("models");
-	
-	string_copy(&filePath, &modelPath->string);
-	file_concatenatePath(&filePath, &obj->material_library);
+	string_copy(&filePath, &obj->material_library);
 	
 	log_info(__func__, "Loading material \"%s\"", filePath.value);
 	
-	localError = vfs_getFileText(&vfs, &fileText, &filePath);
+	localError = vfs_getFileText(&vfs_g, &fileText, &filePath);
 	if (localError) {
 		log_error(__func__, "Could not open file \"%s\"", filePath.value);
 		goto cleanup_l;
@@ -572,7 +568,6 @@ int l_loadObj(lua_State *Lua) {
 	string_t fileText;
 	obj_t obj;
 	int localError = 0;
-	cfg_var_t *modelsPath;
 	
 	obj_init(&obj);
 	
@@ -595,21 +590,8 @@ int l_loadObj(lua_State *Lua) {
 		goto cleanup_l;
 	}
 	
-	modelsPath = cfg_findVar("models");
-	if (modelsPath == NULL) {
-		log_critical_error(__func__, "Config variable \"models\" not defined");
-		localError = ERR_GENERIC;
-		goto cleanup_l;
-	}
-	if (modelsPath->string.length == 0) {
-		log_critical_error(__func__, "\"models\" not set");
-		localError = ERR_GENERIC;
-		goto cleanup_l;
-	}
-
-	string_copy(&filePath, &modelsPath->string);
-	file_concatenatePath(&filePath, &fileName);
-	localError = vfs_getFileText(&vfs, &fileText, &filePath);
+	string_copy(&filePath, &fileName);
+	localError = vfs_getFileText(&vfs_g, &fileText, &filePath);
 	if (localError) {
 		goto cleanup_l;
 	}

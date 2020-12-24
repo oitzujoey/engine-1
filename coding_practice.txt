@@ -30,11 +30,8 @@ int main(void) {
 		EXPRESSION;
 	
 	/*
-	A global error variable shall be declared. All errors will set this
-	variable. The name does not matter. serious errors will not be directly
-	returned to a function.
-	If a function only returns an error, then that function should be instead
-	declared as void and set the global error.
+	Return values are for errors only. If a function does not return an error,
+	then it should be declared void.
 	*/
 	
 	/*
@@ -60,5 +57,10 @@ int main(void) {
 	Type definitions must be of the form "<typename>_t".
 	Enum definitions must be of the form "<enumname>_e".
 	Labels must be of the form "<label>_l".
+	Globals must be of the form "<varname>_g".
+	*/
+	
+	/*
+	The name of arrays will be plural.
 	*/
 }

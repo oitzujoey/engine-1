@@ -5,7 +5,7 @@ CLIENT=cengine-1
 
 CC=gcc
 CFLAGS='-std=c99 -pedantic-errors -Werror'
-CLIBS='-lSDL2 -llua -lzip'
+CLIBS='-lSDL2 -lSDL2_net -llua'
 
 # Not a command line argument
 DEBUG='-debug'

@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <SDL2/SDL.h>
 #include "../common/common.h"
 #include "../common/lua_sandbox.h"
 #include "../common/obj.h"
@@ -9,6 +11,7 @@
 #include "../common/file.h"
 #include "../common/cfg.h"
 #include "../common/vfs.h"
+#include "snetwork.h"
 
 luaCFunc_t luaCFunctions[] = {
 	{.func = l_puts,                .name = "l_puts"                },
@@ -22,12 +25,41 @@ luaCFunc_t luaCFunctions[] = {
 };
 
 const cfg_var_init_t initialConfigVars[] = {
-	{.name = "server",      .vector = 0,    .integer = 0,   .string = NULL, .type = none,   .permissions = CFG_VAR_PERMISSION_NONE},
-	{.name = "lua_main",    .vector = 0,    .integer = 0,   .string = "",   .type = string, .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = "models",      .vector = 0,    .integer = 0,   .string = "",   .type = string, .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = "workspace",   .vector = 0,    .integer = 0,   .string = "",   .type = string, .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = NULL,          .vector = 0,    .integer = 0,   .string = NULL, .type = none,   .permissions = CFG_VAR_PERMISSION_NONE}
+	{.name = "server",          .vector = 0,    .integer = 0,                   .string = NULL, .type = none,       .permissions = CFG_VAR_PERMISSION_NONE},
+	{.name = "lua_main",        .vector = 0,    .integer = 0,                   .string = "",   .type = string,     .permissions = CFG_VAR_PERMISSION_READ},
+	{.name = "workspace",       .vector = 0,    .integer = 0,                   .string = "",   .type = string,     .permissions = CFG_VAR_PERMISSION_READ},
+	{.name = "network_port",    .vector = 0,    .integer = DEFAULT_PORT_NUMBER, .string = "",   .type = integer,    .permissions = CFG_VAR_PERMISSION_READ},
+	{.name = NULL,              .vector = 0,    .integer = 0,                   .string = NULL, .type = none,       .permissions = CFG_VAR_PERMISSION_NONE}
 };
+
+static int main_init(void) {
+
+	int error = 0;
+	
+	/*  As of SDL v2.0.14:
+		Allocates 220 bytes that SDL_Quit doesn't free.
+		I don't think I can do anything about it. */
+	error = SDL_Init(SDL_INIT_TIMER);
+	if (error != 0) {
+		critical_error("SDL_Init returned %s", SDL_GetError());
+		return ERR_CRITICAL;
+	}
+	
+	error = snetwork_init();
+	if (error) {
+		critical_error("Could not initialize network", "");
+		return ERR_CRITICAL;
+	}
+
+	return ERR_OK;
+}
+
+static void main_quit(void) {
+	
+	snetwork_quit();
+	
+	SDL_Quit();
+}
 
 int main(int argc, char *argv[]) {
 	
@@ -38,6 +70,7 @@ int main(int argc, char *argv[]) {
 	cfg_var_t *lua_main_v;
 	cfg_var_t *workspace_v;
 	string_t tempString;
+	IPaddress ipAddress;
 	
 	log_info(__func__, "Starting engine-1 v0.0 (Server)");
 	
@@ -79,9 +112,15 @@ int main(int argc, char *argv[]) {
 		goto cleanup_l;
 	}
 	
-	error = vfs_init(&vfs, &workspace_v->string);
+	error = vfs_init(&vfs_g, &workspace_v->string);
 	if (error) {
 		log_critical_error(__func__, "Could not start VFS");
+		goto cleanup_l;
+	}
+	
+	error = main_init();
+	if (error) {
+		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 
@@ -101,9 +140,15 @@ int main(int argc, char *argv[]) {
 	string_copy(&luaFilePath, &workspace_v->string);
 	file_concatenatePath(&luaFilePath, &lua_main_v->string);
 	file_concatenatePath(&luaFilePath, string_const(luaFileName));
-	// string_concatenate(&luaFilePath, &workspace_v->string);
-	// luaFilePath = malloc((strlen(workspace_v->string) + strlen(lua_main_v->string) + strlen(luaFileName) + strlen(".///") + 1) * sizeof(char));
-	// sprintf(luaFilePath, "%s/%s/%s", workspace_v->string, lua_main_v->string, luaFileName);
+	
+	error = SDLNet_ResolveHost(&ipAddress, "192.168.1.218", cfg_findVar("network_port")->integer);
+	if (error != 0) {
+		critical_error("SDLNet_ResolveHost returned %s", SDL_GetError());
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	l_snetwork_send((Uint8 *) "Hello, world!", strlen("Hello, world!") + 1, ipAddress);
 	
 	/* Before we begin, lock the restricted variables. */
 	cfg.lock = true;
@@ -120,7 +165,9 @@ int main(int argc, char *argv[]) {
 	
 	cleanup_l:
 	
-	vfs_free(&vfs);
+	main_quit();
+	
+	vfs_free(&vfs_g);
 	
 	cfg_free();
 	
