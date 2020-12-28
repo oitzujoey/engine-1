@@ -59,7 +59,7 @@ int l_snetwork_send(const uint8_t *data, int length, IPaddress ipAddress) {
 	error = 0;
 	cleanup_l:
 	
-	SDL_free(packet);
+	SDLNet_FreePacket(packet);
 	
 	return error;
 }
@@ -68,7 +68,8 @@ int snetwork_init(void) {
 	int error;
 	
 	IPaddress ipAddress;
-	cfg_var_t *varPort;
+	cfg_var_t *varServerPort;
+	cfg_var_t *varClientPort;
 	
 	error = SDLNet_Init();
 	if (error == -1) {
@@ -77,28 +78,35 @@ int snetwork_init(void) {
 		goto cleanup_l;
 	}
 	
-	varPort = cfg_findVar("network_port");
-	if (varPort == NULL) {
-		critical_error("\"network_port\" undefined", "");
+	varServerPort = cfg_findVar("server_port");
+	if (varServerPort == NULL) {
+		critical_error("\"server_port\" undefined", "");
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 	
-	serverSocket_g = SDLNet_UDP_Open(varPort->integer);
+	serverSocket_g = SDLNet_UDP_Open(varServerPort->integer);
 	if (serverSocket_g == NULL) {
 		critical_error("SDLNet_UDP_Open returned %s", SDL_GetError());
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 	
-	error = SDLNet_ResolveHost(&ipAddress, NULL, varPort->integer);
+	varClientPort = cfg_findVar("client_port");
+	if (varClientPort == NULL) {
+		critical_error("\"client_port\" undefined", "");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	error = SDLNet_ResolveHost(&ipAddress, NULL, varClientPort->integer);
 	if (error != 0) {
 		critical_error("SDLNet_ResolveHost returned %s", SDL_GetError());
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 	
-	info("Opened UDP socket on port %i", varPort->integer);
+	info("Opened UDP socket on port %i", varServerPort->integer);
 	
 	// socketSet_g = SDLNet_AllocSocketSet(MAX_CLIENTS + 1);
 	// if (socketSet_g == NULL) {
@@ -136,4 +144,6 @@ void snetwork_quit(void) {
 	
 	// SDLNet_FreeSocketSet(socketSet_g);
 	// socketSet_g = NULL;
+	
+	SDLNet_Quit();
 }

@@ -10,6 +10,14 @@
 #define ERR_CRITICAL    2
 #define ERR_OUTOFMEMORY 3
 
+// @TODO: Might want to change this to an actual variable.
+#define ERR ((char*[15]) { \
+	"OK", \
+	"Generic error", \
+	"Critical error", \
+	"Out of memory" \
+})
+
 #define COLOR_NORMAL    "\x1B[0m"
 #define COLOR_RED       "\x1B[31m"
 #define COLOR_GREEN     "\x1B[32m"

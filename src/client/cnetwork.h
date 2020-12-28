@@ -6,9 +6,9 @@
 #include <SDL2/SDL_net.h>
 
 int cnetwork_closeSocket(UDPsocket socket);
-int l_cnetwork_receive(Uint8 *data, int *length);
+int l_cnetwork_receive(Uint8 **data, int *length);
 
-int cnetwork_init(const char *serverAddress);
+int cnetwork_init(void);
 void cnetwork_quit(void);
 
 #endif

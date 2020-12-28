@@ -28,7 +28,8 @@ const cfg_var_init_t initialConfigVars[] = {
 	{.name = "server",          .vector = 0,    .integer = 0,                   .string = NULL, .type = none,       .permissions = CFG_VAR_PERMISSION_NONE},
 	{.name = "lua_main",        .vector = 0,    .integer = 0,                   .string = "",   .type = string,     .permissions = CFG_VAR_PERMISSION_READ},
 	{.name = "workspace",       .vector = 0,    .integer = 0,                   .string = "",   .type = string,     .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = "network_port",    .vector = 0,    .integer = DEFAULT_PORT_NUMBER, .string = "",   .type = integer,    .permissions = CFG_VAR_PERMISSION_READ},
+	{.name = "server_port",     .vector = 0,    .integer = DEFAULT_PORT_NUMBER, .string = "",   .type = integer,    .permissions = CFG_VAR_PERMISSION_READ},
+	{.name = "client_port",     .vector = 0,    .integer = DEFAULT_PORT_NUMBER, .string = "",   .type = integer,    .permissions = CFG_VAR_PERMISSION_READ},
 	{.name = NULL,              .vector = 0,    .integer = 0,                   .string = NULL, .type = none,       .permissions = CFG_VAR_PERMISSION_NONE}
 };
 
@@ -81,11 +82,13 @@ int main(int argc, char *argv[]) {
 	error = cfg_initVars(initialConfigVars);
 	if (error == ERR_GENERIC) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
-		return ERR_GENERIC;
+		error = ERR_GENERIC;
+		goto cleanup_l;
 	}
 	else if (error == ERR_OUTOFMEMORY) {
 		log_critical_error(__func__, "Out of memory.");
-		return ERR_OUTOFMEMORY;
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
 	}
 
 	if (file_exists(AUTOEXEC)) {
@@ -141,7 +144,7 @@ int main(int argc, char *argv[]) {
 	file_concatenatePath(&luaFilePath, &lua_main_v->string);
 	file_concatenatePath(&luaFilePath, string_const(luaFileName));
 	
-	error = SDLNet_ResolveHost(&ipAddress, "192.168.1.218", cfg_findVar("network_port")->integer);
+	error = SDLNet_ResolveHost(&ipAddress, "localhost", cfg_findVar("client_port")->integer);
 	if (error != 0) {
 		critical_error("SDLNet_ResolveHost returned %s", SDL_GetError());
 		error = ERR_CRITICAL;
@@ -162,7 +165,6 @@ int main(int argc, char *argv[]) {
 	lua_sandbox_quit(&Lua);
 	
 	error = ERR_OK;
-	
 	cleanup_l:
 	
 	main_quit();
@@ -174,7 +176,8 @@ int main(int argc, char *argv[]) {
 	string_free(&luaFilePath);
 	string_free(&tempString);
 	
-	log_info(__func__, "Server quit");
+	// I'm leaving this because it works and it's cool.
+	info("Server quit (%s)", (char*[4]){"OK", "Error", "Critical error", "Out of memory"}[error]);
 
     return error;
 }

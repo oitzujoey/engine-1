@@ -1,4 +1,6 @@
 
+@TODO: Lines marked with an exlamation point in the first column are out-of-date.
+
 Engine is the main game. It runs a secure VM and provides acceleration for slow operations and I/O.
 Mod loader finds and selects resources and resolves conflicts. The final mod is placed in the main game directory.
 Server browser finds servers and sends the selected one to the engine.
@@ -6,9 +8,12 @@ Supervisor runs each application and moves the necessary data between them.
 
 Order of implementation:
     Engine - Game
+        Server - Client
+        Sgame - Cgame
     Mod loader
-    Server browser
     Supervisor
+    Master server
+    Server browser
 
 VM
     What we want to avoid:
@@ -31,7 +36,7 @@ VM
             Every number is a float. I don't like it.
 
 Pre-game
-    Restricted variables can be set using pipe.
+    Restricted variables can be set using pipe or arguments.
     Game code is loaded.
 In-game
     Nearly any variable can be set and read.
@@ -40,29 +45,29 @@ Server will know the whole game state. Client will (ideally) only know what it c
 
 The client will setup the I/O, and then run the game script. The script will periodically call functions that the client provides.
 The server will run the game script. The script will periodically call functions that the server provides.
-The script is somewhat in charge of the framerate. I may or may not change that in the future. We don't want people mining Bitcoin in other people's game.
+The script is somewhat in charge of the framerate. I may or may not change that in the future. We don't want people mining Bitcoin in other people's games.
 
 I'm thinking of keeping all geometry inside the engine. I don't think the game code needs it, and it would be a hassle to transfer it to Lua. If the game code needs a normal, I'll let it have the normal. It doesn't need any more than that though. All collision detection will be done in the engine itself.
 
-Do *any* config, lock restricted settings, start lua, do limited config
+Do *any* config; lock restricted settings; start lua; do limited config
 
-Client system calls
-    get_user_input
-        Keyboard, mouse, and joystick
-    add_entity
-        Tell renderer to try drawing this entity.
-    render_scene
-    get_server_state
-        Get the server state from the network, named pipe, or carrier pigeon.
-    send_client state
-        Send the client state using the network, named pipe, or carrier pigeon.
-Server systems calls
-    get_client_state
-        Get the client state from the network, named pipe, or carrier pigeon.
-    send_server_state
-        Send the server state using the network, named pipe, or carrier pigeon.
-    load_map
-        Load the map into the given entity tree.
+!Client system calls
+!    get_user_input
+!        Keyboard, mouse, and joystick
+!    add_entity
+!        Tell renderer to try drawing this entity.
+!    render_scene
+!    get_server_state
+!        Get the server state from the network, named pipe, or carrier pigeon.
+!    send_client state
+!        Send the client state using the network, named pipe, or carrier pigeon.
+!Server systems calls
+!    get_client_state
+!        Get the client state from the network, named pipe, or carrier pigeon.
+!    send_server_state
+!        Send the server state using the network, named pipe, or carrier pigeon.
+!    load_map
+!        Load the map into the given entity tree.
 
 Lua may not execute config scripts, however, it may set config variables that it has permissions for.
 
@@ -75,6 +80,63 @@ Client config vars will be initialized to whatever is required, but the server w
 The entity tree is created not by the engine, but by the Lua script. This allows for the script to either load a map from a file, or do something fancier like procedurally generate the map.
 All objects are stored in a global array.
 All materials are stored in a global array.
+
+
+No entity truely contains any other entity. It may contain the addresses of several child entities, but the children will always be stored in the entity list.
+Models may be treated as a child entity, but they cannot contain other entities, and they may not be placed in the entity list.
+The entity list exists to keep track of all entities. It should prevent permanently lost entities that are unable to be freed, and it allows the game state to be sent to the client more easily and compactly. Once an entity is created, it will never be destroyed. It may be completely unlinked and placed on the deleted-entity list, but it will not be freed. When a new entity is asked for, the deleted-entity list will be checked first. If an entity is in that list, it will be resurrected and removed from that list. If the deleted-entity list is empty, a new entity will be created using malloc. Only during shutdown will the entities in the entity list be freed.
+
+Lists:
+    entity_t *world_g;
+    model_t *model_g;
+
+entity world_g {
+    void *entities {
+        entity {
+            void *entities {
+                entity ...,
+                ooliteModel {
+                    vec3_t *vertices;
+                    int vertices_length;
+                    vec3_t *faces;
+                    int faces_length;
+                    vec3_t *surfaceNormals; // Same length as "faces".
+                }
+            };
+            int entities_length;
+        },
+        ...
+    };
+    int entities_length;
+    subEntityType_t type[none, entity, ooliteModel] = entity;
+}
+
+Oolite .dat file format:
+    NVERTS <number of vertices>
+    NFACES <number of faces>
+    
+    VERTEX
+    <(float[3]) vertex>
+    ...
+    
+    FACES
+    0 0 0 <(float[3]) face normal> || <"0 0 0"> 3 <(int[3]) vertex indices>
+    ...
+    
+    TEXTURES
+    <Texture index> 1.0 1.0 <(float[2]) texture coordinates[0]> <(float[2]) texture coordinates[1]> <(float[2]) texture coordinates[2]>
+    ...
+    
+    NAMES <number of names>
+    <Material name>
+    ...
+    
+    NORMALS
+    <(float[3]) normal>
+    
+    END
+
+
 
 Required calls to manage the entity tree:
     bool l_fileExists(string fileName)
@@ -113,7 +175,7 @@ Server → client gamestate commands
     Delete entity
     Set entity
 
-The above command list will be implemented in Lua. Determining what to send the client will be Lua's job. The packaging of it will be the engine's job.
+!The above command list will be implemented in Lua. Determining what to send the client will be Lua's job. The packaging of it will be the engine's job.
 
 After a map is loaded, the game state of both the client and the server should be the same. Diffs will then be sent to the client when appropriate.
 
@@ -121,6 +183,7 @@ I need to use UDP because it is real time, while TCP may do weird things with ti
 
 Server send
     C: Subtract most recently acknowledged state from current state.
+        Subtraction should result in changes only and static values should cancel to zero. We need a protocol that has this characteristic.
     C: Place current state in queue.
     C: Compress difference.
     C: Send compressed difference.
@@ -151,9 +214,12 @@ Files to rewrite when it is somewhat working:
     [*] (Common) Create file_concatenatePath()
     [*] (Common) Only allow file paths that remain in the workspace
 [/] (Common) Load and parse Wavefront MTL files
+[ ] (Common) Load and parse Oolite DAT files
 [ ] (Common) Create entity tree from Lua
 [ ] (Server) Send entity tree over the network
-    [ ] (All) Decide on network protocol
+    [*] (All) Decide on network protocol
+    [*] (Client Server) Send and receive packet over the network.
+    [ ] (Server) Send entity over the network.
 [ ] (Client) Receive entity tree from the network
 [ ] (All)    Get on those TODOs (ugly ones)
 [ ] (Client) Render entity tree in basic 3D using OpenGL

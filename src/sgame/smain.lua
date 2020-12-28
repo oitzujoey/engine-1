@@ -1,23 +1,40 @@
 
 l_log_info("main", "Server started")
 -- box = l_loadObj("resources/microcode-v1.1.2.obj")
-box = l_loadObj("resources/untitled.obj")
+-- box = l_loadObj("resources/untitled.obj")
 -- l_puts(box)
 
 -- file = l_vfs_getFileText("src/sgame/smain.lua")
 -- l_puts(file)
 
+-- Entity list constant indices
 type_none = 0
 type_model = 1
 worldEntity = 0
-asteroidModel, name = l_loadOoliteModel("Models/asteroid.dat")
-if asteroidModel ~= -1 then
-	asteroidEntity = l_createEntity("asteroid", type_model)
-	l_entity_addChild(worldEntity, asteroidEntity)
-	l_entity_addChild(asteroidEntity, asteroidModel)
+
+-- Textures
+texturePath = "oolite-binary-resources/Textures/"
+modelPath = "oolite-binary-resources/Models/"
+HullTexture = "oolite_cobra3_diffuse.png"
+GunTexture = "oolite_cobra3_subents.png"
+
+cobra3Model, name, error = l_loadOoliteModel(modelPath .. "oolite_cobra3.dat")
+if cobra3Model ~= -1 then
+	cobra3Entity, error = l_addEntity("asteroid", type_model)
+	error = l_entity_addChild(worldEntity, cobra3Entity)
+	error = l_entity_addChild(cobra3Entity, cobra3Model)
 	
 	-- l_server_sendState
 	-- l_renderEntity(worldEntity, 0.0, 0.0, 1.0, 1.0)
 end
+
+-- // Load the Oolite model specified by the string. Return the newly created entity index and the name of the entity.
+-- integer entityIndex, string name = l_loadOoliteModel(string fileName)
+
+-- // Create an entity (if a freed one doesn't already exist) with name "name" and type "type" and add it to the entity list. Return the index.
+-- integer index = l_addEntity(string name, integer type)
+
+-- // Link the two entities if possible. Non-entity structures are allowed to be linked as long as the type of the entity is set properly.
+-- l_entity_addChild(integer parentIndex, integer childIndex)
 
 l_log_info("main", "Server quit");

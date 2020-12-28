@@ -12,19 +12,58 @@
 #include "file.h"
 
 
+/* Oolite DAT */
+/* ========== */
+
+/*
+We will need a dedicated list of models. I think only one type will be required
+since each type of model should be able to be converted to a unified format. We
+will call that format "model_t".
+*/
+
+/* obj_loadOoliteDAT
+filePath:i      Workspace path to file.
+index:o         Index of the model in the model list.
+Returns:        error
+Globals:        modelList_g
+Description:    Load an Oolite model from a .dat file and add it into the model
+	list. "index" is set to the index of the model in the model list.
+*/
+int obj_loadOoliteDAT(const string_t *filePath, int *index) {
+	int error;
+
+	string_t fileText;
+	
+	string_init(&fileText);
+
+	error = vfs_getFileText(&vfs_g, &fileText, filePath);
+	if (error) {
+		error("vfs_getFileText returned ", ERR[error]);
+		error = error;
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	string_free(&fileText);
+	
+	return error;
+}
+
 /* MTL */
 /* === */
 
-int mtl_parsestring(mtl_t *mtl, const char *string) {
+static int mtl_parsestring(mtl_t *mtl, const char *string) {
 }
 
-int mtl_print(mtl_t *mtl) {
+static int mtl_print(mtl_t *mtl) {
 }
 
-int mtl_init(mtl_t *mtl) {
+static int mtl_init(mtl_t *mtl) {
 }
 
-int mtl_free(mtl_t *mtl) {
+static int mtl_free(mtl_t *mtl) {
 }
 
 int obj_loadMTL(obj_t *obj) {

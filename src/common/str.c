@@ -38,7 +38,7 @@ int string_init(string_t *s) {
 		return ERR_OUTOFMEMORY;
 	}
 	s->value[0] = '\0';
-	return 0;
+	return ERR_OK;
 }
 
 void string_free(string_t *s) {

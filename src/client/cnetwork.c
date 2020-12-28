@@ -33,7 +33,7 @@ int cnetwork_closeSocket(UDPsocket socket) {
 	return error;
 }
 
-int l_cnetwork_receive(Uint8 *data, int *length) {
+int l_cnetwork_receive(Uint8 **data, int *length) {
 	int error;
 	
 	UDPpacket *packet = SDLNet_AllocPacket(100);
@@ -51,16 +51,19 @@ int l_cnetwork_receive(Uint8 *data, int *length) {
 	}
 	if (error > 0) {
 		// We got something!
-		data = realloc(data, packet->len * sizeof(Uint8));
-		memcpy(data, packet->data, packet->len);
+		*data = realloc(*data, packet->len * sizeof(Uint8));
+		memcpy(*data, packet->data, packet->len);
 		*length = packet->len;
 	}
 	else {
 		*length = 0;
+		// insane_free(data);
 	}
 	
 	error = 0;
 	cleanup_l:
+	
+	SDLNet_FreePacket(packet);
 	
 	return error;
 }
@@ -96,11 +99,13 @@ int l_cnetwork_receive(Uint8 *data, int *length) {
 // 	return error;
 // }
 
-int cnetwork_init(const char *serverAddress) {
+int cnetwork_init(void) {
 	int error;
 	
 	IPaddress ipAddress;
-	cfg_var_t *varPort;
+	cfg_var_t *varClientPort;
+	cfg_var_t *varServerPort;
+	cfg_var_t *varIpAddress;
 	
 	error = SDLNet_Init();
 	if (error == -1) {
@@ -109,28 +114,42 @@ int cnetwork_init(const char *serverAddress) {
 		goto cleanup_l;
 	}
 	
-	varPort = cfg_findVar("network_port");
-	if (varPort == NULL) {
-		critical_error("\"network_port\" undefined", "");
+	varClientPort = cfg_findVar("client_port");
+	if (varClientPort == NULL) {
+		critical_error("\"client_port\" undefined", "");
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 	
-	clientSocket_g = SDLNet_UDP_Open(varPort->integer);
+	clientSocket_g = SDLNet_UDP_Open(varClientPort->integer);
 	if (clientSocket_g == NULL) {
 		critical_error("SDLNet_UDP_Open returned %s", SDL_GetError());
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 	
-	error = SDLNet_ResolveHost(&ipAddress, serverAddress, varPort->integer);
+	varServerPort = cfg_findVar("server_port");
+	if (varServerPort == NULL) {
+		critical_error("\"server_port\" undefined", "");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	varIpAddress = cfg_findVar("ip_address");
+	if (varIpAddress == NULL) {
+		critical_error("\"ip_address undefined", "");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	error = SDLNet_ResolveHost(&ipAddress, varIpAddress->string.value, varServerPort->integer);
 	if (error != 0) {
 		critical_error("SDLNet_ResolveHost returned %s", SDL_GetError());
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 	
-	info("Opened UDP socket on port %i", varPort->integer);
+	info("Opened UDP socket on port %i", varClientPort->integer);
 	
 	// socketSet_g = SDLNet_AllocSocketSet(MAX_CLIENTS + 1);
 	// if (socketSet_g == NULL) {
@@ -168,4 +187,6 @@ void cnetwork_quit(void) {
 	
 	// SDLNet_FreeSocketSet(socketSet_g);
 	// socketSet_g = NULL;
+	
+	SDLNet_Quit();
 }
