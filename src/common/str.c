@@ -9,6 +9,10 @@
 #include "insane.h"
 
 int string_realloc(string_t *s) {
+	// unsigned int msb = MSB(s->length) + 1;
+	// if (s->memsize < msb) {
+	// 	s->memsize = msb;
+	// }
 	s->memsize = MSB(s->length) + 1;
 	s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
 	if (s->value == NULL) {
@@ -213,17 +217,21 @@ int string_count_c(const string_t *s, const char *c) {
 }
 
 /* Remove comments */
-int string_removeLineComments(string_t *line, const char linecomment) {
-
-	int error = 0;
+int string_removeLineComments(string_t *line, const char *linecomment) {
+	int error = ERR_OK;
+	
+	char *commentStart = strstr(line->value, linecomment);
+	if (commentStart == NULL) {
+		return ERR_OK;
+	}
 
 	/* Remove comments. */
-	error = string_substring(line, line, 0, string_index_of(line, 0, linecomment));
+	error = string_substring(line, line, 0, commentStart - line->value);
 	if (error > 2) {
 		return error;
 	}
 
-	return 0;
+	return ERR_OK;
 }
 
 /* Remove whitespace */
@@ -270,12 +278,11 @@ int string_removeWhitespace(string_t *line, const char *config) {
 		}
 		else if (trailing) {
 			deletespaces = false;
-			line->value[i + gap] = line->value[i];
 		}
 	}
-	if (!trailing) {
+	// if (!trailing) {
 		endlength = line->length - gap;
-	}
+	// }
 
 	/* Remove middle whitespace. */
 	gap = 0;

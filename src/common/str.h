@@ -39,7 +39,7 @@ int string_substring(string_t *destination, const string_t *source, const int in
 /* Set the value, then call this to adjust the rest. */
 int string_normalize(string_t *s);
 int string_count_char(const string_t *s, const char c);
-int string_removeLineComments(string_t *line, const char linecomment);
+int string_removeLineComments(string_t *line, const char *linecomment);
 int string_removeWhitespace(string_t *line, const char *config);
 int string_print(string_t *s);
 /*void string_format(string_t *out, const char *format, ...);*/

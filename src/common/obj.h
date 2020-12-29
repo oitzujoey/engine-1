@@ -6,6 +6,29 @@
 #include "common.h"
 #include "str.h"
 
+typedef struct {
+    // string_t name;
+    vec3_t *vertices;
+    int vertices_length;
+    int **faces;
+    int faces_length;
+    vec3_t *surface_normals;    // Same length as faces.
+} model_t;
+
+typedef struct {
+	model_t *models;
+	int models_length;
+	int models_length_actual;
+} modelList_t;
+
+extern modelList_t modelList_g;
+
+int modelList_createModel(model_t **model, int *index);
+void modelList_init(void);
+void modelList_free(void);
+
+void model_init(model_t *model);
+
 /* Wavefront OBJ structure */
 /* ======================= */
 
@@ -20,6 +43,7 @@ typedef struct {
     int faces_length;
 } faceset_t;
 
+/* @TODO: Remove this offense. */
 typedef struct {
     void *children;
     int length;
@@ -49,6 +73,9 @@ typedef struct {
     string_t material_name;
 } mtl_t;
 
+void model_free(model_t *model);
+
+int l_obj_loadOoliteDAT(lua_State *luaState);
 
 int l_loadObj(lua_State *Lua);
 

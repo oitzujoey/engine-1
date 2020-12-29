@@ -10,7 +10,100 @@
 #include "cfg.h"
 #include "common.h"
 #include "file.h"
+#include "insane.h"
 
+
+/* Model list */
+/* ========== */
+
+modelList_t modelList_g;
+
+/* modelList_createModel
+model:o         The address of the model.
+index:o         The index of the model.
+Returns:        error
+Globals:        modelList_g
+Description:    Creates a model and returns the address and index in the list.
+*/
+int modelList_createModel(model_t **model, int *index) {
+	int error = ERR_OK;
+
+	if (modelList_g.models_length < modelList_g.models_length_actual) {
+		modelList_g.models_length++;
+	}
+	else {
+		modelList_g.models_length++;
+		modelList_g.models_length_actual++;
+		modelList_g.models = realloc(modelList_g.models, modelList_g.models_length_actual * sizeof(model_t));
+		if (modelList_g.models == NULL) {
+			critical_error("Out of memory", "");
+			error = ERR_OUTOFMEMORY;
+			goto cleanup_l;
+		}
+	}
+	*model = &modelList_g.models[modelList_g.models_length - 1];
+	*index = modelList_g.models_length - 1;
+	
+	model_init(*model);
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
+}
+
+/* modelList_removeLastModel
+Globals:        modelList_g
+Description:    Ignores the last model that was created.
+*/
+void modelList_removeLastModel(void) {
+	--modelList_g.models_length;
+}
+
+/* modelList_free
+Globals:        modelList_g
+Description:    Frees all models in the list and then frees the list iself.
+*/
+void modelList_free(void) {
+	for (int i = 0; i < modelList_g.models_length_actual; i++) {
+		model_free(&modelList_g.models[i]);
+	}
+	insane_free(modelList_g.models);
+	modelList_g.models_length = 0;
+	modelList_g.models_length_actual = 0;
+}
+
+/* modelList_init
+Globals:        modelList_g
+Description:    Initialize the model list.
+*/
+void modelList_init(void) {
+	modelList_g.models = NULL;
+	modelList_g.models_length = 0;
+	modelList_g.models_length_actual = 0;
+}
+
+/* Model */
+/* ===== */
+
+void model_init(model_t *model) {
+	model->faces = NULL;
+	model->faces_length = 0;
+	model->surface_normals = NULL;
+	model->vertices = NULL;
+	model->vertices_length = 0;
+}
+
+void model_free(model_t *model) {
+	insane_free(model->vertices);
+	model->vertices_length = 0;
+	insane_free(model->surface_normals);
+	for (int i = 0; i < model->faces_length; i++) {
+		insane_free(model->faces[i]);
+	}
+	insane_free(model->faces);
+	model->faces_length = 0;
+}
 
 /* Oolite DAT */
 /* ========== */
@@ -30,11 +123,50 @@ Description:    Load an Oolite model from a .dat file and add it into the model
 	list. "index" is set to the index of the model in the model list.
 */
 int obj_loadOoliteDAT(const string_t *filePath, int *index) {
-	int error;
+	int error = ERR_OK;
 
 	string_t fileText;
+	string_t line;
+	int lineStartIndex;
+	int tempIndex0;
+	int tempIndex1;
+	int datProgress = 0;
+	
+	enum {
+		mode_start,
+		mode_nverts,
+		mode_nfaces,
+		mode_vertex,
+		mode_faces,
+		mode_textures,
+		mode_names,
+		mode_normals,
+		mode_end
+	} mode = mode_start;
+	
+	int argc;
+	const int maxArgs = 10;
+	string_t argv[maxArgs];
+	model_t *model;
+	int tempModelElementIndex;
+	vec3_t tempVec3[2];
+	const int progressMask
+	    = (1<<mode_start)   | (1<<mode_nverts)  | (1<<mode_nfaces)
+	    | (1<<mode_vertex)  | (1<<mode_faces)   | (1<<mode_end);
+	
+	// model_init(model);
+	// Create a model.
+	modelList_createModel(&model, index);
+	
+	datProgress |= 1<<mode_start;
 	
 	string_init(&fileText);
+	string_init(&line);
+	for (int i = 0; i < maxArgs; i++) {
+		string_init(&argv[i]);
+	}
+
+	/* Get text from file. */
 
 	error = vfs_getFileText(&vfs_g, &fileText, filePath);
 	if (error) {
@@ -43,12 +175,395 @@ int obj_loadOoliteDAT(const string_t *filePath, int *index) {
 		goto cleanup_l;
 	}
 	
+	/* Go through each line in file. */
+	
+	lineStartIndex = 0;
+
+	for (int lineNumber = 1;; lineNumber++) {
+		
+		/* Get the line. */
+		
+		// I'm pretty sure this is way more complicated than it need to be.`
+		if (lineNumber == 1) {
+			tempIndex1 = string_index_of(&fileText, 0, '\n');
+			if (tempIndex1 < 0) {
+				tempIndex1 = -1;
+			}
+			else {
+				--tempIndex1;
+			}
+			string_substring(&line, &fileText, 0, tempIndex1);
+		}
+		else {
+			tempIndex0 = string_index_of(&fileText, lineNumber - 2, '\n');
+			if (tempIndex0 < 0) {
+				// End of file.
+				break;
+			}
+			// Get past the newline.
+			tempIndex0++;
+			
+			tempIndex1 = string_index_of(&fileText, lineNumber - 1, '\n');
+			if (tempIndex1 < 0) {
+				tempIndex1 = -1;
+			}
+			else {
+				--tempIndex1;
+			}
+			string_substring(&line, &fileText, tempIndex0, tempIndex1 - tempIndex0);
+		}
+		
+		/* Remove comments and unnecessary whitespace. */
+		
+		string_removeLineComments(&line, "//");
+		string_removeWhitespace(&line, "melt");
+		// Convert remaining whitespace to spaces.
+		for (int i = 0; i < line.length; i++) {
+			if (isspace(line.value[i])) {
+				line.value[i] = ' ';
+			}
+		}
+
+		// Remove empty lines.
+		if (!strcmp(line.value, "")) {
+			continue;
+		}
+		
+		/* Split line into arguments. */
+		
+		argc = string_count_char(&line, ' ') + 1;
+		if (argc > maxArgs) {
+			error("Line %i of file \"%s\" has too many arguments. %i > maxArgs(%i)", lineNumber, filePath->value, argc, maxArgs);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		}
+		
+		for (int i = 0; i < argc; i++) {
+			
+			tempIndex0 = string_index_of(&line, i - 1, ' ');
+			tempIndex1 = string_index_of(&line, i, ' ');
+			if (i != 0) {
+				tempIndex0++;
+			}
+			error = string_substring(&argv[i], &line, tempIndex0, tempIndex1 - tempIndex0);
+			
+			// Substring errors are ridiculous. I really need to redo them.
+			if (error >= 4) {
+				error = ERR_OUTOFMEMORY;
+				goto cleanup_l;
+			}
+			if (error) {
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
+		}
+		
+		/* Execute command if one exists. */
+		
+		if (!strcmp(argv[0].value, "NVERTS")) {
+			
+			if (argc != 2) {
+				error("\"%s\":%i \"%s\" requires 2 arguments", filePath->value, lineNumber, argv[0].value);
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
+			
+			model->vertices_length = strtol(argv[1].value, NULL, 10);
+			// I should really be checking for INT_MAX and INT_MIN.
+			
+			if (model->vertices_length != 0) {
+				model->vertices = malloc(model->vertices_length * sizeof(vec3_t));
+			}
+			else {
+				model->vertices = NULL;
+			}
+			
+			// Does nothing special.
+			mode = mode_nverts;
+			datProgress |= 1<<mode_nverts;
+			continue;
+		}
+		if (!strcmp(argv[0].value, "NFACES")) {
+			
+			if (argc != 2) {
+				error("\"%s\":%i \"%s\" requires 2 arguments", filePath->value, lineNumber, argv[0].value);
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
+			
+			model->faces_length = strtol(argv[1].value, NULL, 10);
+			// I should really be checking for INT_MAX and INT_MIN.
+			
+			if (model->faces_length != 0) {
+				model->faces = malloc(model->faces_length * sizeof(int *));
+				for (int i = 0; i < model->faces_length; i++) {
+					model->faces[i] = malloc(3 * sizeof(int));
+				}
+			}
+			else {
+				model->faces = NULL;
+			}
+			
+			// Does nothing special.
+			mode = mode_nfaces;
+			datProgress |= 1<<mode_nfaces;
+			continue;
+		}
+		if (!strcmp(argv[0].value, "VERTEX")) {
+			
+			if (argc != 1) {
+				error("\"%s\":%i \"%s\" requires 1 argument", filePath->value, lineNumber, argv[0].value);
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
+			
+			if (((1<<mode_nverts) & datProgress) == 0) {
+				error("\"%s\":%i NVERTS has not been declared", filePath->value, lineNumber);
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
+			
+			tempModelElementIndex = 0;
+			
+			mode = mode_vertex;
+			// Don't set progress until the last vertex has been set.
+			// datProgress |= 1<<mode_vertex;
+			continue;
+		}
+		if (!strcmp(argv[0].value, "FACES")) {
+			
+			if (argc != 1) {
+				error("\"%s\":%i \"%s\" requires 1 argument", filePath->value, lineNumber, argv[0].value);
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
+			
+			if (((1<<mode_nfaces) & datProgress) == 0) {
+				error("\"%s\":%i NFACES has not been declared", filePath->value, lineNumber);
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
+			
+			tempModelElementIndex = 0;
+			
+			mode = mode_faces;
+			// Don't set progress until the last face has been set.
+			// datProgress |= 1<<mode_faces;
+			continue;
+		}
+		if (!strcmp(argv[0].value, "TEXTURES")) {
+			
+			if (argc != 1) {
+				error("\"%s\":%i \"%s\" requires 1 argument", filePath->value, lineNumber, argv[0].value);
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
+			
+			// @TODO: Do something about the textures.
+			
+			tempModelElementIndex = 0;
+			
+			mode = mode_textures;
+			continue;
+		}
+		if (!strcmp(argv[0].value, "NAMES")) {
+			
+			if (argc != 2) {
+				error("\"%s\":%i \"%s\" requires 1 argument", filePath->value, lineNumber, argv[0].value);
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
+			
+			// @TODO: Do something about the names.
+			
+			tempModelElementIndex = 0;
+			
+			mode = mode_names;
+			continue;
+		}
+		if (!strcmp(argv[0].value, "NORMALS")) {
+			
+			if (argc != 1) {
+				error("\"%s\":%i \"%s\" requires 1 argument", filePath->value, lineNumber, argv[0].value);
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
+			
+			// @TODO: Do something about the normals.
+			
+			tempModelElementIndex = 0;
+			
+			mode = mode_normals;
+			continue;
+		}
+		if (!strcmp(argv[0].value, "END")) {
+			
+			// Picky, picky.
+			if (argc != 1) {
+				error("\"%s\":%i \"%s\" requires 1 argument", filePath->value, lineNumber, argv[0].value);
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
+			
+			datProgress |= 1<<mode_end;
+			mode = mode_end;
+			break;
+		}
+		
+		/* Do the appropriate action for the current mode. */
+		switch (mode) {
+			case mode_start:
+				continue;
+			case mode_nverts:
+				continue;
+			case mode_nfaces:
+				continue;
+			
+			case mode_vertex:
+				
+				if (argc != 3) {
+					error("\"%s\":%i mode \"vertex\" requires 3 arguments", filePath->value, lineNumber);
+					error = ERR_GENERIC;
+					goto cleanup_l;
+				}
+				
+				if (tempModelElementIndex >= model->vertices_length) {
+					error("\"%s\":%i Vertex list is longer than declared by NVERTS(%i)", filePath->value, lineNumber, model->vertices_length);
+					error = ERR_GENERIC;
+					goto cleanup_l;
+				}
+				
+				for (int i = 0; i < 3; i++) {
+					model->vertices[tempModelElementIndex][i] = strtof(argv[i].value, NULL);
+				}
+				tempModelElementIndex++;
+				
+				if (tempModelElementIndex == model->vertices_length) {
+					// Done.
+					datProgress |= 1<<mode_vertex;
+				}
+				
+				continue;
+			
+			case mode_faces:
+				
+				if (argc != 10) {
+					error("\"%s\":%i mode \"faces\" requires 10 arguments", filePath->value, lineNumber);
+					error = ERR_GENERIC;
+					goto cleanup_l;
+				}
+				
+				if (tempModelElementIndex >= model->faces_length) {
+					error("\"%s\":%i Face list is longer than declared by NFACES(%i)", filePath->value, lineNumber, model->faces_length);
+					error = ERR_GENERIC;
+					goto cleanup_l;
+				}
+				
+				for (int i = 0; i < 3; i++) {
+					model->faces[tempModelElementIndex][i] = strtof(argv[i + 7].value, NULL);
+				}
+				tempModelElementIndex++;
+				
+				if (tempModelElementIndex == model->faces_length) {
+					// Done.
+					datProgress |= 1<<mode_faces;
+				}
+				
+				continue;
+			
+			case mode_textures:
+				continue;
+			case mode_names:
+				continue;
+			case mode_normals:
+				continue;
+			case mode_end:
+				error("Can't happen. \"mode\" is set to \"mode_end\".", "");
+				break;
+			default:
+				error("Can't happen. \"mode\" is set to the invalid value %i.", mode);
+				continue;
+		}
+	}
+
+	// Now that we are finished loading the model, let's see what we actually accomplished.
+	if (datProgress != progressMask) {
+		error("\"%s\" Model not fully defined by file", filePath->value);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	// Create suface normals.
+	model->surface_normals = malloc(model->faces_length * sizeof(vec3_t));
+	if (model->surface_normals == NULL) {
+		critical_error("Out of memory", "");
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	
+	/* I think this is correct. Subtract vertex 0 from 1 & 2 to create two
+	   vectors. The cross product will be normal to both. */
+	for (int i = 0; i < model->faces_length; i++) {
+		// Create vectors from the three face points. Two vectors define a plane.
+		vec3_subtract(&tempVec3[0], &model->vertices[model->faces[i][1]], &model->vertices[model->faces[i][0]]);
+		vec3_subtract(&tempVec3[1], &model->vertices[model->faces[i][2]], &model->vertices[model->faces[i][0]]);
+		// Create normal from vectors.
+		vec3_crossProduct(&model->surface_normals[i], &tempVec3[0], &tempVec3[1]);
+		// And finally, normalize the normal.
+		error = vec3_normalize(&model->surface_normals[i]);
+		if (error) {
+			error("Cannot create normal due to invalid face %i", "");
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		}
+	}
+	
 	error = ERR_OK;
 	cleanup_l:
 	
+	if (error) {
+		model_free(model);
+		modelList_removeLastModel();
+	}
+	
+	for (int i = 0; i < maxArgs; i++) {
+		string_free(&argv[i]);
+	}
+	string_free(&line);
 	string_free(&fileText);
 	
 	return error;
+}
+
+int l_obj_loadOoliteDAT(lua_State *luaState) {
+	int error = 0;
+	
+	int index = -1;
+	string_t filePath;
+	
+	string_init(&filePath);
+	
+	if (!lua_isstring(luaState, 1)) {
+		error("Argument 1 must be a string.", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	string_copy_c(&filePath, lua_tostring(luaState, 1));
+	
+	error = obj_loadOoliteDAT(&filePath, &index);
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	error = 0;
+	cleanup_l:
+	
+	string_free(&filePath);
+	
+	lua_pushinteger(luaState, index);
+	lua_pushinteger(luaState, error);
+	
+	return 2;
 }
 
 /* MTL */
@@ -115,7 +630,7 @@ int obj_loadMTL(obj_t *obj) {
 		string_substring(&line, &fileText, tempIndex, string_index_of(&fileText, lineNumber, '\n') - tempIndex);
 		
 		/* Remove comments and unnecessary whitespace. */
-		string_removeLineComments(&line, '#');
+		string_removeLineComments(&line, "#");
 		string_removeWhitespace(&line, "melt");
 		/* Convert remaining whitespace to spaces */
 		for (int i = 0; i < line.length; i++) {
@@ -223,7 +738,8 @@ int obj_parsestring(obj_t *obj, const char *string) {
 		/* Clean line. */
 		
 		/* Remove comments and unnecessary whitespace. */
-		string_removeLineComments(&linecopy, '#');
+		string_removeLineComments(&linecopy, "#");
+		/* You see it too, don't you. */
 		string_removeWhitespace(&linecopy, "melt");
 		/* Convert remaining whitespace to spaces */
 		for (int i = 0; i < linecopy.length; i++) {

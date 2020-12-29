@@ -532,7 +532,7 @@ int cfg_execFile(const char *filepath) {
 		}
 		
 		/* Remove comments and unnecessary whitespace. */
-		string_removeLineComments(&line, '#');
+		string_removeLineComments(&line, "#");
 		string_removeWhitespace(&line, "melt");
 		/* Convert remaining whitespace to spaces */
 		for (int i = 0; i < line.length; i++) {

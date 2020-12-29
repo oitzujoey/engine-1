@@ -85,6 +85,7 @@ All materials are stored in a global array.
 No entity truely contains any other entity. It may contain the addresses of several child entities, but the children will always be stored in the entity list.
 Models may be treated as a child entity, but they cannot contain other entities, and they may not be placed in the entity list.
 The entity list exists to keep track of all entities. It should prevent permanently lost entities that are unable to be freed, and it allows the game state to be sent to the client more easily and compactly. Once an entity is created, it will never be destroyed. It may be completely unlinked and placed on the deleted-entity list, but it will not be freed. When a new entity is asked for, the deleted-entity list will be checked first. If an entity is in that list, it will be resurrected and removed from that list. If the deleted-entity list is empty, a new entity will be created using malloc. Only during shutdown will the entities in the entity list be freed.
+Models may be created, but not freed until game shutdown.
 
 Lists:
     entity_t *world_g;
@@ -214,7 +215,7 @@ Files to rewrite when it is somewhat working:
     [*] (Common) Create file_concatenatePath()
     [*] (Common) Only allow file paths that remain in the workspace
 [/] (Common) Load and parse Wavefront MTL files
-[ ] (Common) Load and parse Oolite DAT files
+[/] (Common) Load and parse Oolite DAT files
 [ ] (Common) Create entity tree from Lua
 [ ] (Server) Send entity tree over the network
     [*] (All) Decide on network protocol

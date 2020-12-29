@@ -18,7 +18,7 @@ modelPath = "oolite-binary-resources/Models/"
 HullTexture = "oolite_cobra3_diffuse.png"
 GunTexture = "oolite_cobra3_subents.png"
 
-cobra3Model, name, error = l_loadOoliteModel(modelPath .. "oolite_cobra3.dat")
+cobra3Model, error = l_loadOoliteModel(modelPath .. "oolite_cobra3.dat")
 if cobra3Model ~= -1 then
 	cobra3Entity, error = l_addEntity("asteroid", type_model)
 	error = l_entity_addChild(worldEntity, cobra3Entity)

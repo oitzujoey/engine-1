@@ -12,6 +12,7 @@
 #include "../common/cfg.h"
 #include "../common/vfs.h"
 #include "snetwork.h"
+#include "../common/lua_common.h"
 
 luaCFunc_t luaCFunctions[] = {
 	{.func = l_puts,                .name = "l_puts"                },
@@ -21,6 +22,8 @@ luaCFunc_t luaCFunctions[] = {
 	{.func = l_log_error,           .name = "l_log_error"           },
 	{.func = l_log_critical_error,  .name = "l_log_critical_error"  },
 	{.func = l_vfs_getFileText,     .name = "l_vfs_getFileText"     },
+	{.func = l_obj_loadOoliteDAT,   .name = "l_loadOoliteModel"     },
+	{.func = l_common_toString,     .name = "l_toString"            },
 	{.func = NULL,                  .name = NULL                    }
 };
 
@@ -51,11 +54,15 @@ static int main_init(void) {
 		critical_error("Could not initialize network", "");
 		return ERR_CRITICAL;
 	}
+	
+	modelList_init();
 
 	return ERR_OK;
 }
 
 static void main_quit(void) {
+	
+	modelList_free();
 	
 	snetwork_quit();
 	
