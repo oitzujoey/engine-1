@@ -13,6 +13,7 @@
 #include "../common/vfs.h"
 #include "snetwork.h"
 #include "../common/lua_common.h"
+#include "../common/entity.h"
 
 luaCFunc_t luaCFunctions[] = {
 	{.func = l_puts,                .name = "l_puts"                },
@@ -24,6 +25,8 @@ luaCFunc_t luaCFunctions[] = {
 	{.func = l_vfs_getFileText,     .name = "l_vfs_getFileText"     },
 	{.func = l_obj_loadOoliteDAT,   .name = "l_loadOoliteModel"     },
 	{.func = l_common_toString,     .name = "l_toString"            },
+	{.func = l_entity_createEntity, .name = "l_createEntity"        },
+	{.func = l_entity_linkChild,    .name = "l_entity_linkChild"    },
 	{.func = NULL,                  .name = NULL                    }
 };
 
@@ -55,6 +58,7 @@ static int main_init(void) {
 		return ERR_CRITICAL;
 	}
 	
+	entity_initEntityList();
 	modelList_init();
 
 	return ERR_OK;
@@ -63,6 +67,7 @@ static int main_init(void) {
 static void main_quit(void) {
 	
 	modelList_free();
+	entity_freeEntityList();
 	
 	snetwork_quit();
 	
@@ -122,7 +127,7 @@ int main(int argc, char *argv[]) {
 		goto cleanup_l;
 	}
 	
-	error = vfs_init(&vfs_g, &workspace_v->string);
+	error = vfs_init(&g_vfs, &workspace_v->string);
 	if (error) {
 		log_critical_error(__func__, "Could not start VFS");
 		goto cleanup_l;
@@ -176,7 +181,7 @@ int main(int argc, char *argv[]) {
 	
 	main_quit();
 	
-	vfs_free(&vfs_g);
+	vfs_free(&g_vfs);
 	
 	cfg_free();
 	

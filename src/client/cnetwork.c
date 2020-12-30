@@ -4,8 +4,8 @@
 #include "../common/cfg.h"
 #include "../common/insane.h"
 
-UDPsocket serverSocket_g;
-UDPsocket clientSocket_g;
+UDPsocket g_serverSocket;
+UDPsocket g_clientSocket;
 // SDLNet_SocketSet socketSet_g;
 
 
@@ -43,7 +43,7 @@ int l_cnetwork_receive(Uint8 **data, int *length) {
 		goto cleanup_l;
 	}
 	
-	error = SDLNet_UDP_Recv(clientSocket_g, packet);
+	error = SDLNet_UDP_Recv(g_clientSocket, packet);
 	if (error < 0) {
 		error("SDLNet_UDP_Recv returned %s", SDL_GetError());
 		error = ERR_GENERIC;
@@ -83,7 +83,7 @@ int l_cnetwork_receive(Uint8 **data, int *length) {
 	
 // 	packet->address = ipAddress;
 	
-// 	error = SDLNet_UDP_Send(serverSocket_g, -1, packet);
+// 	error = SDLNet_UDP_Send(g_serverSocket, -1, packet);
 	
 // 	if (error == 0) {
 // 		error("SDLNet_UDP_Send returned %s", SDL_GetError());
@@ -121,8 +121,8 @@ int cnetwork_init(void) {
 		goto cleanup_l;
 	}
 	
-	clientSocket_g = SDLNet_UDP_Open(varClientPort->integer);
-	if (clientSocket_g == NULL) {
+	g_clientSocket = SDLNet_UDP_Open(varClientPort->integer);
+	if (g_clientSocket == NULL) {
 		critical_error("SDLNet_UDP_Open returned %s", SDL_GetError());
 		error = ERR_CRITICAL;
 		goto cleanup_l;
@@ -158,7 +158,7 @@ int cnetwork_init(void) {
 	// 	goto cleanup_l;
 	// }
 	
-	// error = SDLNet_UDP_AddSocket(socketSet_g, serverSocket_g);
+	// error = SDLNet_UDP_AddSocket(socketSet_g, g_serverSocket);
 	// if (error == -1) {
 	// 	critical_error("SDLNet_UDP_AddSocket returned %s", SDL_GetError());
 	// 	error = ERR_CRITICAL;
@@ -175,7 +175,7 @@ int cnetwork_init(void) {
 void cnetwork_quit(void) {
 
 	// Don't care about errors.
-	cnetwork_closeSocket(clientSocket_g);
+	cnetwork_closeSocket(g_clientSocket);
 	
 	// for (int i = 0; i < MAX_CLIENTS; i++) {
 	// 	if (clients_g[i].socket == NULL) {

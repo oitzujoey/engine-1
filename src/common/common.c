@@ -5,7 +5,7 @@
 
 int error;
 
-vfs_t vfs_g;
+vfs_t g_vfs;
 
 int l_puts(lua_State *Lua) {
     printf(COLOR_CYAN"Lua {"COLOR_NORMAL"%s"COLOR_CYAN"}"COLOR_NORMAL"\n", lua_tostring(Lua, 1));

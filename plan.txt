@@ -216,7 +216,8 @@ Files to rewrite when it is somewhat working:
     [*] (Common) Only allow file paths that remain in the workspace
 [/] (Common) Load and parse Wavefront MTL files
 [/] (Common) Load and parse Oolite DAT files
-[ ] (Common) Create entity tree from Lua
+[/] (Common) Create entity tree from Lua
+    [ ] (Common) Set position and orientation from Lua.
 [ ] (Server) Send entity tree over the network
     [*] (All) Decide on network protocol
     [*] (Client Server) Send and receive packet over the network.

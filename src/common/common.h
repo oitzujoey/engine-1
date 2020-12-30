@@ -47,7 +47,7 @@ typedef struct {
 
 extern int error;
 
-extern vfs_t vfs_g;
+extern vfs_t g_vfs;
 
 int l_puts(lua_State*);
 

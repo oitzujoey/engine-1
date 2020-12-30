@@ -5,7 +5,7 @@
 #include "../common/insane.h"
 
 client_t clients_g[MAX_CLIENTS];
-UDPsocket serverSocket_g;
+UDPsocket g_serverSocket;
 // SDLNet_SocketSet socketSet_g;
 
 
@@ -48,7 +48,7 @@ int l_snetwork_send(const uint8_t *data, int length, IPaddress ipAddress) {
 	
 	packet->address = ipAddress;
 	
-	error = SDLNet_UDP_Send(serverSocket_g, -1, packet);
+	error = SDLNet_UDP_Send(g_serverSocket, -1, packet);
 	
 	if (error == 0) {
 		error("SDLNet_UDP_Send returned %s", SDL_GetError());
@@ -85,8 +85,8 @@ int snetwork_init(void) {
 		goto cleanup_l;
 	}
 	
-	serverSocket_g = SDLNet_UDP_Open(varServerPort->integer);
-	if (serverSocket_g == NULL) {
+	g_serverSocket = SDLNet_UDP_Open(varServerPort->integer);
+	if (g_serverSocket == NULL) {
 		critical_error("SDLNet_UDP_Open returned %s", SDL_GetError());
 		error = ERR_CRITICAL;
 		goto cleanup_l;
@@ -115,7 +115,7 @@ int snetwork_init(void) {
 	// 	goto cleanup_l;
 	// }
 	
-	// error = SDLNet_UDP_AddSocket(socketSet_g, serverSocket_g);
+	// error = SDLNet_UDP_AddSocket(socketSet_g, g_serverSocket);
 	// if (error == -1) {
 	// 	critical_error("SDLNet_UDP_AddSocket returned %s", SDL_GetError());
 	// 	error = ERR_CRITICAL;
@@ -132,7 +132,7 @@ int snetwork_init(void) {
 void snetwork_quit(void) {
 
 	// Don't care about errors.
-	snetwork_closeSocket(serverSocket_g);
+	snetwork_closeSocket(g_serverSocket);
 	
 	for (int i = 0; i < MAX_CLIENTS; i++) {
 		if (clients_g[i].socket == NULL) {

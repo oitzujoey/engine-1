@@ -9,7 +9,8 @@ l_log_info("main", "Server started")
 
 -- Entity list constant indices
 type_none = 0
-type_model = 1
+type_entity = 1
+type_model = 2
 worldEntity = 0
 
 -- Textures
@@ -20,9 +21,9 @@ GunTexture = "oolite_cobra3_subents.png"
 
 cobra3Model, error = l_loadOoliteModel(modelPath .. "oolite_cobra3.dat")
 if cobra3Model ~= -1 then
-	cobra3Entity, error = l_addEntity("asteroid", type_model)
-	error = l_entity_addChild(worldEntity, cobra3Entity)
-	error = l_entity_addChild(cobra3Entity, cobra3Model)
+	cobra3Entity, error = l_createEntity(type_model)
+	error = l_entity_linkChild(worldEntity, cobra3Entity)
+	error = l_entity_linkChild(cobra3Entity, cobra3Model)
 	
 	-- l_server_sendState
 	-- l_renderEntity(worldEntity, 0.0, 0.0, 1.0, 1.0)
@@ -32,7 +33,7 @@ end
 -- integer entityIndex, string name = l_loadOoliteModel(string fileName)
 
 -- // Create an entity (if a freed one doesn't already exist) with name "name" and type "type" and add it to the entity list. Return the index.
--- integer index = l_addEntity(string name, integer type)
+-- integer index = l_createEntity(string name, integer type)
 
 -- // Link the two entities if possible. Non-entity structures are allowed to be linked as long as the type of the entity is set properly.
 -- l_entity_addChild(integer parentIndex, integer childIndex)

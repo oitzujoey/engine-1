@@ -127,7 +127,7 @@ static int main_init(const int argc, char *argv[]) {
 		goto cleanup_l;
 	}
 	
-	error = vfs_init(&vfs_g, &workspace_v->string);
+	error = vfs_init(&g_vfs, &workspace_v->string);
 	if (error) {
 		log_critical_error(__func__, "Could not start VFS");
 		goto cleanup_l;
@@ -152,7 +152,7 @@ void main_quit(void) {
 
 	cnetwork_quit();
 	
-	vfs_free(&vfs_g);
+	vfs_free(&g_vfs);
 	
 	windowQuit();
 	

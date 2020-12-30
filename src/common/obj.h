@@ -21,8 +21,9 @@ typedef struct {
 	int models_length_actual;
 } modelList_t;
 
-extern modelList_t modelList_g;
+extern modelList_t g_modelList;
 
+int obj_isValidModelIndex(int index);
 int modelList_createModel(model_t **model, int *index);
 void modelList_init(void);
 void modelList_free(void);
@@ -42,12 +43,6 @@ typedef struct {
     face_t *faces;
     int faces_length;
 } faceset_t;
-
-/* @TODO: Remove this offense. */
-typedef struct {
-    void *children;
-    int length;
-} entity_t;
 
 typedef struct {
     string_t object_name;

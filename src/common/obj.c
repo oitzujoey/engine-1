@@ -16,33 +16,51 @@
 /* Model list */
 /* ========== */
 
-modelList_t modelList_g;
+modelList_t g_modelList;
+
+/* obj_isValidModelIndex
+index:i     The index of a model.
+Returns:    1 if index is valid, otherwise 0.
+*/
+int obj_isValidModelIndex(int index) {
+	
+	// Out of bounds.
+	if (index < 0) {
+		return 0;
+	}
+	if (index >= g_modelList.models_length) {
+		return 0;
+	}
+
+	return 1;
+}
+
 
 /* modelList_createModel
 model:o         The address of the model.
 index:o         The index of the model.
 Returns:        error
-Globals:        modelList_g
+Globals:        g_modelList
 Description:    Creates a model and returns the address and index in the list.
 */
 int modelList_createModel(model_t **model, int *index) {
 	int error = ERR_OK;
 
-	if (modelList_g.models_length < modelList_g.models_length_actual) {
-		modelList_g.models_length++;
+	if (g_modelList.models_length < g_modelList.models_length_actual) {
+		g_modelList.models_length++;
 	}
 	else {
-		modelList_g.models_length++;
-		modelList_g.models_length_actual++;
-		modelList_g.models = realloc(modelList_g.models, modelList_g.models_length_actual * sizeof(model_t));
-		if (modelList_g.models == NULL) {
+		g_modelList.models_length++;
+		g_modelList.models_length_actual++;
+		g_modelList.models = realloc(g_modelList.models, g_modelList.models_length_actual * sizeof(model_t));
+		if (g_modelList.models == NULL) {
 			critical_error("Out of memory", "");
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}
 	}
-	*model = &modelList_g.models[modelList_g.models_length - 1];
-	*index = modelList_g.models_length - 1;
+	*model = &g_modelList.models[g_modelList.models_length - 1];
+	*index = g_modelList.models_length - 1;
 	
 	model_init(*model);
 	
@@ -53,34 +71,34 @@ int modelList_createModel(model_t **model, int *index) {
 }
 
 /* modelList_removeLastModel
-Globals:        modelList_g
+Globals:        g_modelList
 Description:    Ignores the last model that was created.
 */
 void modelList_removeLastModel(void) {
-	--modelList_g.models_length;
+	--g_modelList.models_length;
 }
 
 /* modelList_free
-Globals:        modelList_g
+Globals:        g_modelList
 Description:    Frees all models in the list and then frees the list iself.
 */
 void modelList_free(void) {
-	for (int i = 0; i < modelList_g.models_length_actual; i++) {
-		model_free(&modelList_g.models[i]);
+	for (int i = 0; i < g_modelList.models_length_actual; i++) {
+		model_free(&g_modelList.models[i]);
 	}
-	insane_free(modelList_g.models);
-	modelList_g.models_length = 0;
-	modelList_g.models_length_actual = 0;
+	insane_free(g_modelList.models);
+	g_modelList.models_length = 0;
+	g_modelList.models_length_actual = 0;
 }
 
 /* modelList_init
-Globals:        modelList_g
+Globals:        g_modelList
 Description:    Initialize the model list.
 */
 void modelList_init(void) {
-	modelList_g.models = NULL;
-	modelList_g.models_length = 0;
-	modelList_g.models_length_actual = 0;
+	g_modelList.models = NULL;
+	g_modelList.models_length = 0;
+	g_modelList.models_length_actual = 0;
 }
 
 /* Model */
@@ -118,7 +136,7 @@ will call that format "model_t".
 filePath:i      Workspace path to file.
 index:o         Index of the model in the model list.
 Returns:        error
-Globals:        modelList_g
+Globals:        g_modelList
 Description:    Load an Oolite model from a .dat file and add it into the model
 	list. "index" is set to the index of the model in the model list.
 */
@@ -168,7 +186,7 @@ int obj_loadOoliteDAT(const string_t *filePath, int *index) {
 
 	/* Get text from file. */
 
-	error = vfs_getFileText(&vfs_g, &fileText, filePath);
+	error = vfs_getFileText(&g_vfs, &fileText, filePath);
 	if (error) {
 		error("vfs_getFileText returned ", ERR[error]);
 		error = error;
@@ -613,7 +631,7 @@ int obj_loadMTL(obj_t *obj) {
 	
 	log_info(__func__, "Loading material \"%s\"", filePath.value);
 	
-	localError = vfs_getFileText(&vfs_g, &fileText, &filePath);
+	localError = vfs_getFileText(&g_vfs, &fileText, &filePath);
 	if (localError) {
 		log_error(__func__, "Could not open file \"%s\"", filePath.value);
 		goto cleanup_l;
@@ -1146,7 +1164,7 @@ int l_loadObj(lua_State *Lua) {
 	}
 	
 	string_copy(&filePath, &fileName);
-	localError = vfs_getFileText(&vfs_g, &fileText, &filePath);
+	localError = vfs_getFileText(&g_vfs, &fileText, &filePath);
 	if (localError) {
 		goto cleanup_l;
 	}
