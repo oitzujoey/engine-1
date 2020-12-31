@@ -1,11 +1,43 @@
 --[[
 This should be a completely sandboxed environment.
 No libraries have been loaded, and the only resources available to the script are whitelisted C functions.
+
+This should do almost nothing. The server engine/script and client engine will do the majority of the work.
+This script will draw the HUD, create and set 3D reference entities, and perform other menial tasks.
 --]]
 
 puts("Lua start");
 
+-- Entity types
+type_none = 0
+type_entity = 1
+type_model = 2
+
+-- Entity list constant indices
+worldEntity = 0
+
+-- File paths
+texturePath = "oolite-binary-resources/Textures/"
+modelPath = "oolite-binary-resources/Models/"
+HullTexture = "oolite_cobra3_diffuse.png"
+GunTexture = "oolite_cobra3_subents.png"
+
+cobra3Model, error = l_loadOoliteModel(modelPath .. "oolite_cobra3.dat")
+if cobra3Model ~= -1 then
+	cobra3Entity, error = l_createEntity(type_model)
+	error = l_entity_linkChild(worldEntity, cobra3Entity)
+	error = l_entity_linkChild(cobra3Entity, cobra3Model)
+	-- l_cnetwork_receiveEntityTree will set the 
+	-- l_entity_setPosition(cobra3Entity, {x=20, y=0, z=0})
+	-- l_entity_setOrientation(cobra3Entity, {w=1, x=0, y=0, z=0})
+	
+	-- l_snetwork_sendEntityTree()
+	-- l_renderEntity(worldEntity, 0.0, 0.0, 1.0, 1.0)
+end
+
 while true do
+
+	
 
 	-- puts("Lua render")
 	render()

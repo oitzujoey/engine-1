@@ -14,10 +14,10 @@ int getInput(lua_State *luaState) {
     return 0;
 }
 
-int getKeys() {
+int getKeys(void) {
 
 }
 
-int getMouse() {
+int getMouse(void) {
 
 }

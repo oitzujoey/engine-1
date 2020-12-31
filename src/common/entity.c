@@ -12,6 +12,11 @@ static void entity_initEntity(entity_t *entity) {
 	entity->children = NULL;
 	entity->children_length = 0;
 	entity->childType = entity_childType_none;
+	for (int i = 0; i < sizeof(vec3_t)/sizeof(vec_t); i++) {
+		entity->position[i] = 0;
+		entity->orientation.v[i] = 0;
+	}
+	entity->orientation.s = 1;
 }
 
 static void entity_freeEntity(entity_t *entity) {
@@ -239,5 +244,109 @@ int l_entity_linkChild(lua_State *luaState) {
 	
 	lua_pushinteger(luaState, error);
 	
+	return 1;
+}
+
+int l_entity_setPosition(lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	int index;
+	
+	if (!lua_isinteger(luaState, 1)) {
+		error("Argument 1 must be an integer.", "");
+		lua_error(luaState);
+	}
+	
+	index = lua_tointeger(luaState, 1);
+	if (!entity_isValidEntityIndex(index)) {
+		error("Index (%i) references an invalid entity.", index);
+		lua_error(luaState);
+	}
+	
+	lua_pushstring(luaState, "x");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key x must be a number", "");
+		lua_error(luaState);
+	}
+	g_entityList.entities[index].position[0] = lua_tonumber(luaState, 3);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "y");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key y must be a number", "");
+		lua_error(luaState);
+	}
+	g_entityList.entities[index].position[1] = lua_tonumber(luaState, 3);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "z");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key z must be a number", "");
+		lua_error(luaState);
+	}
+	g_entityList.entities[index].position[2] = lua_tonumber(luaState, 3);
+	lua_pop(luaState, 1);
+	
+	error = ERR_OK;
+	cleanup_l:
+
+	lua_pushinteger(luaState, error);
+	
+	return 1;
+}
+
+int l_entity_setOrientation(lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	int index;
+	
+	if (!lua_isinteger(luaState, 1)) {
+		error("Argument 1 must be an integer.", "");
+		lua_error(luaState);
+	}
+	
+	index = lua_tointeger(luaState, 1);
+	if (!entity_isValidEntityIndex(index)) {
+		error("Index (%i) references an invalid entity.", index);
+		lua_error(luaState);
+	}
+	
+	lua_pushstring(luaState, "w");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key x must be a number", "");
+		lua_error(luaState);
+	}
+	g_entityList.entities[index].orientation.s = lua_tonumber(luaState, 3);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "x");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key x must be a number", "");
+		lua_error(luaState);
+	}
+	g_entityList.entities[index].orientation.v[0] = lua_tonumber(luaState, 3);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "y");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key y must be a number", "");
+		lua_error(luaState);
+	}
+	g_entityList.entities[index].orientation.v[1] = lua_tonumber(luaState, 3);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "z");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key z must be a number", "");
+		lua_error(luaState);
+	}
+	g_entityList.entities[index].orientation.v[2] = lua_tonumber(luaState, 3);
+	lua_pop(luaState, 1);
+	
+	error = ERR_OK;
+	cleanup_l:
+
+	lua_pushinteger(luaState, error);
+
 	return 1;
 }

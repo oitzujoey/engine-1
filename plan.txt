@@ -77,6 +77,8 @@ Console will be fully integrated into the engine. No part of it will be in Lua. 
 
 Client config vars will be initialized to whatever is required, but the server will then send additional vars to create. If a var already exists, it will be overwritten.
 
+Client will know its own number.
+
 The entity tree is created not by the engine, but by the Lua script. This allows for the script to either load a map from a file, or do something fancier like procedurally generate the map.
 All objects are stored in a global array.
 All materials are stored in a global array.
@@ -195,6 +197,19 @@ Server receive
     C: Add current state to 
 
 
+Coordinate system:
+    vec3 is specified by "x,y,z".
+    quat is specified by "w,x,y,z".
+    1,0,0 points horizontally along the x axis.
+    0,1,0 points horizontally along the y axis.
+    0,0,1 points vertically along the z axis.
+    Camera:
+        1,0,0,0 points along the x axis. Camera x axis is along the y axis. Camera y axis is along the z axis. This only applies for the 1,0,0,0 orientation.
+
+
+sgame will tell server what models to load. server will tell client what models to load. cgame might be able to check what models are loaded.
+
+
 
 Files to rewrite when it is somewhat working:
     obj
@@ -217,11 +232,11 @@ Files to rewrite when it is somewhat working:
 [/] (Common) Load and parse Wavefront MTL files
 [/] (Common) Load and parse Oolite DAT files
 [/] (Common) Create entity tree from Lua
-    [ ] (Common) Set position and orientation from Lua.
+    [*] (Common) Set position and orientation from Lua.
 [ ] (Server) Send entity tree over the network
     [*] (All) Decide on network protocol
     [*] (Client Server) Send and receive packet over the network.
-    [ ] (Server) Send entity over the network.
+    [ ] (Server) Send entity tree over the network.
 [ ] (Client) Receive entity tree from the network
 [ ] (All)    Get on those TODOs (ugly ones)
 [ ] (Client) Render entity tree in basic 3D using OpenGL

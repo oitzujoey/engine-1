@@ -24,8 +24,10 @@ if cobra3Model ~= -1 then
 	cobra3Entity, error = l_createEntity(type_model)
 	error = l_entity_linkChild(worldEntity, cobra3Entity)
 	error = l_entity_linkChild(cobra3Entity, cobra3Model)
+	l_entity_setPosition(cobra3Entity, {x=20, y=0, z=0})
+	l_entity_setOrientation(cobra3Entity, {w=1, x=0, y=0, z=0})
 	
-	-- l_server_sendState
+	-- l_snetwork_sendEntityTree()
 	-- l_renderEntity(worldEntity, 0.0, 0.0, 1.0, 1.0)
 end
 
@@ -36,6 +38,6 @@ end
 -- integer index = l_createEntity(string name, integer type)
 
 -- // Link the two entities if possible. Non-entity structures are allowed to be linked as long as the type of the entity is set properly.
--- l_entity_addChild(integer parentIndex, integer childIndex)
+-- l_entity_linkChild(integer parentIndex, integer childIndex)
 
 l_log_info("main", "Server quit");

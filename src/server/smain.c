@@ -16,18 +16,20 @@
 #include "../common/entity.h"
 
 luaCFunc_t luaCFunctions[] = {
-	{.func = l_puts,                .name = "l_puts"                },
-	{.func = l_loadObj,             .name = "l_loadObj"             },
-	{.func = l_log_info,            .name = "l_log_info"            },
-	{.func = l_log_warning,         .name = "l_log_warning"         },
-	{.func = l_log_error,           .name = "l_log_error"           },
-	{.func = l_log_critical_error,  .name = "l_log_critical_error"  },
-	{.func = l_vfs_getFileText,     .name = "l_vfs_getFileText"     },
-	{.func = l_obj_loadOoliteDAT,   .name = "l_loadOoliteModel"     },
-	{.func = l_common_toString,     .name = "l_toString"            },
-	{.func = l_entity_createEntity, .name = "l_createEntity"        },
-	{.func = l_entity_linkChild,    .name = "l_entity_linkChild"    },
-	{.func = NULL,                  .name = NULL                    }
+	{.func = l_puts,                    .name = "l_puts"                    },
+	{.func = l_loadObj,                 .name = "l_loadObj"                 },
+	{.func = l_log_info,                .name = "l_log_info"                },
+	{.func = l_log_warning,             .name = "l_log_warning"             },
+	{.func = l_log_error,               .name = "l_log_error"               },
+	{.func = l_log_critical_error,      .name = "l_log_critical_error"      },
+	{.func = l_vfs_getFileText,         .name = "l_vfs_getFileText"         },
+	{.func = l_obj_loadOoliteDAT,       .name = "l_loadOoliteModel"         },
+	{.func = l_common_toString,         .name = "l_toString"                },
+	{.func = l_entity_createEntity,     .name = "l_createEntity"            },
+	{.func = l_entity_linkChild,        .name = "l_entity_linkChild"        },
+	{.func = l_entity_setPosition,      .name = "l_entity_setPosition"      },
+	{.func = l_entity_setOrientation,   .name = "l_entity_setOrientation"   },
+	{.func = NULL,                      .name = NULL                        }
 };
 
 const cfg_var_init_t initialConfigVars[] = {

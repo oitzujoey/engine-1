@@ -3,9 +3,39 @@
 #define BLOCK       EXPRESSION; EXPRESSION; EXPRESSION;
 
 /*
-Functions with no arguments must be declared with "void" as the only argument.
+Struct definitions must be of the form `<structname>_s`.
+Type definitions must be of the form `<typename>_t`.
+Enum definitions must be of the form `<enumname>_e`.
+Labels must be of the form `<label>_l`.
+Globals must be of the form `g_<varname>`. This form differs from the rest
+because it works better with code completion.
+*/
+
+int g_global;
+
+typedef struct struct_s {
+	int element0;
+	int element1;
+} struct_t;
+
+typedef enum enum_e {
+	enum_element_A,
+	enum_element_B,
+	enum_element_C
+} enum_t;
+
+/*
+Functions with no arguments must be declared with `void` as the only argument.
 */
 int main(void) {
+	/*
+	If a function returns an error, `int error` must be declared on the first
+	line.
+	*/
+	int error = 1;
+	
+	int value;
+	
 	/*
 	If statements shall take this form.
 	*/
@@ -30,37 +60,45 @@ int main(void) {
 		EXPRESSION;
 	
 	/*
-	Return values are for errors only. If a function does not return an error,
-	then it should be declared void.
-	*/
-	
-	/*
 	When practical, the string type should be used exclusively.
 	*/
 	
 	/*
 	If a function is defined in a header file, then it is usually best to
-	define it as "<headerfile>_<functionName>"
+	define it as `<headerfile>_<functionName>`
 	*/
 	
 	/*
-	Functions that create something should be named "something_create*".
+	Functions that create something should be named `something_create*`.
 	Functions that setup something that exists should be named
-	"something_init*".
-	Functions that destroy something should be named "something_delete*".
-	Functions that decommission something should be named "something_quit*".
-	Functions that free something should be named "something_free*".
-	*/
-	
-	/*
-	Struct definitions must be of the form "<structname>_s".
-	Type definitions must be of the form "<typename>_t".
-	Enum definitions must be of the form "<enumname>_e".
-	Labels must be of the form "<label>_l".
-	Globals must be of the form "<varname>_g".
+	`something_init*`.
+	Functions that destroy something should be named `something_delete*`.
+	Functions that decommission something should be named `something_quit*`.
+	Functions that free something should be named `something_free*`.
 	*/
 	
 	/*
 	The name of arrays will be plural.
 	*/
+	
+	value = EXPRESSION;
+	if (value != 0) {
+		/*
+		To handle a function-ending error, set `error` and jump to `cleanup_l`.
+		*/
+		error = 1;
+		goto cleanup_l;
+	}
+	
+	/*
+	These two lines must be in every function that returns an error.
+	*/
+	error = 0;
+	cleanup_l:
+	
+	/*
+	Return values are for errors only. If a function does not return an error,
+	then it should be declared void, unless that really doesn't make sense.
+	*/
+	return error;
 }

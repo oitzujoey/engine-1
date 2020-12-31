@@ -39,6 +39,7 @@
         "type_traits": "cpp",
         "utility": "cpp",
         "optional": "c",
-        "system_error": "c"
+        "system_error": "c",
+        "*.txt": "c"
     }
 }

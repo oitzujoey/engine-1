@@ -3,6 +3,7 @@
 #define ENTITY_H
 
 #include <lua.h>
+#include "common.h"
 
 typedef enum entity_childType_e {
 	entity_childType_none,
@@ -15,6 +16,8 @@ typedef struct {
 	int *children;
 	int children_length;
 	entity_childType_t childType;
+	vec3_t position;
+	quat_t orientation;
 } entity_t;
 
 typedef struct {
@@ -36,5 +39,7 @@ int entity_createEntity(int *index, entity_childType_t type);
 
 int l_entity_createEntity(lua_State *luaState);
 int l_entity_linkChild(lua_State *luaState);
+int l_entity_setPosition(lua_State *luaState);
+int l_entity_setOrientation(lua_State *luaState);
 
 #endif

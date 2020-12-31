@@ -4,7 +4,7 @@ SERVER=sengine-1
 CLIENT=cengine-1
 
 CC=gcc
-CFLAGS='-std=c99 -pedantic-errors -Werror'
+CFLAGS='-std=c99 -pedantic-errors -Werror -Wstrict-prototypes'
 CLIBS='-lSDL2 -lSDL2_net -llua -lm'
 
 # Not a command line argument
