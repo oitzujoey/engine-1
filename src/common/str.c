@@ -124,6 +124,8 @@ int string_copy_length_c(string_t *destination, const char *source, int length) 
 	
 	strncpy(destination->value, source, destination->length);
 	destination->value[destination->length] = '\0';
+	
+	return 0;
 }
 
 int string_index_of(const string_t *s, const int index, const char c) {
@@ -306,16 +308,16 @@ int string_removeWhitespace(string_t *line, const char *config) {
 	/* Normalize the resulting string since we did a major surgery on it. */
 	line->value[endlength] = '\0';
 	error = string_normalize(line);
-	if (error)
-		return error;		
+	
+	return error;		
 }
 
 int string_print(string_t *s) {
-	printf(COLOR_CYAN"string: "
-	       COLOR_BLUE"[length] "COLOR_CYAN"%i"COLOR_NORMAL" ; "
-	       COLOR_BLUE"[memsize] "COLOR_CYAN"%i"COLOR_NORMAL" ; "
-	       COLOR_BLUE"[value] "COLOR_CYAN"\"%s\""COLOR_NORMAL"\n",
-	       s->length, s->memsize, s->value);
+	return printf(COLOR_CYAN"string: "
+	              COLOR_BLUE"[length] "COLOR_CYAN"%i"COLOR_NORMAL" ; "
+	              COLOR_BLUE"[memsize] "COLOR_CYAN"%i"COLOR_NORMAL" ; "
+	              COLOR_BLUE"[value] "COLOR_CYAN"\"%s\""COLOR_NORMAL"\n",
+	              s->length, s->memsize, s->value);
 }
 
 // /*

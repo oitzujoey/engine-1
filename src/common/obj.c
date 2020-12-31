@@ -145,7 +145,6 @@ int obj_loadOoliteDAT(const string_t *filePath, int *index) {
 
 	string_t fileText;
 	string_t line;
-	int lineStartIndex;
 	int tempIndex0;
 	int tempIndex1;
 	int datProgress = 0;
@@ -195,8 +194,6 @@ int obj_loadOoliteDAT(const string_t *filePath, int *index) {
 	
 	/* Go through each line in file. */
 	
-	lineStartIndex = 0;
-
 	for (int lineNumber = 1;; lineNumber++) {
 		
 		/* Get the line. */
@@ -587,27 +584,25 @@ int l_obj_loadOoliteDAT(lua_State *luaState) {
 /* MTL */
 /* === */
 
-static int mtl_parsestring(mtl_t *mtl, const char *string) {
-}
+// static int mtl_parsestring(mtl_t *mtl, const char *string) {
+// }
 
-static int mtl_print(mtl_t *mtl) {
-}
+// static int mtl_print(mtl_t *mtl) {
+// }
 
-static int mtl_init(mtl_t *mtl) {
-}
+// static int mtl_init(mtl_t *mtl) {
+// }
 
-static int mtl_free(mtl_t *mtl) {
-}
+// static int mtl_free(mtl_t *mtl) {
+// }
 
 int obj_loadMTL(obj_t *obj) {
 	
 	string_t fileText;
 	string_t filePath;
 	int localError = 0;
-	int materialsInFile = 0;
 	/* This is not really a string. It should never be init or freed. */
 	string_t line;
-	int newlineIndex;
 	int tempIndex;
 	bool acceptCommands = false;
 	string_t command;
@@ -1051,7 +1046,7 @@ int obj_parsestring(obj_t *obj, const char *string) {
 	}
 }
 
-int obj_print(obj_t *obj) {
+void obj_print(obj_t *obj) {
 
 	log_info(__func__, "Dumping object \"%s\"", (obj->object_name.value == NULL) ? "(null)" : obj->object_name.value);
 
@@ -1104,9 +1099,23 @@ int obj_print(obj_t *obj) {
 }
 
 int obj_init(obj_t *obj) {
-	string_init(&obj->material_library);
+	int error = 0;
+	
+	error = string_init(&obj->material_library);
+	if (error) {
+		goto cleanup_l;
+	}
+	
 	string_init(&obj->object_name);
+	if (error) {
+		goto cleanup_l;
+	}
+	
 	string_init(&obj->material_name);
+	if (error) {
+		goto cleanup_l;
+	}
+	
 	obj->geometric_vertices = NULL;
 	obj->geometric_vertices_length = 0;
 	obj->texture_vertices = NULL;
@@ -1116,6 +1125,11 @@ int obj_init(obj_t *obj) {
 	obj->facesets = NULL;
 	obj->facesets_length = 0;
 	obj->smoothing_group = -1;
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
 }
 
 int obj_free(obj_t *obj) {

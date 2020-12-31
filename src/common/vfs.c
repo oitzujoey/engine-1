@@ -95,6 +95,6 @@ int vfs_init(vfs_t *vfs, const string_t *path) {
 	return ERR_OK;
 }
 
-int vfs_free(vfs_t *vfs) {
+void vfs_free(vfs_t *vfs) {
 	string_free(&vfs->path);
 }

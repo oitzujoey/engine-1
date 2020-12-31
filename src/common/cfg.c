@@ -268,7 +268,6 @@ int cfg_initVars(const cfg_var_init_t *initCfgList) {
 }
 
 int cfg_printVar(cfg_var_t *var, const char *tag) {
-	string_t value;
 
 	if (!cfg.lock || (var->permissions & CFG_VAR_PERMISSION_READ)) {
 		switch (var->type) {
@@ -282,7 +281,7 @@ int cfg_printVar(cfg_var_t *var, const char *tag) {
 				printf(COLOR_CYAN"%s: "COLOR_BLUE"[%s]"COLOR_CYAN" %i"COLOR_NORMAL"\n", tag, var->name, var->integer);
 				break;
 			case string:
-				printf(COLOR_CYAN"%s: "COLOR_BLUE"[%s]"COLOR_CYAN" \"%s\""COLOR_NORMAL"\n", tag, var->name, var->string);
+				printf(COLOR_CYAN"%s: "COLOR_BLUE"[%s]"COLOR_CYAN" \"%s\""COLOR_NORMAL"\n", tag, var->name, var->string.value);
 				break;
 			default:
 				log_error(__func__, "Can't happen");
@@ -552,8 +551,6 @@ int cfg_execFile(const char *filepath) {
 			// break;
 		}
 	}
-	
-	error_label:
 	
 	string_free(&line);
 	fclose(file);

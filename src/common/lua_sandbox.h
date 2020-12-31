@@ -13,6 +13,6 @@ typedef struct {
 } luaCFunc_t;
 
 int lua_sandbox_init(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename);
-int lua_sandbox_quit(lua_State **Lua);
+void lua_sandbox_quit(lua_State **Lua);
 
 #endif

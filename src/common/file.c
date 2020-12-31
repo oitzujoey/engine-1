@@ -222,7 +222,6 @@ int file_pathIsInDirectory(const string_t * const filePath, const string_t * con
 	string_t filePathCopy;
 	string_t workspaceCopy;
 	int result;
-	int localError = 0;
 	/* Sounds so mathematical, but it's not. */
 	int divergenceIndex;
 	

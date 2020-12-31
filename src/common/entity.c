@@ -288,7 +288,6 @@ int l_entity_setPosition(lua_State *luaState) {
 	lua_pop(luaState, 1);
 	
 	error = ERR_OK;
-	cleanup_l:
 
 	lua_pushinteger(luaState, error);
 	
@@ -344,7 +343,6 @@ int l_entity_setOrientation(lua_State *luaState) {
 	lua_pop(luaState, 1);
 	
 	error = ERR_OK;
-	cleanup_l:
 
 	lua_pushinteger(luaState, error);
 

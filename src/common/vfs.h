@@ -26,6 +26,6 @@ typedef struct {
 int vfs_getFileText(vfs_t *vfs, string_t *fileText, const string_t *workspace_path);
 int l_vfs_getFileText(lua_State *luaState);
 int vfs_init(vfs_t *vfs, const string_t *path);
-int vfs_free(vfs_t *vfs);
+void vfs_free(vfs_t *vfs);
 
 #endif

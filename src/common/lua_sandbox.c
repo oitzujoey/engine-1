@@ -61,7 +61,7 @@ int lua_sandbox_init(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename) 
     return 0;
 }
 
-int lua_sandbox_quit(lua_State **Lua) {
+void lua_sandbox_quit(lua_State **Lua) {
     lua_close(*Lua);
 }
 

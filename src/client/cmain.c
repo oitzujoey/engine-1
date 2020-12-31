@@ -162,7 +162,6 @@ void main_quit(void) {
 int main (int argc, char *argv[]) {
 
 	int error = 0;
-	lua_State *Lua;
 	string_t data;
 	
 	puts("Starting engine-1 v0.0 (Client)");

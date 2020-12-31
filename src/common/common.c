@@ -12,10 +12,6 @@ int l_puts(lua_State *Lua) {
     return 0;
 }
 
-int com_sprintf(lua_State *Lua) {
-    
-}
-
 int MSB(int n) {
 	int i;
 	
