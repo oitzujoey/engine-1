@@ -1,0 +1,39 @@
+Second game?
+
+Surface attributes
+	Friction
+	Bounciness (OVERCLIP)
+	Collision type (Noclip, Clip, Overbounce)
+	
+collideNoclip:
+
+collideClip:
+	if (norm(velocity) == 0.0) {
+		return
+	}
+	velocity -= (1.0 + surface.bounciness) * dotProduct(velocity, surface.normal) * velocity / norm(velocity)
+
+collideOverbounce:
+	originalSpeed = norm(velocity)
+	if (originalSpeed == 0) {
+		return
+	}
+	velocity -= dotProduct(velocity, surface.normal) * velocity / norm(velocity)
+	error = normalize(velocity)
+	if (error) {
+		// Do something fun!
+	}
+	velocity *= originalSpeed * surface.bounciness
+
+applyFriction:
+	wish = normalize(wish)
+	projection = dotProduct(wish, velocity) * wish
+	normalProjection = velocity - projection
+	velocity -= normalProjection * surface.friction
+	speed = norm(velocity)
+	if (speed > maxSpeed) {
+		speed -= max(speed - surface.friction, maxSpeed)
+		velocity -= projection
+		normalize(projection)
+		velocity += speed * projection
+	}
