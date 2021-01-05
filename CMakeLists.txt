@@ -10,7 +10,7 @@ project(engine-1
 set(CMAKE_BUILD_TYPE Debug)
 
 if(CMAKE_BUILD_TYPE STREQUAL Debug)
-	add_compile_options(-std=c99 -pedantic-errors -Werror -Wall -DDEBUG -g -O0)
+	add_compile_options(-std=c99 -pedantic-errors -Werror -Wall -Wstrict-prototypes -DDEBUG -g -O0)
 else()
 	add_compile_options(-std=c99 -O3)
 endif()

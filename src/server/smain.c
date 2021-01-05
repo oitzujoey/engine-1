@@ -41,7 +41,7 @@ const cfg_var_init_t initialConfigVars[] = {
 	{.name = NULL,              .vector = 0,    .integer = 0,                   .string = NULL, .type = none,       .permissions = CFG_VAR_PERMISSION_NONE}
 };
 
-static int main_init() {
+static int main_init(void) {
 
 	int error = 0;
 	
