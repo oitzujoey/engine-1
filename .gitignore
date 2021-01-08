@@ -4,3 +4,5 @@ cengine-1
 valgrind.log
 vgcore.*
 oolite-binary-resources
+CMakeFiles
+.vscode
