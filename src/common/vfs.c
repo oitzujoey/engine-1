@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <dirent.h>
-#include <zip.h>
 #include "common.h"
 #include "file.h"
 #include "log.h"

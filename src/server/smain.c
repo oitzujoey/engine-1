@@ -59,6 +59,23 @@ int l_main_checkQuit(lua_State *luaState) {
 int l_main_housekeeping(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
+	char sendString[100];
+	IPaddress ipAddress;
+	
+	/* Send packet. */
+	
+	error = SDLNet_ResolveHost(&ipAddress, "localhost", cfg_findVar("client_port")->integer);
+	if (error != 0) {
+		critical_error("SDLNet_ResolveHost returned %s", SDL_GetError());
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	strcpy(sendString, "Hello, world!");
+	network_sendReliablePacket(g_serverSocket, ipAddress, (Uint8 *) sendString, strlen(sendString) + 1);
+	
+	/* Do terminal stuff */
+	
 	error = cfg_runTerminalCommand();
 	goto cleanup_l;
 	
@@ -128,8 +145,6 @@ int main(int argc, char *argv[]) {
 	cfg_var_t *lua_main_v;
 	cfg_var_t *workspace_v;
 	string_t tempString;
-	IPaddress ipAddress;
-	char sendString[100];
 	
 	log_info(__func__, "Starting engine-1 v0.0 (Server)");
 	
@@ -216,26 +231,6 @@ int main(int argc, char *argv[]) {
 	string_copy(&luaFilePath, &workspace_v->string);
 	file_concatenatePath(&luaFilePath, &lua_main_v->string);
 	file_concatenatePath(&luaFilePath, string_const(luaFileName));
-	
-	error = SDLNet_ResolveHost(&ipAddress, "localhost", cfg_findVar("client_port")->integer);
-	if (error != 0) {
-		critical_error("SDLNet_ResolveHost returned %s", SDL_GetError());
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	strcpy(sendString, "Hello, world!");
-	network_sendReliablePacket(g_serverSocket, ipAddress, (Uint8 *) sendString, strlen(sendString) + 1);
-	
-	strcpy(sendString, "What hath God wrought?");
-	network_sendReliablePacket(g_serverSocket, ipAddress, (Uint8 *) sendString, strlen(sendString) + 1);
-	
-	strcpy(sendString, "Gotta kill 'em all!");
-	network_sendReliablePacket(g_serverSocket, ipAddress, (Uint8 *) sendString, strlen(sendString) + 1);
-	
-	strcpy(sendString, "How about a nice game of chess?");
-	network_sendReliablePacket(g_serverSocket, ipAddress, (Uint8 *) sendString, strlen(sendString) + 1);
-	
 	
 	// l_snetwork_send((Uint8 *) "Hello, world!", strlen("Hello, world!") + 1, ipAddress);
 	

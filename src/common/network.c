@@ -94,17 +94,17 @@ int network_receiveReliablePacket(UDPsocket socket, uint8_t **data, int *length)
 		
 		memcpy(*data, dataPointer, *length);
 		
-		printf(
-			"ID: %i\n"
-			"ID ACK: %i\n"
-			"Flags: %X\n"
-			"String: %s\n"
-			"\n",
-			reliablePacket.id,
-			reliablePacket.idAck,
-			reliablePacket.flags,
-			*data
-		);
+		// printf(
+		// 	"ID: %i\n"
+		// 	"ID ACK: %i\n"
+		// 	"Flags: %X\n"
+		// 	"String: %s\n"
+		// 	"\n",
+		// 	reliablePacket.id,
+		// 	reliablePacket.idAck,
+		// 	reliablePacket.flags,
+		// 	*data
+		// );
 		
 		// Check for missed packets.
 		for (; idCheck < reliablePacket.id; idCheck++) {
