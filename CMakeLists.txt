@@ -15,6 +15,8 @@ else()
 	add_compile_options(-std=c99 -O3)
 endif()
 
+add_compile_options(-DLINUX)
+
 add_executable(sengine-1)
 add_executable(cengine-1)
 

@@ -13,17 +13,28 @@ typedef enum cfg_var_type_e {
 	string
 } cfg_var_type_t;
 
-#define CFG_VAR_PERMISSION_NONE         (0)
-#define CFG_VAR_PERMISSION_READ         (1<<0)
-#define CFG_VAR_PERMISSION_WRITE        (1<<1)
-#define CFG_VAR_PERMISSION_DELETE       (1<<2)
-#define CFG_VAR_PERMISSION_PERMISSION   (1<<3)
+#define CFG_VAR_FLAG_NONE       (0)
+#define CFG_VAR_FLAG_READ       (1<<0)
+#define CFG_VAR_FLAG_WRITE      (1<<1)
+#define CFG_VAR_FLAG_DELETE     (1<<2)
+#define CFG_VAR_FLAG_PERMISSION (1<<3)
+#define CFG_VAR_FLAG_PROTECTED  (1<<4)
 #define CFG_VAR_PERMISSION_ALL          ( \
-											CFG_VAR_PERMISSION_READ     | \
-											CFG_VAR_PERMISSION_WRITE    | \
-											CFG_VAR_PERMISSION_DELETE   | \
-											CFG_VAR_PERMISSION_PERMISSION \
+											CFG_VAR_FLAG_READ       | \
+											CFG_VAR_FLAG_WRITE      | \
+											CFG_VAR_FLAG_DELETE     | \
+											CFG_VAR_FLAG_PERMISSION   \
 										)
+
+typedef struct cfg_var_s {
+	char *name;
+	vec_t vector;
+	int integer;
+	string_t string;
+	cfg_var_type_t type;
+	unsigned int permissions;
+	int (*handle)(struct cfg_var_s *var);
+} cfg_var_t;
 
 typedef struct {
 	char *name;
@@ -32,24 +43,27 @@ typedef struct {
 	char *string;
 	cfg_var_type_t type;
 	unsigned int permissions;
+	int (*handle)(cfg_var_t *var);
 } cfg_var_init_t;
 
 typedef struct {
-	char *name;
-	vec_t vector;
-	int integer;
-	string_t string;
-	cfg_var_type_t type;
-	unsigned int permissions;
-} cfg_var_t;
-
-typedef struct {
 	bool lock;
+	bool quit;
 	cfg_var_t *vars;
 	int vars_length;
 } cfg_t;
 
-extern cfg_t cfg;
+#define CFG_NUM_COMMANDS    19
+typedef struct {
+	char *commands[CFG_NUM_COMMANDS];
+	int arguments_min[CFG_NUM_COMMANDS];
+	int arguments_max[CFG_NUM_COMMANDS];
+	int frequency[CFG_NUM_COMMANDS];
+	int length;
+} cfg_commandList_t;
+
+extern cfg_t g_cfg;
+extern string_t g_consoleCommand;
 
 int cfg_initVars(const cfg_var_init_t *initCfgList);
 cfg_var_t *cfg_addVarNone(const char *name);
@@ -67,8 +81,20 @@ int cfg_deleteVar(cfg_var_t *var);
 int cfg_printVar(cfg_var_t *var, const char *tag);
 
 /* tag is what is shown when the script prints a message. */
-int cfg_execString(const string_t *line, const char *tag);
-int cfg_execFile(const char *filepath);
+int cfg_execString(const string_t *line, const char *tag, const int recursionDepth);
+int cfg_execFile(const char *filepath, const int recursionDepth);
+
 void cfg_free(void);
+
+int cfg_terminalInit(void);
+int cfg_runTerminalCommand(void);
+
+int cfg_addLineToHistory(const string_t *line);
+int cfg_getHistoryLine(string_t *line, int *index);
+int cfg_initConsole(void);
+void cfg_quitConsole(void);
+
+int cfg_handle_updateCommandHistoryLength(cfg_var_t *var);
+int cfg_handle_maxRecursion(cfg_var_t *var);
 
 #endif

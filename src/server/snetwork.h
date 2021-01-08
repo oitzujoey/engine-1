@@ -12,7 +12,8 @@ typedef struct {
 	UDPsocket socket;
 } client_t;
 
-extern client_t clients_g[MAX_CLIENTS];
+extern client_t g_clients[MAX_CLIENTS];
+extern UDPsocket g_serverSocket;
 
 int l_snetwork_send(const uint8_t *data, int length, IPaddress ipAddress);
 int snetwork_init(void);

@@ -19,6 +19,8 @@ modelPath = "oolite-binary-resources/Models/"
 HullTexture = "oolite_cobra3_diffuse.png"
 GunTexture = "oolite_cobra3_subents.png"
 
+l_log_info("main", "Loading world tree")
+
 cobra3Model, error = l_loadOoliteModel(modelPath .. "oolite_cobra3.dat")
 if cobra3Model ~= -1 then
 	cobra3Entity, error = l_createEntity(type_model)
@@ -39,5 +41,11 @@ end
 
 -- // Link the two entities if possible. Non-entity structures are allowed to be linked as long as the type of the entity is set properly.
 -- l_entity_linkChild(integer parentIndex, integer childIndex)
+
+l_log_info("main", "Starting game")
+
+while l_checkQuit() == 0 do
+	l_main_housekeeping()
+end
 
 l_log_info("main", "Server quit");

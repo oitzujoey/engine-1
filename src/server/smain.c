@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <SDL2/SDL.h>
 #include "../common/common.h"
 #include "../common/lua_sandbox.h"
@@ -14,6 +15,10 @@
 #include "snetwork.h"
 #include "../common/lua_common.h"
 #include "../common/entity.h"
+#include "../common/network.h"
+
+int l_main_housekeeping(lua_State *luaState);
+int l_main_checkQuit(lua_State *luaState);
 
 luaCFunc_t luaCFunctions[] = {
 	{.func = l_puts,                    .name = "l_puts"                    },
@@ -29,21 +34,47 @@ luaCFunc_t luaCFunctions[] = {
 	{.func = l_entity_linkChild,        .name = "l_entity_linkChild"        },
 	{.func = l_entity_setPosition,      .name = "l_entity_setPosition"      },
 	{.func = l_entity_setOrientation,   .name = "l_entity_setOrientation"   },
+	{.func = l_main_housekeeping,       .name = "l_main_housekeeping"       },
+	{.func = l_main_checkQuit,          .name = "l_checkQuit"               },
 	{.func = NULL,                      .name = NULL                        }
 };
 
 const cfg_var_init_t initialConfigVars[] = {
-	{.name = "server",          .vector = 0,    .integer = 0,                   .string = NULL, .type = none,       .permissions = CFG_VAR_PERMISSION_NONE},
-	{.name = "lua_main",        .vector = 0,    .integer = 0,                   .string = "",   .type = string,     .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = "workspace",       .vector = 0,    .integer = 0,                   .string = "",   .type = string,     .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = "server_port",     .vector = 0,    .integer = DEFAULT_PORT_NUMBER, .string = "",   .type = integer,    .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = "client_port",     .vector = 0,    .integer = DEFAULT_PORT_NUMBER, .string = "",   .type = integer,    .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = NULL,              .vector = 0,    .integer = 0,                   .string = NULL, .type = none,       .permissions = CFG_VAR_PERMISSION_NONE}
+	{.name = "server",              .vector = 0,    .integer = 0,                           .string = NULL, .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
+	{.name = "lua_main",            .vector = 0,    .integer = 0,                           .string = "",   .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = "workspace",           .vector = 0,    .integer = 0,                           .string = "",   .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = "server_port",         .vector = 0,    .integer = DEFAULT_PORT_NUMBER,         .string = "",   .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = "client_port",         .vector = 0,    .integer = DEFAULT_PORT_NUMBER,         .string = "",   .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_MAX_RECURSION,     .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,   .string = "",   .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_RUN_QUIET,         .vector = 0,    .integer = false,                       .string = "",   .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
+	{.name = CFG_HISTORY_LENGTH,    .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,  .string = "",   .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
+	{.name = NULL,                  .vector = 0,    .integer = 0,                           .string = NULL, .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
 };
 
-static int main_init(void) {
+int l_main_checkQuit(lua_State *luaState) {
+	lua_pushinteger(luaState, g_cfg.quit);
+	return 1;
+}
 
-	int error = 0;
+int l_main_housekeeping(lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	error = cfg_runTerminalCommand();
+	goto cleanup_l;
+	
+	error = ERR_OK;
+	cleanup_l:
+	if (error) {
+		g_cfg.quit = true;
+	}
+	
+	return 0;
+}
+
+static int main_init(void) {
+	int error = ERR_CRITICAL;
+	
+	string_init(&g_consoleCommand);
 	
 	/*  As of SDL v2.0.14:
 		Allocates 220 bytes that SDL_Quit doesn't free.
@@ -62,8 +93,18 @@ static int main_init(void) {
 	
 	entity_initEntityList();
 	modelList_init();
+	
+	error = cfg_terminalInit();
+	if (error) {
+		critical_error("Could not initialize the terminal", "");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
 
-	return ERR_OK;
+	return error;
 }
 
 static void main_quit(void) {
@@ -74,6 +115,8 @@ static void main_quit(void) {
 	snetwork_quit();
 	
 	SDL_Quit();
+	
+	string_free(&g_consoleCommand);
 }
 
 int main(int argc, char *argv[]) {
@@ -86,6 +129,7 @@ int main(int argc, char *argv[]) {
 	cfg_var_t *workspace_v;
 	string_t tempString;
 	IPaddress ipAddress;
+	char sendString[100];
 	
 	log_info(__func__, "Starting engine-1 v0.0 (Server)");
 	
@@ -104,16 +148,31 @@ int main(int argc, char *argv[]) {
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
+	
+	error = cfg_initConsole();
+	if (error) {
+		goto cleanup_l;
+	}
 
 	if (file_exists(AUTOEXEC)) {
 		log_info(__func__, "Found \""AUTOEXEC"\"");
-		cfg_execFile(AUTOEXEC);
+		cfg_execFile(AUTOEXEC, 0);
 	}
 
 	if (argc > 1) {
 		for (int i = 1; i < argc; i++) {
 			string_copy_c(&tempString, argv[i]);
-			cfg_execString(&tempString, "Console");
+			error = cfg_execString(&tempString, "Console", 0);
+			if (error == ERR_OUTOFMEMORY) {
+				critical_error("Out of memory", "");
+				goto cleanup_l;
+			}
+			if (error == ERR_CRITICAL) {
+				goto cleanup_l;
+			}
+			if (error) {
+				break;
+			}
 		}
 	}
 	
@@ -165,15 +224,35 @@ int main(int argc, char *argv[]) {
 		goto cleanup_l;
 	}
 	
-	l_snetwork_send((Uint8 *) "Hello, world!", strlen("Hello, world!") + 1, ipAddress);
+	strcpy(sendString, "Hello, world!");
+	network_sendReliablePacket(g_serverSocket, ipAddress, (Uint8 *) sendString, strlen(sendString) + 1);
+	
+	strcpy(sendString, "What hath God wrought?");
+	network_sendReliablePacket(g_serverSocket, ipAddress, (Uint8 *) sendString, strlen(sendString) + 1);
+	
+	strcpy(sendString, "Gotta kill 'em all!");
+	network_sendReliablePacket(g_serverSocket, ipAddress, (Uint8 *) sendString, strlen(sendString) + 1);
+	
+	strcpy(sendString, "How about a nice game of chess?");
+	network_sendReliablePacket(g_serverSocket, ipAddress, (Uint8 *) sendString, strlen(sendString) + 1);
+	
+	
+	// l_snetwork_send((Uint8 *) "Hello, world!", strlen("Hello, world!") + 1, ipAddress);
+	
+	if (g_cfg.quit) {
+		error = ERR_OK;
+		goto cleanup_l;
+	}
 	
 	/* Before we begin, lock the restricted variables. */
-	cfg.lock = true;
+	g_cfg.lock = true;
 	
 	log_info(__func__, "Executing \"%s\"", luaFilePath.value);
 	error = lua_sandbox_init(&Lua, luaCFunctions, luaFilePath.value);
 	if (error) {
 		log_critical_error(__func__, "Could not start Lua server");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
 	}
 	
 	lua_sandbox_quit(&Lua);
@@ -185,6 +264,7 @@ int main(int argc, char *argv[]) {
 	
 	vfs_free(&g_vfs);
 	
+	cfg_quitConsole();
 	cfg_free();
 	
 	string_free(&luaFilePath);

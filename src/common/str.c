@@ -13,10 +13,13 @@ int string_realloc(string_t *s) {
 	// if (s->memsize < msb) {
 	// 	s->memsize = msb;
 	// }
-	s->memsize = MSB(s->length) + 1;
-	s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
-	if (s->value == NULL) {
-		return ERR_OUTOFMEMORY;
+	int memSize = MSB(s->length) + 1;
+	if (s->memsize != memSize) {
+		s->memsize = memSize;
+		s->value = (char *) realloc(s->value, (1<<s->memsize) * sizeof(char));
+		if (s->value == NULL) {
+			return ERR_OUTOFMEMORY;
+		}
 	}
 	return ERR_OK;
 }
@@ -46,7 +49,9 @@ int string_init(string_t *s) {
 }
 
 void string_free(string_t *s) {
-	insane_free(s->value);
+	if (s != NULL && s->value != NULL) {
+		insane_free(s->value);
+	}
 }
 
 int string_copy_c(string_t *destination, const char *source) {
@@ -220,7 +225,7 @@ int string_count_c(const string_t *s, const char *c) {
 
 /* Remove comments */
 int string_removeLineComments(string_t *line, const char *linecomment) {
-	int error = ERR_OK;
+	// int error = ERR_OK;
 	
 	char *commentStart = strstr(line->value, linecomment);
 	if (commentStart == NULL) {
@@ -228,10 +233,13 @@ int string_removeLineComments(string_t *line, const char *linecomment) {
 	}
 
 	/* Remove comments. */
-	error = string_substring(line, line, 0, commentStart - line->value);
-	if (error > 2) {
-		return error;
-	}
+	// Don't require a free.
+	line->length = commentStart - line->value;
+	line->value[line->length] = '\0';
+	// error = string_substring(line, line, 0, commentStart - line->value);
+	// if (error > 2) {
+	// 	return error;
+	// }
 
 	return ERR_OK;
 }
@@ -307,7 +315,10 @@ int string_removeWhitespace(string_t *line, const char *config) {
 	
 	/* Normalize the resulting string since we did a major surgery on it. */
 	line->value[endlength] = '\0';
-	error = string_normalize(line);
+	
+	// Don't require a free.
+	line->length = strlen(line->value);
+	// error = string_normalize(line);
 	
 	return error;		
 }

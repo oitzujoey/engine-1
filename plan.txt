@@ -210,6 +210,111 @@ Coordinate system:
 sgame will tell server what models to load. server will tell client what models to load. cgame might be able to check what models are loaded.
 
 
+~100 packets/second - Determined by server variable. Server will send this value to the client.
+~1000 millisecond timeout - Determined by server variable. Server will send this value to the client.
+1400 MTU - Determined by server and client variables.
+
+UDPv4 {
+    16'source_port
+    16'destination_port
+    16'length
+    16'checksum
+    ?8'data
+}
+
+flags {
+    1'encrypted
+    1'compressed
+    1'subtracted
+}
+
+server_data {
+    8'command
+}
+
+client_data {
+    8'command
+}
+
+server_header {
+    16'id
+    16'id_ack
+    16'flags
+    ?8'server_data
+}
+
+client_header {
+    16'id
+    16'id_ack
+    16'flags
+    ?8'client_data
+}
+
+if server {
+    UDPv4.data:server_header
+}
+
+if client {
+    UDPv4.data:client_header
+}
+
+Client commands:
+    Dummy
+    Join
+    Set game input [float mouseX] [float mouseY] [bool keys[]] // The length of keys is NUMBER_OF_KEYS
+    Disconnect
+    Server console command [char command[]]
+    Raw to lua [uint8_t message[]]
+    Error
+    
+Server commands:
+    Dummy
+    Negotiate private key
+    Enable encryption
+    Set entity state [entityList_t entityList] [entity_t entityList.entities[]] [int entityList.deletedEntities[]] // Length of both arrays is stored in the entity list.
+    Play sound [int soundNumber]
+    Client console command [int length] [char command[]] // Not null terminated
+    Raw to lua [int length] [uint8_t message[]] // Not null terminated
+    Error
+
+Dummy commands are too keep the connection alive when no data is being sent.
+id_ack is the id of the message that is being referenced by the sender. The receiver must add this message to the just received one.
+id & id_ack start at 0 and count up to ID_MAX. The value will then overflow to zero. ID_MAX and the timeout must be chosen such that id will not cycle through the entire sequence before a timeout occurs.
+If a timeout occurs, 
+
+init
+    send "hello"
+    negotiate key
+
+send data
+    message = send_queue.pop()
+    sent_messages.push(message)
+    message = subtract(message, last_acknowledged(received_messages))
+    compress message
+    encrypt message
+    send message
+    
+receive data
+    receive message
+    decrypt message
+    inflate message
+    message = add(message, sent_messages[message.id_ack])
+    set_acknowledge(received_messages[message.id_ack])
+    received_messages.push(message)
+
+Order is important. If the fields aren't set in the proper order, the subtraction trick won't work.
+0.  Headers + Flags
+<Start encryption>
+1.  Entity state
+*.  Misc commands
+<End encryption>
+-0. Signature
+
+
+The purpose of config scripts is to set variables required to get the game running.
+The purpose of the console is to do basic configuration of the client and server, however, making it an extensive debugging tool will also be a priority. 
+
+
 
 Files to rewrite when it is somewhat working:
     obj
@@ -236,6 +341,7 @@ Files to rewrite when it is somewhat working:
 [ ] (Server) Send entity tree over the network
     [*] (All) Decide on network protocol
     [*] (Client Server) Send and receive packet over the network.
+    [ ] (Client Server) Sand and receive packets reliably over the network.
     [ ] (Server) Send entity tree over the network.
 [ ] (Client) Receive entity tree from the network
 [ ] (All)    Get on those TODOs (ugly ones)
@@ -256,3 +362,6 @@ Files to rewrite when it is somewhat working:
 -----------------------------------------------
 [ ] (Client) Attach camera to moving entity
 -------------------------------------------
+
+Expected leaks:
+    220B    SDL_Init()

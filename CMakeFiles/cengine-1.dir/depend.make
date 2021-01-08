@@ -10,6 +10,7 @@ CMakeFiles/cengine-1.dir/src/client/cmain.c.o: src/common/common.h
 CMakeFiles/cengine-1.dir/src/client/cmain.c.o: src/common/file.h
 CMakeFiles/cengine-1.dir/src/client/cmain.c.o: src/common/log.h
 CMakeFiles/cengine-1.dir/src/client/cmain.c.o: src/common/lua_sandbox.h
+CMakeFiles/cengine-1.dir/src/client/cmain.c.o: src/common/network.h
 CMakeFiles/cengine-1.dir/src/client/cmain.c.o: src/common/str.h
 CMakeFiles/cengine-1.dir/src/client/cmain.c.o: src/common/vfs.h
 
@@ -81,6 +82,12 @@ CMakeFiles/cengine-1.dir/src/common/lua_sandbox.c.o: src/common/lua_sandbox.c
 CMakeFiles/cengine-1.dir/src/common/lua_sandbox.c.o: src/common/lua_sandbox.h
 CMakeFiles/cengine-1.dir/src/common/lua_sandbox.c.o: src/common/str.h
 CMakeFiles/cengine-1.dir/src/common/lua_sandbox.c.o: src/common/vfs.h
+
+CMakeFiles/cengine-1.dir/src/common/network.c.o: src/common/common.h
+CMakeFiles/cengine-1.dir/src/common/network.c.o: src/common/network.c
+CMakeFiles/cengine-1.dir/src/common/network.c.o: src/common/network.h
+CMakeFiles/cengine-1.dir/src/common/network.c.o: src/common/str.h
+CMakeFiles/cengine-1.dir/src/common/network.c.o: src/common/vfs.h
 
 CMakeFiles/cengine-1.dir/src/common/obj.c.o: src/common/cfg.h
 CMakeFiles/cengine-1.dir/src/common/obj.c.o: src/common/common.h

@@ -145,9 +145,10 @@ int obj_loadOoliteDAT(const string_t *filePath, int *index) {
 
 	string_t fileText;
 	string_t line;
-	int tempIndex0;
-	int tempIndex1;
+	char *tempPointer0;
+	char *tempPointer1;
 	int datProgress = 0;
+	char *newlinePointer;
 	
 	enum {
 		mode_start,
@@ -178,9 +179,16 @@ int obj_loadOoliteDAT(const string_t *filePath, int *index) {
 	datProgress |= 1<<mode_start;
 	
 	string_init(&fileText);
-	string_init(&line);
+	// string_init(&line);
+	line.value = NULL;
+	line.length = 0;
+	line.memsize = 0;
+	
 	for (int i = 0; i < maxArgs; i++) {
-		string_init(&argv[i]);
+		// string_init(&argv[i]);
+		argv[i].value = NULL;
+		argv[i].length = 0;
+		argv[i].memsize = 0;
 	}
 
 	/* Get text from file. */
@@ -192,41 +200,36 @@ int obj_loadOoliteDAT(const string_t *filePath, int *index) {
 		goto cleanup_l;
 	}
 	
+	/* Convert all \r to \n. */
+	for (int i = 0; i < fileText.length; i++) {
+		if (fileText.value[i] == '\r') {
+			fileText.value[i] = '\n';
+		}
+	}
+	
 	/* Go through each line in file. */
 	
 	for (int lineNumber = 1;; lineNumber++) {
 		
 		/* Get the line. */
 		
-		// I'm pretty sure this is way more complicated than it need to be.`
 		if (lineNumber == 1) {
-			tempIndex1 = string_index_of(&fileText, 0, '\n');
-			if (tempIndex1 < 0) {
-				tempIndex1 = -1;
-			}
-			else {
-				--tempIndex1;
-			}
-			string_substring(&line, &fileText, 0, tempIndex1);
+			line.value = fileText.value;
 		}
 		else {
-			tempIndex0 = string_index_of(&fileText, lineNumber - 2, '\n');
-			if (tempIndex0 < 0) {
-				// End of file.
+			line.value = newlinePointer + 1;
+			if (line.value > fileText.value + fileText.length) {
 				break;
 			}
-			// Get past the newline.
-			tempIndex0++;
-			
-			tempIndex1 = string_index_of(&fileText, lineNumber - 1, '\n');
-			if (tempIndex1 < 0) {
-				tempIndex1 = -1;
-			}
-			else {
-				--tempIndex1;
-			}
-			string_substring(&line, &fileText, tempIndex0, tempIndex1 - tempIndex0);
 		}
+		
+		newlinePointer = strchr(line.value, '\n');
+		if (newlinePointer == NULL) {
+			newlinePointer = fileText.value + fileText.length;
+		}
+		
+		line.length = newlinePointer - line.value;
+		line.value[line.length] = '\0';
 		
 		/* Remove comments and unnecessary whitespace. */
 		
@@ -255,22 +258,19 @@ int obj_loadOoliteDAT(const string_t *filePath, int *index) {
 		
 		for (int i = 0; i < argc; i++) {
 			
-			tempIndex0 = string_index_of(&line, i - 1, ' ');
-			tempIndex1 = string_index_of(&line, i, ' ');
-			if (i != 0) {
-				tempIndex0++;
+			if (i == 0)  {
+				tempPointer0 = line.value;
 			}
-			error = string_substring(&argv[i], &line, tempIndex0, tempIndex1 - tempIndex0);
+			tempPointer1 = strchr(tempPointer0, ' ');
+			if (tempPointer1 == NULL) {
+				tempPointer1 = line.value + line.length;
+			}
 			
-			// Substring errors are ridiculous. I really need to redo them.
-			if (error >= 4) {
-				error = ERR_OUTOFMEMORY;
-				goto cleanup_l;
-			}
-			if (error) {
-				error = ERR_GENERIC;
-				goto cleanup_l;
-			}
+			argv[i].value = tempPointer0;
+			argv[i].length = tempPointer1 - tempPointer0;
+			argv[i].value[argv[i].length] = '\0';
+			
+			tempPointer0 = tempPointer1 + 1;
 		}
 		
 		/* Execute command if one exists. */
@@ -541,10 +541,10 @@ int obj_loadOoliteDAT(const string_t *filePath, int *index) {
 		modelList_removeLastModel();
 	}
 	
-	for (int i = 0; i < maxArgs; i++) {
-		string_free(&argv[i]);
-	}
-	string_free(&line);
+	// for (int i = 0; i < maxArgs; i++) {
+	// 	string_free(&argv[i]);
+	// }
+	// string_free(&line);
 	string_free(&fileText);
 	
 	return error;

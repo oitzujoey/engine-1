@@ -4,9 +4,9 @@
 #include "../common/cfg.h"
 #include "../common/insane.h"
 
-client_t clients_g[MAX_CLIENTS];
+client_t g_clients[MAX_CLIENTS];
 UDPsocket g_serverSocket;
-// SDLNet_SocketSet socketSet_g;
+// SDLNet_SocketSet g_socketSet;
 
 
 int snetwork_closeSocket(UDPsocket socket) {
@@ -18,7 +18,7 @@ int snetwork_closeSocket(UDPsocket socket) {
 		goto cleanup_l;
 	}
 	
-	// error = SDLNet_UDP_DelSocket(socketSet_g, socket);
+	// error = SDLNet_UDP_DelSocket(g_socketSet, socket);
 	// if (error == -1) {
 	// 	error("SDLNet_UDP_DelSocket returned %s", SDL_GetError());
 	// 	// Not that we care... The socket will be freed either way.
@@ -135,11 +135,11 @@ void snetwork_quit(void) {
 	snetwork_closeSocket(g_serverSocket);
 	
 	for (int i = 0; i < MAX_CLIENTS; i++) {
-		if (clients_g[i].socket == NULL) {
+		if (g_clients[i].socket == NULL) {
 			continue;
 		}
 		// Don't care about errors.
-		snetwork_closeSocket(clients_g[i].socket);
+		snetwork_closeSocket(g_clients[i].socket);
 	}
 	
 	// SDLNet_FreeSocketSet(socketSet_g);

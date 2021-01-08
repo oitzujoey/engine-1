@@ -6,5 +6,5 @@ C_DEFINES =
 
 C_INCLUDES = 
 
-C_FLAGS = -g -std=c99 -pedantic-errors -Werror -Wall -Wstrict-prototypes -DDEBUG -g -O0
+C_FLAGS = -g -std=c99 -pedantic-errors -Werror -Wall -Wstrict-prototypes -DDEBUG -g -O0 -DLINUX
 

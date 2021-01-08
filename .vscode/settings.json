@@ -40,6 +40,7 @@
         "utility": "cpp",
         "optional": "c",
         "system_error": "c",
-        "*.txt": "c"
+        "*.txt": "c",
+        "string_view": "c"
     }
 }

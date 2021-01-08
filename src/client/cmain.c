@@ -12,6 +12,7 @@
 #include "../common/log.h"
 #include "../common/cfg.h"
 #include "../common/file.h"
+#include "../common/network.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -28,13 +29,16 @@ luaCFunc_t luaCFunctions[] = {
 };
 
 const cfg_var_init_t initialConfigVars[] = {
-	{.name = "client",          .vector = 0,    .integer = 0,                   .string = NULL,         .type = none,       .permissions = CFG_VAR_PERMISSION_NONE},
-	{.name = "lua_main",        .vector = 0,    .integer = 0,                   .string = "",           .type = string,     .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = "workspace",       .vector = 0,    .integer = 0,                   .string = "",           .type = string,     .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = "server_port",     .vector = 0,    .integer = DEFAULT_PORT_NUMBER, .string = "",           .type = integer,    .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = "client_port",     .vector = 0,    .integer = DEFAULT_PORT_NUMBER, .string = "",           .type = integer,    .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = "ip_address",      .vector = 0,    .integer = 0,                   .string = "localhost",  .type = string,     .permissions = CFG_VAR_PERMISSION_READ},
-	{.name = NULL,              .vector = 0,    .integer = 0,                   .string = NULL,         .type = none,       .permissions = CFG_VAR_PERMISSION_NONE}
+	{.name = "client",              .vector = 0,    .integer = 0,                           .string = NULL,         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
+	{.name = "lua_main",            .vector = 0,    .integer = 0,                           .string = "",           .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = "workspace",           .vector = 0,    .integer = 0,                           .string = "",           .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = "server_port",         .vector = 0,    .integer = DEFAULT_PORT_NUMBER,         .string = "",           .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = "client_port",         .vector = 0,    .integer = DEFAULT_PORT_NUMBER,         .string = "",           .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = "ip_address",          .vector = 0,    .integer = 0,                           .string = "localhost",  .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_MAX_RECURSION,     .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,   .string = "",           .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_RUN_QUIET,         .vector = 0,    .integer = false,                       .string = "",           .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
+	{.name = CFG_HISTORY_LENGTH,    .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,  .string = "",           .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
+	{.name = NULL,                  .vector = 0,    .integer = 0,                           .string = NULL,         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
 };
 
 int windowInit(void) {
@@ -98,13 +102,23 @@ static int main_init(const int argc, char *argv[]) {
 
 	if (file_exists(AUTOEXEC)) {
 		log_info(__func__, "Found \""AUTOEXEC"\"");
-		cfg_execFile(AUTOEXEC);
+		cfg_execFile(AUTOEXEC, 0);
 	}
 
 	if (argc > 1) {
 		for (int i = 1; i < argc; i++) {
 			string_copy_c(&execString, argv[i]);
-			cfg_execString(&execString, "Console");
+			error = cfg_execString(&execString, "Console", 0);
+			if (error == ERR_OUTOFMEMORY) {
+				critical_error("Out of memory", "");
+				goto cleanup_l;
+			}
+			if (error == ERR_CRITICAL) {
+				goto cleanup_l;
+			}
+			if (error) {
+				break;
+			}
 		}
 	}
 	
@@ -162,11 +176,14 @@ void main_quit(void) {
 int main (int argc, char *argv[]) {
 
 	int error = 0;
-	string_t data;
+	string_t data;	
+	SDL_Event event;
 	
 	puts("Starting engine-1 v0.0 (Client)");
 	
-	string_init(&data);
+	data.memsize = 0;
+	data.length = 0;
+	data.value = NULL;
 	
 	error = main_init(argc, argv);
 	if (error) {
@@ -176,8 +193,16 @@ int main (int argc, char *argv[]) {
 	}
 	
 	do {
-		error = l_cnetwork_receive((Uint8 **) &data.value, (int *) &data.length);
-	} while (!error && (data.length == 0));
+		// error = l_cnetwork_receive((Uint8 **) &data.value, (int *) &data.length);
+	
+	    if (SDL_PollEvent(&event)) {
+	        if (event.type == SDL_QUIT) {
+	            break;
+			}
+	    }
+    
+		error = network_receiveReliablePacket(g_clientSocket, (uint8_t **) &data.value, (int *) &data.length);
+	} while (!error);
 	
 	if (error) {
 		error("l_cnetwork_receive returned %i", "");
@@ -186,7 +211,7 @@ int main (int argc, char *argv[]) {
 	}
 	
 	--data.length;
-	string_print(&data);
+	// string_print(&data);
 	
 	// if (argc != 2) {
 	// 	fprintf(stderr, "Error: engine-1 must have one argument\n");

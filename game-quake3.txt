@@ -1,5 +1,9 @@
 Second game?
 
+Remote map option?
+	This mode is disabled by default.
+	When a map is loaded, the server checks for the map locally, and if it doesn't exist, it checks a mapserver for that map. If the map exists, the game server fetches the map, but does not write it to disk. The client will perform the same process to load the map. This will lead to long loading times both client and server side, but it also prevents users from having to download and store the map.
+
 Surface attributes
 	Friction
 	Bounciness (OVERCLIP)

@@ -7,6 +7,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/sengine-1.dir/src/common/log.c.o"
   "CMakeFiles/sengine-1.dir/src/common/lua_common.c.o"
   "CMakeFiles/sengine-1.dir/src/common/lua_sandbox.c.o"
+  "CMakeFiles/sengine-1.dir/src/common/network.c.o"
   "CMakeFiles/sengine-1.dir/src/common/obj.c.o"
   "CMakeFiles/sengine-1.dir/src/common/str.c.o"
   "CMakeFiles/sengine-1.dir/src/common/vfs.c.o"

@@ -503,6 +503,36 @@ src/common/lua_sandbox.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/sengine-1.dir/build.make CMakeFiles/sengine-1.dir/src/common/lua_sandbox.c.s
 .PHONY : src/common/lua_sandbox.c.s
 
+src/common/network.o: src/common/network.c.o
+
+.PHONY : src/common/network.o
+
+# target to build an object file
+src/common/network.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cengine-1.dir/build.make CMakeFiles/cengine-1.dir/src/common/network.c.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sengine-1.dir/build.make CMakeFiles/sengine-1.dir/src/common/network.c.o
+.PHONY : src/common/network.c.o
+
+src/common/network.i: src/common/network.c.i
+
+.PHONY : src/common/network.i
+
+# target to preprocess a source file
+src/common/network.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cengine-1.dir/build.make CMakeFiles/cengine-1.dir/src/common/network.c.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sengine-1.dir/build.make CMakeFiles/sengine-1.dir/src/common/network.c.i
+.PHONY : src/common/network.c.i
+
+src/common/network.s: src/common/network.c.s
+
+.PHONY : src/common/network.s
+
+# target to generate assembly for a file
+src/common/network.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/cengine-1.dir/build.make CMakeFiles/cengine-1.dir/src/common/network.c.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/sengine-1.dir/build.make CMakeFiles/sengine-1.dir/src/common/network.c.s
+.PHONY : src/common/network.c.s
+
 src/common/obj.o: src/common/obj.c.o
 
 .PHONY : src/common/obj.o
@@ -693,6 +723,9 @@ help:
 	@echo "... src/common/lua_sandbox.o"
 	@echo "... src/common/lua_sandbox.i"
 	@echo "... src/common/lua_sandbox.s"
+	@echo "... src/common/network.o"
+	@echo "... src/common/network.i"
+	@echo "... src/common/network.s"
 	@echo "... src/common/obj.o"
 	@echo "... src/common/obj.i"
 	@echo "... src/common/obj.s"
