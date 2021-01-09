@@ -29,16 +29,17 @@ luaCFunc_t luaCFunctions[] = {
 };
 
 const cfg_var_init_t initialConfigVars[] = {
-	{.name = "client",              .vector = 0,    .integer = 0,                           .string = NULL,         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
-	{.name = "lua_main",            .vector = 0,    .integer = 0,                           .string = "",           .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-	{.name = "workspace",           .vector = 0,    .integer = 0,                           .string = "",           .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-	{.name = "server_port",         .vector = 0,    .integer = DEFAULT_PORT_NUMBER,         .string = "",           .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-	{.name = "client_port",         .vector = 0,    .integer = DEFAULT_PORT_NUMBER,         .string = "",           .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-	{.name = "ip_address",          .vector = 0,    .integer = 0,                           .string = "localhost",  .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_MAX_RECURSION,     .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,   .string = "",           .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_RUN_QUIET,         .vector = 0,    .integer = false,                       .string = "",           .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
-	{.name = CFG_HISTORY_LENGTH,    .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,  .string = "",           .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
-	{.name = NULL,                  .vector = 0,    .integer = 0,                           .string = NULL,         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
+	{.name = "client",                  .vector = 0,    .integer = 0,                               .string = NULL,         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
+	{.name = "lua_main",                .vector = 0,    .integer = 0,                               .string = "",           .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = "workspace",               .vector = 0,    .integer = 0,                               .string = "",           .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_SERVER_PORT,           .vector = 0,    .integer = DEFAULT_PORT_NUMBER,             .string = "",           .type = integer,    .handle = cnetwork_handle_setServerPort,            .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_CLIENT_PORT,           .vector = 0,    .integer = DEFAULT_PORT_NUMBER,             .string = "",           .type = integer,    .handle = cnetwork_handle_setClientPort,            .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_CONNECTION_TIMEOUT,    .vector = 0,    .integer = CFG_CONNECTION_TIMEOUT_DEFAULT,  .string = "",           .type = integer,    .handle = network_handle_connectionTimeout,         .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_SERVER_IP_ADDRESS,     .vector = 0,    .integer = 0,                               .string = "localhost",  .type = string,     .handle = cnetwork_handle_setIpAddress,             .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_MAX_RECURSION,         .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,       .string = "",           .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_RUN_QUIET,             .vector = 0,    .integer = false,                           .string = "",           .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
+	{.name = CFG_HISTORY_LENGTH,        .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,      .string = "",           .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
+	{.name = NULL,                      .vector = 0,    .integer = 0,                               .string = NULL,         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
 };
 
 int windowInit(void) {
@@ -201,8 +202,9 @@ int main (int argc, char *argv[]) {
 			}
 	    }
     
-		error = network_receiveReliablePacket(g_clientSocket, (uint8_t **) &data.value, (int *) &data.length);
-	} while (!error);
+		// error = network_receiveReliablePacket(g_clientSocket, (uint8_t **) &data.value, (int *) &data.length);
+		error = cnetwork_runEvents();
+	} while (!error && !g_cfg.quit);
 	
 	if (error) {
 		error("l_cnetwork_receive returned %i", "");

@@ -6,3 +6,4 @@ vgcore.*
 oolite-binary-resources
 **/CMakeFiles
 .vscode
+CMakeCache.txt

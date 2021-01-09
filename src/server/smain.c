@@ -43,11 +43,13 @@ const cfg_var_init_t initialConfigVars[] = {
 	{.name = "server",              .vector = 0,    .integer = 0,                           .string = NULL, .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
 	{.name = "lua_main",            .vector = 0,    .integer = 0,                           .string = "",   .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
 	{.name = "workspace",           .vector = 0,    .integer = 0,                           .string = "",   .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-	{.name = "server_port",         .vector = 0,    .integer = DEFAULT_PORT_NUMBER,         .string = "",   .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-	{.name = "client_port",         .vector = 0,    .integer = DEFAULT_PORT_NUMBER,         .string = "",   .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_SERVER_PORT,       .vector = 0,    .integer = DEFAULT_PORT_NUMBER,         .string = "",   .type = integer,    .handle = snetwork_handle_setServerPort,            .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_CLIENT_PORT,       .vector = 0,    .integer = DEFAULT_PORT_NUMBER,         .string = "",   .type = integer,    .handle = snetwork_handle_setClientPort,            .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_MAX_CLIENTS,       .vector = 0,    .integer = CFG_MAX_CLIENTS_DEFAULT,     .string = "",   .type = integer,    .handle = snetwork_handle_maxClients,               .permissions = CFG_VAR_FLAG_READ},
 	{.name = CFG_MAX_RECURSION,     .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,   .string = "",   .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_RUN_QUIET,         .vector = 0,    .integer = false,                       .string = "",   .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
-	{.name = CFG_HISTORY_LENGTH,    .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,  .string = "",   .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
+	{.name = CFG_RUN_QUIET,         .vector = 0,    .integer = 0,                           .string = "",   .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_HISTORY_LENGTH,    .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,  .string = "",   .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ},
+	{.name = "enet_message",        .vector = 0,    .integer = 0,                           .string = "",   .type = string,     .handle = snetwork_handle_enetMessage,              .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
 	{.name = NULL,                  .vector = 0,    .integer = 0,                           .string = NULL, .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
 };
 
@@ -59,20 +61,25 @@ int l_main_checkQuit(lua_State *luaState) {
 int l_main_housekeeping(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
-	char sendString[100];
-	IPaddress ipAddress;
+	// char sendString[100];
+	// IPaddress ipAddress;
 	
 	/* Send packet. */
 	
-	error = SDLNet_ResolveHost(&ipAddress, "localhost", cfg_findVar("client_port")->integer);
-	if (error != 0) {
-		critical_error("SDLNet_ResolveHost returned %s", SDL_GetError());
-		error = ERR_CRITICAL;
+	// error = SDLNet_ResolveHost(&ipAddress, "localhost", cfg_findVar("client_port")->integer);
+	// if (error != 0) {
+	// 	critical_error("SDLNet_ResolveHost returned %s", SDL_GetError());
+	// 	error = ERR_CRITICAL;
+	// 	goto cleanup_l;
+	// }
+	
+	// strcpy(sendString, "Hello, world!");
+	// network_sendReliablePacket(g_serverSocket, ipAddress, (Uint8 *) sendString, strlen(sendString) + 1);
+	
+	error = snetwork_runEvents();
+	if (error) {
 		goto cleanup_l;
 	}
-	
-	strcpy(sendString, "Hello, world!");
-	network_sendReliablePacket(g_serverSocket, ipAddress, (Uint8 *) sendString, strlen(sendString) + 1);
 	
 	/* Do terminal stuff */
 	
@@ -84,6 +91,8 @@ int l_main_housekeeping(lua_State *luaState) {
 	if (error) {
 		g_cfg.quit = true;
 	}
+	
+	SDL_Delay(10);
 	
 	return 0;
 }

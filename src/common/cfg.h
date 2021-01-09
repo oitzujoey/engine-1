@@ -53,6 +53,20 @@ typedef struct {
 	int vars_length;
 } cfg_t;
 
+// Macros have completion support. Strings don't.
+#define CFG_SERVER_PORT         "server_port"
+#define CFG_CLIENT_PORT         "client_port"
+#define CFG_SERVER_IP_ADDRESS   "server_ip_address"
+#define CFG_CONNECTION_TIMEOUT  "connection_timeout"
+#define CFG_CONNECTION_TIMEOUT_DEFAULT  10 // Seconds
+#define CFG_MAX_CLIENTS         "max_clients"
+#define CFG_MAX_CLIENTS_DEFAULT         MAX_CLIENTS
+#define CFG_MAX_RECURSION       "max_recursion_depth"
+#define CFG_MAX_RECURSION_DEFAULT       10
+#define CFG_RUN_QUIET           "quiet"
+#define CFG_HISTORY_LENGTH      "command_history_length"
+#define CFG_HISTORY_LENGTH_DEFAULT      10
+
 #define CFG_NUM_COMMANDS    19
 typedef struct {
 	char *commands[CFG_NUM_COMMANDS];

@@ -280,6 +280,7 @@ Server commands:
 Dummy commands are too keep the connection alive when no data is being sent.
 id_ack is the id of the message that is being referenced by the sender. The receiver must add this message to the just received one.
 id & id_ack start at 0 and count up to ID_MAX. The value will then overflow to zero. ID_MAX and the timeout must be chosen such that id will not cycle through the entire sequence before a timeout occurs.
+All out-of-order packets will be mercilessly discarded.
 If a timeout occurs, 
 
 init
@@ -310,9 +311,23 @@ Order is important. If the fields aren't set in the proper order, the subtractio
 <End encryption>
 -0. Signature
 
+Lag compensation techniques:
+    None:
+        client0 r0      r1
+        client1 r1      r0
+        server     r0r1
+
+Layer 0:    UDP
+Layer 1:    Encryption
+Layer 2:    Reliable packet transmission
+Layer 3:    Compression
+
 
 The purpose of config scripts is to set variables required to get the game running.
 The purpose of the console is to do basic configuration of the client and server, however, making it an extensive debugging tool will also be a priority. 
+
+
+Server discovery will happen over TCP.
 
 
 
@@ -365,3 +380,6 @@ Files to rewrite when it is somewhat working:
 
 Expected leaks:
     220B    SDL_Init()
+
+Remember this:
+    git status | grep modified: | sed 's/\tmodified:   //'

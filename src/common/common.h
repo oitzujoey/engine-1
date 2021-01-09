@@ -2,6 +2,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <time.h>
 #include <lua.h>
 #include "vfs.h"
 
@@ -39,13 +40,8 @@
 
 #define AUTOEXEC    "autoexec.cfg"
 
+#define MAX_CLIENTS         2
 #define DEFAULT_PORT_NUMBER 8099
-
-#define CFG_MAX_RECURSION   "max_recursion_depth"
-#define CFG_MAX_RECURSION_DEFAULT   10
-#define CFG_RUN_QUIET       "quiet"
-#define CFG_HISTORY_LENGTH  "command_history_length"
-#define CFG_HISTORY_LENGTH_DEFAULT  10
 
 #define ENGINE_MAN_NAME "Scott"
 
@@ -66,6 +62,8 @@ typedef struct {
 extern int error;
 
 extern vfs_t g_vfs;
+
+int common_getTimeNs(long *ns);
 
 int l_puts(lua_State*);
 
