@@ -1,10 +1,12 @@
 
 #include "snetwork.h"
 #include <stdio.h>
+#include <string.h>
 #include "../common/log.h"
 #include "../common/insane.h"
 #include "../common/network.h"
 #include "server.h"
+#include "../common/entity.h"
 
 // client_t g_clients[MAX_CLIENTS];
 // UDPsocket g_serverSocket;
@@ -18,21 +20,10 @@ int snetwork_handle_setServerPort(cfg_var_t *var) {
 
 	// Shouldn't have to check type because it will always be hard coded when this function is run.
 	if (var->integer < 1024) {
-		warning("Variable \"%s\" out of range. Setting to %i.", var->name, CFG_CONNECTION_TIMEOUT_DEFAULT);
-		var->integer = CFG_CONNECTION_TIMEOUT_DEFAULT;
+		warning("Variable \"%s\" out of range. Setting to %i.", var->name, CFG_PORT_DEFAULT);
+		var->integer = CFG_PORT_DEFAULT;
 	}
-	// clientState.serverAddress.port = var->integer;
-
-	return ERR_OK;
-}
-
-int snetwork_handle_setClientPort(cfg_var_t *var) {
-
-	// Shouldn't have to check type because it will always be hard coded when this function is run.
-	if (var->integer < 1024) {
-		warning("Variable \"%s\" out of range. Setting to %i.", var->name, CFG_CONNECTION_TIMEOUT_DEFAULT);
-		var->integer = CFG_CONNECTION_TIMEOUT_DEFAULT;
-	}
+	g_server.ipAddress.port = var->integer;
 
 	return ERR_OK;
 }
@@ -44,7 +35,7 @@ int snetwork_handle_enetMessage(cfg_var_t *var) {
 	}
 	
 	ENetPacket *packet = enet_packet_create(var->string.value, var->string.length + 1, ENET_PACKET_FLAG_RELIABLE);
-	enet_host_broadcast(g_server.host, 0, packet);
+	enet_host_broadcast(g_server.host, ENET_CHANNEL1, packet);
 	
 	cleanup_l:
 	return ERR_OK;
@@ -212,6 +203,12 @@ static void snetwork_connect(ENetEvent event) {
 	
 	if (g_server.connectedClients >= g_server.maxClients) {
 		// Can't allow any more clients.
+		enet_peer_disconnect(event.peer, 0);
+		
+		network_ipv4ToString(&ipAddress, peer->address.host);
+		info("%s:%u attempted to connect, but server is full.", ipAddress, peer->address.port);
+		insane_free(ipAddress);
+		return;
 	}
 	
 	// Find a suitable client number to use.
@@ -234,20 +231,123 @@ static void snetwork_receive(ENetEvent event) {
 	// info("Received packet of length %u from %X:%u on channel %u", event.packet->dataLength, event.peer->address.host, event.peer->address.port, event.channelID);
 	ENetPeer *peer = event.peer;
 	ENetPacket *packet = event.packet;
-	int index = *((int *) peer->data);
+	int index;
+	
+	if (event.peer->data == NULL) {
+		// Not a currently connected client.
+		enet_packet_destroy(packet);
+		return;
+	}
+	
+	index = *((int *) peer->data);
 	
 	printf("Client %u: ", index);
 	for (int i = 0; i < packet->dataLength; i++) {
 		putc(packet->data[i], stdout);
 	}
 	putc('\n', stdout);
+	enet_packet_destroy(packet);
 }
 
 static void snetwork_disconnect(ENetEvent event) {
 	
-	int index = *((int *) event.peer->data);
+	int index;
+	
+	if (event.peer->data == NULL) {
+		// Not a currently connected client.
+		return;
+	}
+	
+	index = *((int *) event.peer->data);
+	
 	insane_free(event.peer->data);
+	if (index < 0) {
+		// Not a currently connected client.
+		return;
+	}
+	g_clients[index].inUse = false;
+	--g_server.connectedClients;
 	info("Client %u disconnected", index);
+}
+
+static int snetwork_sendEntityList(void) {
+	int error = ERR_CRITICAL;
+	
+	/*
+	{
+		g_entityList
+		g_entityList->entities
+		g_entityList->deletedEntities
+		{
+			g_entityList->entities->children
+		}
+	}
+	g_entityList->entities->children will be set to the local address of the children array in the packet.
+	*/
+	
+	ENetPacket *packet;
+	size_t packetlength = 0;
+	enet_uint8 *data;
+	entityList_t *entityList;
+	entity_t *entities;
+	
+	packetlength += sizeof(entityList_t);
+	packetlength += g_entityList.entities_length * sizeof(entity_t);
+	packetlength += g_entityList.deletedEntities_length * sizeof(int);
+	for (int i = 0; i < g_entityList.entities_length; i++) {
+		packetlength += g_entityList.entities[i].children_length * sizeof(int);
+	}
+	
+	// Create unreliable packet.
+	packet = enet_packet_create(NULL, packetlength, 0);
+	if (packet == NULL) {
+		critical_error("Out of memory.", "");
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	data = packet->data;
+	
+	memcpy(data, &g_entityList, sizeof(entityList_t));
+	entityList = (entityList_t *) data;
+	data += sizeof(entityList_t);
+	
+	// for (int i = 0; i < g_entityList.entities_length; i++) {
+	// 	printf("%i children         %lu\n", i, (unsigned long) g_entityList.entities[i].children);
+	// 	printf("%i children_length  %i\n", i, g_entityList.entities[i].children_length);
+	// 	printf("%i childType        %i\n", i, g_entityList.entities[i].childType);
+	// 	for (int j = 0; j < 3; j++) {
+	// 	printf("%i orientation.v[%i] %f\n", i, j, g_entityList.entities[i].orientation.v[j]);
+	// 	}
+	// 	printf("%i orientation.s    %f\n", i, g_entityList.entities[i].orientation.s);
+	// 	for (int j = 0; j < 3; j++) {
+	// 	printf("%i position[%i]      %f\n", i, j, g_entityList.entities[i].position[j]);
+	// 	}
+	// 	puts("");
+	// }
+	// 76
+	memcpy(data, g_entityList.entities, g_entityList.entities_length * sizeof(entity_t));
+	entityList->entities = (entity_t *) (data - packet->data);
+	entities = (entity_t *) data;
+	data += g_entityList.entities_length * sizeof(entity_t);
+	
+	// printf("data %lu\n", (unsigned long) (data - entities));
+	
+	memcpy(data, g_entityList.deletedEntities, g_entityList.deletedEntities_length * sizeof(int));
+	entityList->deletedEntities = (int *) (data - packet->data);
+	data += g_entityList.deletedEntities_length * sizeof(int);
+	
+	for (int i = 0; i < g_entityList.entities_length; i++) {
+		// Copy children indices.
+		memcpy(data, g_entityList.entities[i].children, g_entityList.entities[i].children_length * sizeof(int));
+		entities[i].children = (int *) (data - packet->data);
+		data += g_entityList.entities[i].children_length * sizeof(int);
+	}
+	
+	enet_host_broadcast(g_server.host, ENET_CHANNEL0, packet);
+	
+	error = ERR_OK;
+	cleanup_l:
+	return error;
 }
 
 int snetwork_runEvents(void) {
@@ -255,6 +355,12 @@ int snetwork_runEvents(void) {
 	
 	ENetEvent event;
 	
+	error = snetwork_sendEntityList();
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	// Run event actions.
 	while (enet_host_service(g_server.host, &event, 0) > 0) {
 		switch (event.type) {
 		case ENET_EVENT_TYPE_CONNECT:
@@ -273,8 +379,6 @@ int snetwork_runEvents(void) {
 		}
 	}
 	
-	
-	
 	error = ERR_OK;
 	cleanup_l:
 	return error;
@@ -283,8 +387,6 @@ int snetwork_runEvents(void) {
 int snetwork_init(void) {
 	int error = ERR_CRITICAL;
 	
-	cfg_var_t *v_serverPort;
-
 	error = enet_initialize() != 0;
 	if (error != 0) {
 		critical_error("Could not initialize ENet.", "");
@@ -293,21 +395,7 @@ int snetwork_init(void) {
 	}
 	
 	g_server.ipAddress.host = ENET_HOST_ANY;
-	
-	// Set port.
-	v_serverPort = cfg_findVar(CFG_SERVER_PORT);
-	if (v_serverPort == NULL) {
-		critical_error("Variable \""CFG_SERVER_PORT"\" does not exist.", "");
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	if (v_serverPort->type != integer) {
-		critical_error("Variable \""CFG_SERVER_PORT"\" is not an integer.", "");
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	g_server.ipAddress.port = v_serverPort->integer;
+	// Port set by cvar handle.
 	
 	// Create UDP server.
 	// @TODO: Decide if we need to limit bandwidth.
@@ -331,6 +419,14 @@ int snetwork_init(void) {
 
 void snetwork_quit(void) {
 	
+	// Free client data.
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		if ((g_clients[i].peer != NULL) && (g_clients[i].peer->data != NULL)) {
+			insane_free(g_clients[i].peer->data);
+		}
+	}
+	
+	// End ENet.
 	enet_host_destroy(g_server.host);
 	enet_deinitialize();
 	

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "insane.h"
 
 void log_info(const char *function, const char *fmt, ...) {
 	va_list va;
@@ -62,16 +63,35 @@ void log_critical_error(const char *function, const char *fmt, ...) {
 }
 
 int l_log_info(lua_State *l) {
-	const char *function = lua_tostring(l, 1);
-	const char *message = lua_tostring(l, 2);
+	int error = ERR_CRITICAL;
+
+	const char *function = NULL;
+	const char *message = NULL;
+	char *buf = NULL;
+	
+	if (!lua_isstring(l, 1) || !lua_isstring(l, 2)) {
+		error("Arguments must be strings", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	function = lua_tostring(l, 1);
+	message = lua_tostring(l, 2);
 
 	const char *infomessage = COLOR_CYAN"Lua "COLOR_GREEN"Info: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
-	char *buf = malloc((strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1) * sizeof(char));
+	buf = malloc((strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1) * sizeof(char));
 	sprintf(buf, infomessage, function, message);
 	
 	printf(buf);
 	
-	free(buf);
+	error = ERR_OK;
+	cleanup_l:
+	
+	insane_free(buf);
+	
+	if (error) {
+		lua_error(l);
+	}
 	
 	return 0;
 }

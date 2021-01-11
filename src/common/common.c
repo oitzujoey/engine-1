@@ -5,7 +5,6 @@
 
 int error;
 
-vfs_t g_vfs;
 
 int common_getTimeNs(long *ns) {
 	int error = ERR_CRITICAL;

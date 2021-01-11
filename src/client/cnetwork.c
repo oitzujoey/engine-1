@@ -1,9 +1,12 @@
 
 #include "cnetwork.h"
+#include <string.h>
+#include <stdio.h>
 #include "../common/log.h"
 #include "../common/insane.h"
 #include "../common/network.h"
 #include "../common/str.h"
+#include "../common/entity.h"
 
 // UDPsocket g_serverSocket;
 // UDPsocket g_clientSocket;
@@ -11,7 +14,7 @@
 
 ENetHost *clientHost;
 ENetPeer *serverPeer;
-cnetwork_clientState_t clientState;
+cnetwork_clientState_t g_clientState;
 
 
 // int cnetwork_closeSocket(UDPsocket socket) {
@@ -202,8 +205,8 @@ cnetwork_clientState_t clientState;
 int cnetwork_handle_setIpAddress(cfg_var_t *var) {
 	int error = ERR_CRITICAL;
 
-	clientState.serverAddressString = var->string.value;
-	error = enet_address_set_host(&clientState.serverAddress, var->string.value);
+	g_clientState.serverAddressString = var->string.value;
+	error = enet_address_set_host(&g_clientState.serverAddress, var->string.value);
 	if (error < 0) {
 		error("Could not set IP address to host \"%s\". Resetting to \"localhost\".", var->string.value);
 		error = string_copy_c(&var->string, "localhost");
@@ -212,7 +215,7 @@ int cnetwork_handle_setIpAddress(cfg_var_t *var) {
 			error = ERR_CRITICAL;
 			goto cleanup_l;
 		}
-		error = enet_address_set_host(&clientState.serverAddress, var->string.value);
+		error = enet_address_set_host(&g_clientState.serverAddress, var->string.value);
 		if (error) {
 			critical_error("Could not set IP address to host \"localhost\".", "");
 			error = ERR_CRITICAL;
@@ -231,21 +234,10 @@ int cnetwork_handle_setServerPort(cfg_var_t *var) {
 
 	// Shouldn't have to check type because it will always be hard coded when this function is run.
 	if (var->integer < 1024) {
-		warning("Variable \"%s\" out of range. Setting to %i.", var->name, CFG_CONNECTION_TIMEOUT_DEFAULT);
-		var->integer = CFG_CONNECTION_TIMEOUT_DEFAULT;
+		warning("Variable \"%s\" out of range. Setting to %i.", var->name, CFG_PORT_DEFAULT);
+		var->integer = CFG_PORT_DEFAULT;
 	}
-	clientState.serverAddress.port = var->integer;
-
-	return ERR_OK;
-}
-
-int cnetwork_handle_setClientPort(cfg_var_t *var) {
-
-	// Shouldn't have to check type because it will always be hard coded when this function is run.
-	if (var->integer < 1024) {
-		warning("Variable \"%s\" out of range. Setting to %i.", var->name, CFG_CONNECTION_TIMEOUT_DEFAULT);
-		var->integer = CFG_CONNECTION_TIMEOUT_DEFAULT;
-	}
+	g_clientState.serverAddress.port = var->integer;
 
 	return ERR_OK;
 }
@@ -254,8 +246,8 @@ int cnetwork_handle_setClientPort(cfg_var_t *var) {
 
 static void cnetwork_connectionReset(void) {
 	enet_peer_reset(serverPeer);
-	clientState.connected = false;
-	clientState.connectionState = cnetwork_connectionState_disconnected;
+	g_clientState.connected = false;
+	g_clientState.connectionState = cnetwork_connectionState_disconnected;
 	g_cfg.quit = true;
 	info("Connection reset", "");
 }
@@ -267,30 +259,166 @@ static void cnetwork_requestDisconnect(void) {
 
 static void cnetwork_requestConnect(void) {
 
-	serverPeer = enet_host_connect(clientHost, &clientState.serverAddress, ENET_CHANNELS, 0);
-	clientState.lastResponseTime = time(NULL);
-	clientState.connectionState = cnetwork_connectionState_connecting;
+	info("Requesting to connect with %s:%i", g_clientState.serverAddressString, g_clientState.serverAddress.port);
+	serverPeer = enet_host_connect(clientHost, &g_clientState.serverAddress, ENET_CHANNELS, 0);
+	g_clientState.lastResponseTime = time(NULL);
+	g_clientState.connectionState = cnetwork_connectionState_connecting;
 }
 
 static void cnetwork_connect(ENetEvent event) {
-	clientState.connected = true;
-	clientState.connectionState = cnetwork_connectionState_connected;
-	clientState.lastResponseTime = time(NULL);
-	info("Successfully connected to %s:%u", clientState.serverAddressString, event.peer->address.port);
+	g_clientState.connected = true;
+	g_clientState.connectionState = cnetwork_connectionState_connected;
+	g_clientState.lastResponseTime = time(NULL);
+	info("Successfully connected to %s:%u", g_clientState.serverAddressString, event.peer->address.port);
 }
 
-static void cnetwork_receive(ENetEvent event) {
-	// info("Received packet of length %u from %s:%u on channel %u", event.packet->dataLength, clientState.serverAddressString, event.peer->address.port, event.channelID);
+static int cnetwork_receiveEntities(ENetEvent event) {
+	int error = ERR_CRITICAL;
+	
+	ENetPacket *packet;
+	int length;
+	enet_uint8 *data;
+	entityList_t *entityList;
+	entity_t *entities;
+	
+	packet = event.packet;
+	data = packet->data;
+	length = packet->dataLength;
+	
+	if (data - packet->data >= length) {
+		error("Malformed entity packet", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	entityList = (entityList_t *) data;
+	data += sizeof(entityList_t);
+	
+	if (entityList->entities_length > g_entityList.entities_length) {
+		entityList->entities = realloc(g_entityList.entities, entityList->entities_length * sizeof(entity_t));
+		if (entityList->entities == NULL) {
+			critical_error("Out of memory.", "");
+			error = ERR_OUTOFMEMORY;
+			goto cleanup_l;
+		}
+		
+		// Initialize new entities to zero.
+		memset((entityList->entities + g_entityList.entities_length), 0, (entityList->entities_length - g_entityList.entities_length) * sizeof(entity_t));
+	}
+	else {
+		entityList->entities = g_entityList.entities;
+	}
+	
+	if (entityList->deletedEntities_length > g_entityList.deletedEntities_length_allocated) {
+		entityList->deletedEntities = realloc(g_entityList.deletedEntities, entityList->deletedEntities_length * sizeof(int));
+		if (entityList->deletedEntities == NULL) {
+			critical_error("Out of memory.", "");
+			error = ERR_OUTOFMEMORY;
+			goto cleanup_l;
+		}
+		entityList->deletedEntities_length_allocated = entityList->deletedEntities_length;
+		
+	}
+	else {
+		entityList->deletedEntities = g_entityList.deletedEntities;
+	}
+	
+	memcpy(&g_entityList, entityList, sizeof(entityList_t));
+	
+	
+	// This uses newly updated length;
+	if (data - packet->data >= length) {
+		error("Malformed entity packet", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	entities = (entity_t *) data;
+	data += g_entityList.entities_length * sizeof(entity_t);
+	if (data - packet->data >= length) {
+		error("Malformed entity packet", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	for (int i = 0; i < g_entityList.entities_length; i++) {
+		if (entities[i].children_length > g_entityList.entities[i].children_length) {
+			entities[i].children = realloc(g_entityList.entities[i].children, entities[i].children_length * sizeof(int));
+			if (entities[i].children == NULL) {
+				critical_error("Out of memory.", "");
+				error = ERR_OUTOFMEMORY;
+				goto cleanup_l;
+			}
+		}
+		else {
+			entities[i].children = g_entityList.entities[i].children;
+		}
+	}
+	
+	memcpy(g_entityList.entities, entities, g_entityList.entities_length * sizeof(entity_t));
+	
+	
+	if (data - packet->data >= length) {
+		error("Malformed entity packet", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	memcpy(g_entityList.deletedEntities, data, g_entityList.deletedEntities_length * sizeof(int));
+	data += g_entityList.deletedEntities_length * sizeof(int);
+	
+	
+	for (int i = 0; i < g_entityList.entities_length; i++) {
+		if (data - packet->data >= length) {
+			error("Malformed entity packet", "");
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		}
+		memcpy(g_entityList.entities[i].children, data, g_entityList.entities[i].children_length * sizeof(int));
+		data += g_entityList.entities[i].children_length * sizeof(int);
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
+}
+
+static int cnetwork_receive(ENetEvent event) {
+	int error = ERR_CRITICAL;
+	
 	string_t string;
-	string.value = (char *) event.packet->data;
-	string.length = event.packet->dataLength;
-	string.memsize = 0;
-	string_print(&string);
+	
+	if (g_clientState.connectionState != cnetwork_connectionState_connected) {
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	switch (event.channelID) {
+	case ENET_CHANNEL0:
+		error = cnetwork_receiveEntities(event);
+		if (error) {
+			goto cleanup_l;
+		}
+		break;
+	case ENET_CHANNEL1:
+		string.value = (char *) event.packet->data;
+		string.length = event.packet->dataLength;
+		string.memsize = 0;
+		string_print(&string);
+		break;
+	default:
+		error("Bad ENet channel %i.", event.channelID);
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	enet_packet_destroy(event.packet);
+	
+	return error;
 }
 
 static void cnetwork_disconnect(ENetEvent event) {
-	clientState.connected = false;
-	clientState.connectionState = cnetwork_connectionState_disconnected;
+	g_clientState.connected = false;
+	g_clientState.connectionState = cnetwork_connectionState_disconnected;
 	g_cfg.quit = true;
 	info("Client disconnected.", "");
 }
@@ -301,7 +429,7 @@ int cnetwork_runEvents(void) {
 	ENetEvent event;
 	
 	// Attempt to connect on startup.
-	if (clientState.connectionState == cnetwork_connectionState_initial) {
+	if (g_clientState.connectionState == cnetwork_connectionState_initial) {
 		// Note that time is not of the essence when connecting.
 		cnetwork_requestConnect();
 		error = enet_host_service(clientHost, &event, g_connectionTimeout);
@@ -313,23 +441,23 @@ int cnetwork_runEvents(void) {
 		}
 		// Failed to connect. Reset the connection.
 		else {
-			error("Could not disconnect from server. Resetting connection.", "");
+			error("Could not connect to server. Resetting connection.", "");
 			cnetwork_connectionReset();
 			error = ERR_GENERIC;
 			goto cleanup_l;
 		}
 	}
 	
-	// Reset connection if the timeout is exceeded at any time.
+	// // Reset connection if the timeout is exceeded at any time.
 	// if (
 	// 	(
-	// 		(clientState.connectionState == cnetwork_connectionState_connecting) ||
-	// 		(clientState.connectionState == cnetwork_connectionState_connected)
+	// 		(g_clientState.connectionState == cnetwork_connectionState_connecting) ||
+	// 		(g_clientState.connectionState == cnetwork_connectionState_connected)
 	// 	) &&
-	// 	(difftime(time(NULL), clientState.lastResponseTime) >= (double) g_connectionTimeout)
+	// 	(difftime(time(NULL), g_clientState.lastResponseTime) >= (double) g_connectionTimeout / 1000.0)
 	// ) {
-	// 	if (clientState.connectionState == cnetwork_connectionState_connecting) {
-	// 		error("Could not connect to %s:%i", clientState.serverAddressString, clientState.serverAddress.port);
+	// 	if (g_clientState.connectionState == cnetwork_connectionState_connecting) {
+	// 		error("Could not connect to %s:%i", g_clientState.serverAddressString, g_clientState.serverAddress.port);
 	// 	}
 	// 	cnetwork_connectionReset();
 	// 	error = ERR_OK;
@@ -385,9 +513,9 @@ int cnetwork_runEvents(void) {
 int cnetwork_init(void) {
 	int error = ERR_CRITICAL;
 	
-	clientState.connected = false;
-	clientState.connectionState = cnetwork_connectionState_initial;
-	clientState.lastResponseTime = time(NULL);
+	g_clientState.connected = false;
+	g_clientState.connectionState = cnetwork_connectionState_initial;
+	g_clientState.lastResponseTime = time(NULL);
 	
 	error = enet_initialize() != 0;
 	if (error != 0) {

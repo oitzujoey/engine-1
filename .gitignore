@@ -7,3 +7,5 @@ oolite-binary-resources
 **/CMakeFiles
 .vscode
 CMakeCache.txt
+Makefile
+*.cmake

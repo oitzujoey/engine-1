@@ -1,6 +1,8 @@
 
 #include "entity.h"
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 #include "common.h"
 #include "log.h"
 #include "insane.h"
@@ -9,6 +11,8 @@
 entityList_t g_entityList;
 
 static void entity_initEntity(entity_t *entity) {
+	memset(entity, 0, sizeof(entity_t));
+	
 	entity->children = NULL;
 	entity->children_length = 0;
 	entity->childType = entity_childType_none;
@@ -27,6 +31,7 @@ static void entity_freeEntity(entity_t *entity) {
 void entity_initEntityList(void) {
 	int index;
 
+	memset(&g_entityList, 0, sizeof(entityList_t));
 	g_entityList.entities = NULL;
 	g_entityList.entities_length = 0;
 	g_entityList.deletedEntities = NULL;
@@ -157,6 +162,50 @@ int entity_linkChild(int parentIndex, int childIndex) {
 	error = ERR_OK;
 	cleanup_l:
 	return error;
+}
+
+/* entity_isValidEntityIndex
+index:i         The index of an entity.
+Globals:
+	g_entityList:i
+Description:    Print the contents of an entity.
+*/
+void entity_printEntity(int index) {
+	entity_t *entity;
+	
+	if (entity_isValidEntityIndex(index)) {
+		entity = &g_entityList.entities[index];
+		
+		printf("ENTITY #%i\n", index);
+		printf("\tchildren {");
+		for (int i = 0; i < entity->children_length; i++) {
+			if (i != 0) {
+				printf(", ");
+			}
+			printf("%i", entity->children[i]);
+		}
+		printf("}\n");
+		printf("\tchildren_length %i\n", entity->children_length);
+		printf("\tchildType %i\n", entity->childType);
+		printf("\tposition {");
+		for (int i = 0; i < 3; i++) {
+			if (i != 0) {
+				printf(", ");
+			}
+			printf("%f", entity->position[i]);
+		}
+		printf("}\n");
+		printf("\torientation {");
+		for (int i = 0; i < 3; i++) {
+			printf("%f", entity->orientation.v[i]);
+			printf(", ");
+		}
+		printf("%f", entity->orientation.s);
+		printf("}\n");
+	}
+	else {
+		warning("%i is not a valid entity index.", index);
+	}
 }
 
 

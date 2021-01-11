@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
+#include <math.h>
 #include "file.h"
 #include "log.h"
 #include "insane.h"
@@ -29,6 +30,7 @@ cfg_commandList_t g_commandList = {
 		"-",
 		"=",
 		"add",
+		"clear",
 		"cmds",
 		"create",
 		"delete",
@@ -50,6 +52,7 @@ cfg_commandList_t g_commandList = {
 		2,
 		2,
 		2,
+		1,
 		0,
 		1,
 		1,
@@ -71,6 +74,7 @@ cfg_commandList_t g_commandList = {
 		2,
 		2,
 		2,
+		1,
 		0,
 		2,
 		1,
@@ -475,6 +479,7 @@ int cfg_execString(const string_t *line, const char *tag, const int recursionDep
 	cfg_var_t *tempCfgVar0 = NULL;
 	cfg_var_t *tempCfgVar1 = NULL;
 	cfg_var_type_t type;
+	char *tempString = NULL;
 	
 	string_init(&command);
 	string_init(&arg0);
@@ -1016,13 +1021,12 @@ int cfg_execString(const string_t *line, const char *tag, const int recursionDep
 			goto end_l;
 		}
 		
-		if (tempCfgVar0->type != tempCfgVar1->type) {
-			error("Type of \"%s\" and \"%s\" are not the same.", tempCfgVar0->name, tempCfgVar1->name);
-			error = ERR_GENERIC;
-			goto end_l;
-		}
-		
 		switch (tempCfgVar0->type) {
+		case none:
+			error("Cannot copy variable \"%s\" since is of type \"none\".", tempCfgVar0->name);
+			break;
+		case string:
+			switch(tempCfgVar1->type) {
 			case none:
 				error("Cannot copy variable \"%s\" since is of type \"none\".", tempCfgVar0->name);
 				break;
@@ -1030,7 +1034,53 @@ int cfg_execString(const string_t *line, const char *tag, const int recursionDep
 				cfg_setVarString(tempCfgVar0, tempCfgVar1->string.value);
 				break;
 			case integer:
+				tempString = malloc((3 * sizeof(int) + 1) * sizeof(char));
+				sprintf(tempString, "%i", tempCfgVar1->integer);
+				cfg_setVarString(tempCfgVar0, tempString);
+				insane_free(tempString);
+				break;
+			case vector:
+				tempString = malloc((3 * sizeof(int) + 1) * sizeof(char));
+				sprintf(tempString, "%f", tempCfgVar1->vector);
+				cfg_setVarString(tempCfgVar0, tempString);
+				insane_free(tempString);
+				break;
+			default:
+				log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", tempCfgVar0->type, tempCfgVar0->name);
+				error = ERR_CRITICAL;
+				goto end_l;
+			}
+			break;
+		case integer:
+			switch(tempCfgVar1->type) {
+			case none:
+				error("Cannot copy variable \"%s\" since is of type \"none\".", tempCfgVar0->name);
+				break;
+			case string:
+				cfg_setVarInt(tempCfgVar0, strtol(tempCfgVar1->string.value, NULL, 10));
+				break;
+			case integer:
 				cfg_setVarInt(tempCfgVar0, tempCfgVar1->integer);
+				break;
+			case vector:
+				cfg_setVarInt(tempCfgVar0, round(tempCfgVar1->vector));
+				break;
+			default:
+				log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", tempCfgVar0->type, tempCfgVar0->name);
+				error = ERR_CRITICAL;
+				goto end_l;
+			}
+			break;
+		case vector:
+			switch(tempCfgVar1->type) {
+			case none:
+				error("Cannot copy variable \"%s\" since is of type \"none\".", tempCfgVar0->name);
+				break;
+			case string:
+				cfg_setVarVector(tempCfgVar0, strtod(tempCfgVar1->string.value, NULL));
+				break;
+			case integer:
+				cfg_setVarVector(tempCfgVar0, tempCfgVar1->integer);
 				break;
 			case vector:
 				cfg_setVarVector(tempCfgVar0, tempCfgVar1->vector);
@@ -1039,6 +1089,12 @@ int cfg_execString(const string_t *line, const char *tag, const int recursionDep
 				log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", tempCfgVar0->type, tempCfgVar0->name);
 				error = ERR_CRITICAL;
 				goto end_l;
+			}
+			break;
+		default:
+			log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", tempCfgVar0->type, tempCfgVar0->name);
+			error = ERR_CRITICAL;
+			goto end_l;
 		}
 	}
 	/* Usage: read variable */
@@ -1069,6 +1125,47 @@ int cfg_execString(const string_t *line, const char *tag, const int recursionDep
 		printf(COLOR_CYAN"%s: "COLOR_YELLOW"Try entering \"cmds\" or \"vars\"."COLOR_NORMAL"\n", ENGINE_MAN_NAME);
 		printf(COLOR_CYAN"%s: "COLOR_YELLOW"If you are trying to escape (like me), type \"quit\", \"exit\", or <CTRL>+D."COLOR_NORMAL"\n", ENGINE_MAN_NAME);
 		printf(COLOR_CYAN"%s: "COLOR_YELLOW"Hopefully the developer got around to writing a manual for this."COLOR_NORMAL"\n", ENGINE_MAN_NAME);
+	}
+	/* Usage: delete variable */
+	else if (!strcmp(command.value, "clear")) {
+		if (argc < 1) {
+			log_error(__func__, "Command \"%s\" has too few arguments. Requires 1 argument.", command.value);
+			error = ERR_GENERIC;
+			goto end_l;
+		}
+		if (argc > 1) {
+			log_error(__func__, "Command \"%s\" has too many arguments. Requires 1 argument.", command.value);
+			error = ERR_GENERIC;
+			goto end_l;
+		}
+
+		string_substring(&arg0, line, string_index_of(line, 0, ' ') + 1, -1);
+
+		tempCfgVar0 = cfg_findVar(arg0.value);
+		if (tempCfgVar0 == NULL) {
+			log_error(__func__, "Variable \"%s\" already deleted", arg0.value);
+			error = ERR_GENERIC;
+			goto end_l;
+		}
+		
+		switch (tempCfgVar0->type) {
+		case none:
+			error("Variable \"%s\" is already cleared since is of type \"none\".", tempCfgVar0->name);
+			break;
+		case string:
+			cfg_setVarString(tempCfgVar0, "");
+			break;
+		case integer:
+			cfg_setVarInt(tempCfgVar0, 0);
+			break;
+		case vector:
+			cfg_setVarVector(tempCfgVar0, 0.0);
+			break;
+		default:
+			log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", tempCfgVar0->type, tempCfgVar0->name);
+			error = ERR_CRITICAL;
+			goto end_l;
+		}
 	}
 	else {
 		/* Usage: variable */
@@ -1641,10 +1738,10 @@ int cfg_runTerminalCommand(void) {
 		
 			putc('\n', stdout);
 			
-			// Execute string as administrator.
-			g_cfg.lock = false;
+			// // Execute string as administrator.
+			// g_cfg.lock = false;
 			error = cfg_execString(&g_consoleCommand, "console", 0);
-			g_cfg.lock = true;
+			// g_cfg.lock = true;
 			if (error == ERR_OUTOFMEMORY) {
 				critical_error("Out of memory", "");
 				goto cleanup_l;
@@ -1930,6 +2027,7 @@ void cfg_logCommandFrequency(const string_t *line) {
 int cfg_initConsole(void) {
 	int error = ERR_CRITICAL;
 	
+	string_init(&g_consoleCommand);
 	string_init(&g_commandComplete);
 	
 	cfg_var_t *v_historyLength = cfg_findVar(CFG_HISTORY_LENGTH);
@@ -1987,6 +2085,7 @@ void cfg_quitConsole(void) {
 	cleanup_l:
 	
 	string_free(&g_commandComplete);
+	string_free(&g_consoleCommand);
 	
 	return;
 }

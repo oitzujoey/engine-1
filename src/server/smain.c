@@ -17,7 +17,7 @@
 #include "../common/entity.h"
 #include "../common/network.h"
 
-int l_main_housekeeping(lua_State *luaState);
+static int l_main_housekeeping(lua_State *luaState);
 int l_main_checkQuit(lua_State *luaState);
 
 luaCFunc_t luaCFunctions[] = {
@@ -40,17 +40,17 @@ luaCFunc_t luaCFunctions[] = {
 };
 
 const cfg_var_init_t initialConfigVars[] = {
-	{.name = "server",              .vector = 0,    .integer = 0,                           .string = NULL, .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
-	{.name = "lua_main",            .vector = 0,    .integer = 0,                           .string = "",   .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-	{.name = "workspace",           .vector = 0,    .integer = 0,                           .string = "",   .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_SERVER_PORT,       .vector = 0,    .integer = DEFAULT_PORT_NUMBER,         .string = "",   .type = integer,    .handle = snetwork_handle_setServerPort,            .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_CLIENT_PORT,       .vector = 0,    .integer = DEFAULT_PORT_NUMBER,         .string = "",   .type = integer,    .handle = snetwork_handle_setClientPort,            .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_MAX_CLIENTS,       .vector = 0,    .integer = CFG_MAX_CLIENTS_DEFAULT,     .string = "",   .type = integer,    .handle = snetwork_handle_maxClients,               .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_MAX_RECURSION,     .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,   .string = "",   .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_RUN_QUIET,         .vector = 0,    .integer = 0,                           .string = "",   .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_HISTORY_LENGTH,    .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,  .string = "",   .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ},
-	{.name = "enet_message",        .vector = 0,    .integer = 0,                           .string = "",   .type = string,     .handle = snetwork_handle_enetMessage,              .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
-	{.name = NULL,                  .vector = 0,    .integer = 0,                           .string = NULL, .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
+	{.name = "server",                  .vector = 0,    .integer = 0,                               .string = NULL, .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
+	{.name = "lua_main",                .vector = 0,    .integer = 0,                               .string = "",   .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = "workspace",               .vector = 0,    .integer = 0,                               .string = "",   .type = string,     .handle = vfs_handle_setWorkspace,                  .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_PORT,                  .vector = 0,    .integer = CFG_PORT_DEFAULT,                .string = "",   .type = integer,    .handle = snetwork_handle_setServerPort,            .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_CONNECTION_TIMEOUT,    .vector = 0,    .integer = CFG_CONNECTION_TIMEOUT_DEFAULT,  .string = "",   .type = integer,    .handle = network_handle_connectionTimeout,         .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_MAX_CLIENTS,           .vector = 0,    .integer = CFG_MAX_CLIENTS_DEFAULT,         .string = "",   .type = integer,    .handle = snetwork_handle_maxClients,               .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_MAX_RECURSION,         .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,       .string = "",   .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_RUN_QUIET,             .vector = 0,    .integer = 0,                               .string = "",   .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_HISTORY_LENGTH,        .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,      .string = "",   .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ},
+	{.name = "enet_message",            .vector = 0,    .integer = 0,                               .string = "",   .type = string,     .handle = snetwork_handle_enetMessage,              .permissions = CFG_VAR_FLAG_WRITE},
+	{.name = NULL,                      .vector = 0,    .integer = 0,                               .string = NULL, .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
 };
 
 int l_main_checkQuit(lua_State *luaState) {
@@ -58,7 +58,7 @@ int l_main_checkQuit(lua_State *luaState) {
 	return 1;
 }
 
-int l_main_housekeeping(lua_State *luaState) {
+static int l_main_housekeeping(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// char sendString[100];
@@ -97,68 +97,12 @@ int l_main_housekeeping(lua_State *luaState) {
 	return 0;
 }
 
-static int main_init(void) {
+static int main_init(int argc, char *argv[]) {
 	int error = ERR_CRITICAL;
 	
-	string_init(&g_consoleCommand);
-	
-	/*  As of SDL v2.0.14:
-		Allocates 220 bytes that SDL_Quit doesn't free.
-		I don't think I can do anything about it. */
-	error = SDL_Init(SDL_INIT_TIMER);
-	if (error != 0) {
-		critical_error("SDL_Init returned %s", SDL_GetError());
-		return ERR_CRITICAL;
-	}
-	
-	error = snetwork_init();
-	if (error) {
-		critical_error("Could not initialize network", "");
-		return ERR_CRITICAL;
-	}
-	
-	entity_initEntityList();
-	modelList_init();
-	
-	error = cfg_terminalInit();
-	if (error) {
-		critical_error("Could not initialize the terminal", "");
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	error = ERR_OK;
-	cleanup_l:
-
-	return error;
-}
-
-static void main_quit(void) {
-	
-	modelList_free();
-	entity_freeEntityList();
-	
-	snetwork_quit();
-	
-	SDL_Quit();
-	
-	string_free(&g_consoleCommand);
-}
-
-int main(int argc, char *argv[]) {
-	
-	int error = 0;
-	lua_State *Lua;
-	const char *luaFileName = "smain.lua";
-	string_t luaFilePath;
-	cfg_var_t *lua_main_v;
-	cfg_var_t *workspace_v;
 	string_t tempString;
 	
-	log_info(__func__, "Starting engine-1 v0.0 (Server)");
-	
 	string_init(&tempString);
-	string_init(&luaFilePath);
 	
 	log_info(__func__, "Initializing server vars");
 	error = cfg_initVars(initialConfigVars);
@@ -200,25 +144,83 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
-	workspace_v = cfg_findVar("workspace");
-	if (workspace_v == NULL) {
-		log_critical_error(__func__, "\"workspace\" does not exist.");
-		error = ERR_GENERIC;
-		goto cleanup_l;
-	}
-	if (!strcmp(workspace_v->string.value, "")) {
+	if (!strcmp(g_workspace, "")) {
 		log_critical_error(__func__, "\"workspace\" has not been set.");
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
-	error = vfs_init(&g_vfs, &workspace_v->string);
+	string_copy_c(&tempString, g_workspace);
+	error = vfs_init(&g_vfs, &tempString);
 	if (error) {
 		log_critical_error(__func__, "Could not start VFS");
 		goto cleanup_l;
 	}
 	
-	error = main_init();
+
+
+
+	/*  As of SDL v2.0.14:
+		Allocates 220 bytes that SDL_Quit doesn't free.
+		I don't think I can do anything about it. */
+	error = SDL_Init(SDL_INIT_TIMER);
+	if (error != 0) {
+		critical_error("SDL_Init returned %s", SDL_GetError());
+		return ERR_CRITICAL;
+	}
+	
+	entity_initEntityList();
+	modelList_init();
+	
+	error = snetwork_init();
+	if (error) {
+		critical_error("Could not initialize network", "");
+		return ERR_CRITICAL;
+	}
+	
+	error = cfg_terminalInit();
+	if (error) {
+		critical_error("Could not initialize the terminal", "");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	string_free(&tempString);
+
+	return error;
+}
+
+static void main_quit(void) {
+	
+	cfg_quitConsole();
+	
+	modelList_free();
+	entity_freeEntityList();
+	
+	snetwork_quit();
+	
+	SDL_Quit();
+	
+}
+
+int main(int argc, char *argv[]) {
+	
+	int error = 0;
+	lua_State *Lua;
+	const char *luaFileName = "smain.lua";
+	string_t luaFilePath;
+	cfg_var_t *lua_main_v;
+	string_t tempString;
+	
+	log_info(__func__, "Starting engine-1 v0.0 (Server)");
+	
+	string_init(&tempString);
+	string_init(&luaFilePath);
+	
+	error = main_init(argc, argv);
 	if (error) {
 		error = ERR_CRITICAL;
 		goto cleanup_l;
@@ -237,11 +239,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* @TODO: Do proper file path sanitization. */
-	string_copy(&luaFilePath, &workspace_v->string);
+	string_copy_c(&luaFilePath, g_workspace);
 	file_concatenatePath(&luaFilePath, &lua_main_v->string);
 	file_concatenatePath(&luaFilePath, string_const(luaFileName));
-	
-	// l_snetwork_send((Uint8 *) "Hello, world!", strlen("Hello, world!") + 1, ipAddress);
 	
 	if (g_cfg.quit) {
 		error = ERR_OK;

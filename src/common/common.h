@@ -4,7 +4,6 @@
 
 #include <time.h>
 #include <lua.h>
-#include "vfs.h"
 
 #define ERR_OK          0
 #define ERR_GENERIC     1
@@ -41,7 +40,6 @@
 #define AUTOEXEC    "autoexec.cfg"
 
 #define MAX_CLIENTS         2
-#define DEFAULT_PORT_NUMBER 8099
 
 #define ENGINE_MAN_NAME "Scott"
 
@@ -60,8 +58,6 @@ typedef struct {
 } quat_t;
 
 extern int error;
-
-extern vfs_t g_vfs;
 
 int common_getTimeNs(long *ns);
 

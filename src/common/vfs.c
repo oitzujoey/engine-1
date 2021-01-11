@@ -6,6 +6,15 @@
 #include "common.h"
 #include "file.h"
 #include "log.h"
+#include "cfg.h"
+
+vfs_t g_vfs;
+char *g_workspace;
+
+int vfs_handle_setWorkspace(cfg_var_t *var) {
+	g_workspace = var->string.value;
+	return ERR_OK;
+}
 
 int vfs_getFileText(vfs_t *vfs, string_t *fileText, const string_t * const workspace_path) {
 	

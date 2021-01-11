@@ -9,6 +9,8 @@
 #include "cfg.h"
 
 #define ENET_CHANNELS       2
+#define ENET_CHANNEL0       0
+#define ENET_CHANNEL1       1
 
 // typedef struct {
 // 	uint16_t id;

@@ -18,7 +18,6 @@
 // int l_snetwork_send(const uint8_t *data, int length, IPaddress ipAddress);
 
 int snetwork_handle_setServerPort(cfg_var_t *var);
-int snetwork_handle_setClientPort(cfg_var_t *var);
 int snetwork_handle_enetMessage(cfg_var_t *var);
 int snetwork_handle_maxClients(cfg_var_t *var);
 

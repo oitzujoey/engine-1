@@ -322,6 +322,9 @@ Layer 1:    Encryption
 Layer 2:    Reliable packet transmission
 Layer 3:    Compression
 
+Entities will be sent to the client using unreliable packets. Everything else will be sent using reliable packets.
+Key presses will be sent to the server using unreliable packets. Everything else will be sent using reliable packets.
+
 
 The purpose of config scripts is to set variables required to get the game running.
 The purpose of the console is to do basic configuration of the client and server, however, making it an extensive debugging tool will also be a priority. 
@@ -353,12 +356,12 @@ Files to rewrite when it is somewhat working:
 [/] (Common) Load and parse Oolite DAT files
 [/] (Common) Create entity tree from Lua
     [*] (Common) Set position and orientation from Lua.
-[ ] (Server) Send entity tree over the network
+[/] (Server) Send entity tree over the network
     [*] (All) Decide on network protocol
     [*] (Client Server) Send and receive packet over the network.
-    [ ] (Client Server) Sand and receive packets reliably over the network.
-    [ ] (Server) Send entity tree over the network.
-[ ] (Client) Receive entity tree from the network
+    [/] (Client Server) Sand and receive packets reliably over the network.
+    [*] (Server) Send entity tree over the network.
+[*] (Client) Receive entity tree from the network
 [ ] (All)    Get on those TODOs (ugly ones)
 [ ] (Client) Render entity tree in basic 3D using OpenGL
 -------------------------------------------------------------
