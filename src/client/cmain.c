@@ -3,7 +3,7 @@
 #include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h>
-
+#include <SDL2/SDL.h>
 #include "render.h"
 #include "input.h"
 #include "../common/common.h"
@@ -23,8 +23,8 @@ static int l_main_housekeeping(lua_State *luaState);
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
-extern SDL_Window *window;
-extern SDL_Surface *screenSurface;
+extern SDL_Window *g_window;
+// extern SDL_Surface *g_screenSurface;
 
 luaCFunc_t luaCFunctions[] = {
 	{.func = l_log_info,            .name = "l_log_info"},
@@ -99,34 +99,38 @@ static int l_main_housekeeping(lua_State *luaState) {
 }
 
 int windowInit(void) {
+	int error = ERR_CRITICAL;
 
-	window = NULL;
-	screenSurface = NULL;
+	g_window = NULL;
+	// g_screenSurface = NULL;
 
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
 		fprintf(stderr, "Error: SDL could not initialize | SDL_Error %s\n", SDL_GetError());
-		return 1;
+		error = ERR_GENERIC;
+		goto cleanup_l;
 	}
-	else {
-		window = SDL_CreateWindow("engine-1 Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-		if (window == NULL) {
-			fprintf(stderr, "Error: Window could not be created | SDL_Error %s\n", SDL_GetError());
-			return 2;
-		}
-		else {
-			screenSurface = SDL_GetWindowSurface(window);
-		}
+	
+	g_window = SDL_CreateWindow("engine-1 Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+	if (g_window == NULL) {
+		fprintf(stderr, "Error: Window could not be created | SDL_Error %s\n", SDL_GetError());
+		error = ERR_GENERIC;
+		goto cleanup_l;
 	}
-	return 0;
+	
+	error = render_initOpenGL();
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	return error;
 }
 
 static void windowQuit(void) {
 
-	SDL_FreeSurface(screenSurface);
-	screenSurface = NULL;
-
-	SDL_DestroyWindow(window);
-	window = NULL;
+	SDL_DestroyWindow(g_window);
+	g_window = NULL;
 	
 	SDL_Quit();
 }
