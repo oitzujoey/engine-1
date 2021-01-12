@@ -22,5 +22,5 @@ add_executable(cengine-1)
 
 add_subdirectory(src)
 
-target_link_libraries(sengine-1 SDL2 SDL2_net lua m enet)
-target_link_libraries(cengine-1 SDL2 SDL2_net lua m enet)
+target_link_libraries(sengine-1 SDL2 lua m enet)
+target_link_libraries(cengine-1 SDL2 lua m enet)
