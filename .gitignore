@@ -9,3 +9,4 @@ oolite-binary-resources
 CMakeCache.txt
 Makefile
 *.cmake
+*.cap
