@@ -66,6 +66,8 @@ typedef struct {
 #define CFG_RUN_QUIET           "quiet"
 #define CFG_HISTORY_LENGTH      "command_history_length"
 #define CFG_HISTORY_LENGTH_DEFAULT      10
+#define CFG_OPENGL_LOG_FILE     "opengl_log_file"
+#define CFG_OPENGL_LOG_FILE_DEFAULT     "opengl.log"
 
 #define CFG_NUM_COMMANDS    20
 typedef struct {

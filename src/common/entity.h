@@ -2,6 +2,7 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
+#include <stdbool.h>
 #include <lua.h>
 #include "common.h"
 
@@ -18,6 +19,7 @@ typedef struct {
 	entity_childType_t childType;
 	vec3_t position;
 	quat_t orientation;
+	bool inUse;
 } entity_t;
 
 typedef struct {

@@ -21,6 +21,7 @@ static void entity_initEntity(entity_t *entity) {
 		entity->orientation.v[i] = 0;
 	}
 	entity->orientation.s = 1;
+	entity->inUse = true;
 }
 
 static void entity_freeEntity(entity_t *entity) {
@@ -132,8 +133,9 @@ int entity_deleteEntity(int index) {
 	g_entityList.entities[index].children_length = 0;
 	// Easy!
 	
-	// And finally, save the index.
+	// And finally, save the index and mark as deleted.
 	g_entityList.deletedEntities[g_entityList.deletedEntities_length - 1] = index;
+	g_entityList.entities[index].inUse = false;
 	
 	error = ERR_OK;
 	cleanup_l:

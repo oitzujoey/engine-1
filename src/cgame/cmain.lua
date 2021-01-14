@@ -44,7 +44,7 @@ while l_checkQuit() == 0 do
 	
 
 	-- puts("Lua render")
-	-- render()
+	render()
 
 	-- -- puts("Lua getInput")
 	-- input = (getInput())

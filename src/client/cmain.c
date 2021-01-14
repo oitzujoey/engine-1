@@ -20,8 +20,8 @@
 static int l_main_checkQuit(lua_State *luaState);
 static int l_main_housekeeping(lua_State *luaState);
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+const int SCREEN_WIDTH = 1920;
+const int SCREEN_HEIGHT = 1080;
 
 extern SDL_Window *g_window;
 // extern SDL_Surface *g_screenSurface;
@@ -39,16 +39,17 @@ luaCFunc_t luaCFunctions[] = {
 };
 
 const cfg_var_init_t initialConfigVars[] = {
-	{.name = "client",                  .vector = 0,    .integer = 0,                               .string = NULL,         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
-	{.name = "lua_main",                .vector = 0,    .integer = 0,                               .string = "",           .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-	{.name = "workspace",               .vector = 0,    .integer = 0,                               .string = "",           .type = string,     .handle = vfs_handle_setWorkspace,                  .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_PORT,                  .vector = 0,    .integer = CFG_PORT_DEFAULT,                .string = "",           .type = integer,    .handle = cnetwork_handle_setServerPort,            .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_CONNECTION_TIMEOUT,    .vector = 0,    .integer = CFG_CONNECTION_TIMEOUT_DEFAULT,  .string = "",           .type = integer,    .handle = network_handle_connectionTimeout,         .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_IP_ADDRESS,            .vector = 0,    .integer = 0,                               .string = "localhost",  .type = string,     .handle = cnetwork_handle_setIpAddress,             .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_MAX_RECURSION,         .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,       .string = "",           .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_RUN_QUIET,             .vector = 0,    .integer = false,                           .string = "",           .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
-	{.name = CFG_HISTORY_LENGTH,        .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,      .string = "",           .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
-	{.name = NULL,                      .vector = 0,    .integer = 0,                               .string = NULL,         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
+	{.name = "client",                  .vector = 0,    .integer = 0,                               .string = NULL,                         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
+	{.name = "lua_main",                .vector = 0,    .integer = 0,                               .string = "",                           .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+	{.name = "workspace",               .vector = 0,    .integer = 0,                               .string = "",                           .type = string,     .handle = vfs_handle_setWorkspace,                  .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_PORT,                  .vector = 0,    .integer = CFG_PORT_DEFAULT,                .string = "",                           .type = integer,    .handle = cnetwork_handle_setServerPort,            .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_CONNECTION_TIMEOUT,    .vector = 0,    .integer = CFG_CONNECTION_TIMEOUT_DEFAULT,  .string = "",                           .type = integer,    .handle = network_handle_connectionTimeout,         .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_IP_ADDRESS,            .vector = 0,    .integer = 0,                               .string = "localhost",                  .type = string,     .handle = cnetwork_handle_setIpAddress,             .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_MAX_RECURSION,         .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,       .string = "",                           .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
+	{.name = CFG_RUN_QUIET,             .vector = 0,    .integer = false,                           .string = "",                           .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
+	{.name = CFG_HISTORY_LENGTH,        .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,      .string = "",                           .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
+	{.name = CFG_OPENGL_LOG_FILE,       .vector = 0,    .integer = 0,                               .string = CFG_OPENGL_LOG_FILE_DEFAULT,  .type = string,     .handle = render_handle_updateLogFileName,          .permissions = CFG_VAR_FLAG_READ},
+	{.name = NULL,                      .vector = 0,    .integer = 0,                               .string = NULL,                         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
 };
 
 static int l_main_checkQuit(lua_State *luaState) {
@@ -101,6 +102,8 @@ static int l_main_housekeeping(lua_State *luaState) {
 int windowInit(void) {
 	int error = ERR_CRITICAL;
 
+	int sdlFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN;
+
 	g_window = NULL;
 	// g_screenSurface = NULL;
 
@@ -110,7 +113,15 @@ int windowInit(void) {
 		goto cleanup_l;
 	}
 	
-	g_window = SDL_CreateWindow("engine-1 Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+	SDL_DisplayMode displayMode;
+	error = SDL_GetDesktopDisplayMode(0, &displayMode);
+	if (error < 0) {
+		error("Could not get desktop display mode. SDL error: %s", SDL_GetError());
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	g_window = SDL_CreateWindow("engine-1 Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, displayMode.w, displayMode.h, sdlFlags);
 	if (g_window == NULL) {
 		fprintf(stderr, "Error: Window could not be created | SDL_Error %s\n", SDL_GetError());
 		error = ERR_GENERIC;
