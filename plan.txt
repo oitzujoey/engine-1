@@ -363,7 +363,7 @@ Files to rewrite when it is somewhat working:
     [*] (Server) Send entity tree over the network.
 [*] (Client) Receive entity tree from the network
 [ ] (All)    Get on those TODOs (ugly ones)
-[ ] (Client) Render entity tree in basic 3D using OpenGL
+[*] (Client) Render entity tree in basic 3D using OpenGL
 -------------------------------------------------------------
 [ ] (Client) Pass entity tree through VM and back to renderer
 [*] (Server) Send entity tree every second

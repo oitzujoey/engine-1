@@ -113,15 +113,14 @@ int windowInit(void) {
 		goto cleanup_l;
 	}
 	
-	SDL_DisplayMode displayMode;
-	error = SDL_GetDesktopDisplayMode(0, &displayMode);
+	error = SDL_GetDesktopDisplayMode(0, &g_displayMode);
 	if (error < 0) {
 		error("Could not get desktop display mode. SDL error: %s", SDL_GetError());
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
-	g_window = SDL_CreateWindow("engine-1 Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, displayMode.w, displayMode.h, sdlFlags);
+	g_window = SDL_CreateWindow("engine-1 Client", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, g_displayMode.w, g_displayMode.h, sdlFlags);
 	if (g_window == NULL) {
 		fprintf(stderr, "Error: Window could not be created | SDL_Error %s\n", SDL_GetError());
 		error = ERR_GENERIC;

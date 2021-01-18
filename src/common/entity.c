@@ -7,6 +7,7 @@
 #include "log.h"
 #include "insane.h"
 #include "obj.h"
+#include "vector.h"
 
 entityList_t g_entityList;
 
@@ -393,7 +394,13 @@ int l_entity_setOrientation(lua_State *luaState) {
 	g_entityList.entities[index].orientation.v[2] = lua_tonumber(luaState, 3);
 	lua_pop(luaState, 1);
 	
+	error = quat_normalize(&g_entityList.entities[index].orientation);
+	if (error) {
+		goto cleanup_l;
+	}
+	
 	error = ERR_OK;
+	cleanup_l:
 
 	lua_pushinteger(luaState, error);
 

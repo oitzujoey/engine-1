@@ -5,12 +5,14 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <math.h>
 #include "log.h"
 #include "vfs.h"
 #include "cfg.h"
 #include "common.h"
 #include "file.h"
 #include "insane.h"
+#include "vector.h"
 
 
 /* Model list */

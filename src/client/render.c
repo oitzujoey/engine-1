@@ -2,17 +2,19 @@
 #include "render.h"
 #include <stdio.h>
 #include <stdarg.h>
-#include <SDL2/SDL.h>
 #include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
 #include "../common/common.h"
 #include "../common/log.h"
 #include "../common/entity.h"
 #include "../common/obj.h"
+#include "../common/vector.h"
 
 SDL_Window* g_window;
+SDL_DisplayMode g_displayMode;
 SDL_GLContext g_GLContext;
-GLuint g_vbo;
+GLuint g_VertexVbo;
+GLuint g_colorVbo;
 GLuint g_vao;
 GLuint g_shaderProgram[2];
 char *g_openglLogFileName;
@@ -182,48 +184,81 @@ int render_initOpenGL(void) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
-	g_vbo = 0;
-	glGenBuffers(1, &g_vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
+	// glEnable(GL_CULL_FACE);
+	// glCullFace(GL_BACK);
+	// glFrontFace(GL_CW);
+	
+	g_VertexVbo = 0;
+	glGenBuffers(1, &g_VertexVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
 	// glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), g_points, GL_STATIC_DRAW);
-	glBufferData(GL_ARRAY_BUFFER, 27 * sizeof(float), g_points, GL_DYNAMIC_DRAW);
-	glError = glGetError();
-	if (glError) {
-		error("glBufferData returned with errors.", "");
-		while (glError) {
-			error("OpenGL error: %s", render_glGetErrorString(glError));
-			glError = glGetError();
-		}
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
+	// glBufferData(GL_ARRAY_BUFFER, 27 * sizeof(float), g_points, GL_DYNAMIC_DRAW);
+	// glError = glGetError();
+	// if (glError) {
+	// 	error("glBufferData returned with errors.", "");
+	// 	while (glError) {
+	// 		error("OpenGL error: %s", render_glGetErrorString(glError));
+	// 		glError = glGetError();
+	// 	}
+	// 	error = ERR_CRITICAL;
+	// 	goto cleanup_l;
+	// }
+	
+	g_colorVbo = 0;
+	glGenBuffers(1, &g_colorVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
+	// glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), g_points, GL_STATIC_DRAW);
+	// glBufferData(GL_ARRAY_BUFFER, 27 * sizeof(float), g_points, GL_DYNAMIC_DRAW);
+	// glError = glGetError();
+	// if (glError) {
+	// 	error("glBufferData returned with errors.", "");
+	// 	while (glError) {
+	// 		error("OpenGL error: %s", render_glGetErrorString(glError));
+	// 		glError = glGetError();
+	// 	}
+	// 	error = ERR_CRITICAL;
+	// 	goto cleanup_l;
+	// }
 	
 	g_vao = 0;
 	glGenVertexArrays(1, &g_vao);
 	glBindVertexArray(g_vao);
-	glEnableVertexAttribArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 	
 	const char* vertexShaderSource0 =
 		"#version 400\n"
-		"in vec3 vp;"
+		"layout(location = 0) in vec3 vp;"
+		"layout(location = 1) in vec3 vc;"
+		"out vec3 color;"
 		"void main() {"
 		"  vec3 vertex;"
-		"  vertex = vp / 100.0;"
+		"  vertex = vp;"
 		"  gl_Position = vec4(vertex, 1.0);"
+		"  color = vc;"
 		"}";
 	
 	const char* fragmentShaderSource0 =
 		"#version 400\n"
 		"out vec4 frag_colour;"
+		"in vec3 color;"
 		"void main() {"
-		"  frag_colour = vec4(1.0, 1.0, 1.0, 1.0);"
+		// "  float b = 2 * gl_FragCoord.z;"
+		// "  frag_colour = vec4(b, b, b, 1.0);"
+		"  float dot = dot(color, vec3(0.0, 0.0, 1.0));"
+		"  frag_colour = vec4(abs(dot), abs(dot), abs(dot), 1.0);"
+		// "  frag_colour = vec4(length(color), length(color), length(color), 1.0);"
+		// "  frag_colour = vec4(color.x, color.y, color.z, 1.0);"
 		"}";
 	
 	const char* fragmentShaderSource1 =
 		"#version 400\n"
 		"out vec4 frag_colour;"
+		"in vec3 color;"
 		"void main() {"
 		"  frag_colour = vec4(0.0, 0.0, 0.0, 1.0);"
 		"}";
@@ -358,28 +393,55 @@ int render(lua_State *L) {
 			model_t model = g_modelList.models[modelIndex];
 			GLsizeiptr facesLength = model.faces_length;
 			float points[9 * facesLength];
+			float normals[9 * facesLength];
+			
+			const vec_t scale = 0.015f;
 			
 			// For each face...
 			for (int k = 0; k < facesLength; k++) {
-				points[9 * k + 0] = model.vertices[model.faces[k][0]][0];
-				points[9 * k + 1] = model.vertices[model.faces[k][0]][1];
-				points[9 * k + 2] = model.vertices[model.faces[k][0]][2];
-				points[9 * k + 3] = model.vertices[model.faces[k][1]][0];
-				points[9 * k + 4] = model.vertices[model.faces[k][1]][1];
-				points[9 * k + 5] = model.vertices[model.faces[k][1]][2];
-				points[9 * k + 6] = model.vertices[model.faces[k][2]][0];
-				points[9 * k + 7] = model.vertices[model.faces[k][2]][1];
-				points[9 * k + 8] = model.vertices[model.faces[k][2]][2];
+				// For each face vertex...
+				for (int l = 0; l < 3; l++) {
+					vec3_t point;
+					vec3_t normal;
+					const vec3_t screen = {
+						(vec_t) g_displayMode.h / (vec_t) g_displayMode.w,
+						1.0,
+						1.0
+					};
+					
+					vec3_copy(&normal, &model.surface_normals[k]);
+					vec3_rotate(&normal, &g_entityList.entities[i].orientation);
+					
+					vec3_copy(&point, &model.vertices[model.faces[k][l]]);
+					vec3_rotate(&point, &g_entityList.entities[i].orientation);
+					
+					// For each vertex axis...
+					for (int m = 0; m < 3; m++) {
+						points[9 * k + 3 * l + m] = point[m] * screen[m] * scale;
+						
+						// Each normal will be duplicated at least three times.
+						normals[9 * k + 3 * l + m] = normal[m];
+					}
+				}
 			}
 			
-			glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
+			// For each point...
+			for (int k = 0; k < 3 * facesLength; k++) {
+				for (int l = 0; l < 3; l++) {
+					points[3 * k + l] += g_entityList.entities[i].position[l] * scale;
+				}
+			}
+			
+			glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
 			glBufferData(GL_ARRAY_BUFFER, 9 * facesLength * sizeof(float), points, GL_DYNAMIC_DRAW);
+			glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
+			glBufferData(GL_ARRAY_BUFFER, 9 * facesLength * sizeof(float), normals, GL_DYNAMIC_DRAW);
 			glUseProgram(g_shaderProgram[0]);
 			glBindVertexArray(g_vao);
 			glDrawArrays(GL_TRIANGLES, 0, 3 * facesLength);
-			glUseProgram(g_shaderProgram[1]);
-			glBindVertexArray(g_vao);
-			glDrawArrays(GL_LINE_STRIP, 0, 3 * facesLength);
+			// glUseProgram(g_shaderProgram[1]);
+			// glBindVertexArray(g_vao);
+			// glDrawArrays(GL_LINE_STRIP, 0, 3 * facesLength);
 		}
 	}
 	

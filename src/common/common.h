@@ -4,6 +4,7 @@
 
 #include <time.h>
 #include <lua.h>
+#include "types.h"
 
 #define ERR_OK          0
 #define ERR_GENERIC     1
@@ -43,20 +44,6 @@
 
 #define ENGINE_MAN_NAME "Scott"
 
-#ifdef DOUBLE_VEC
-typedef double vec_t;
-#else
-typedef float vec_t;
-#endif
-typedef vec_t vec2_t[2];
-typedef vec_t vec3_t[3];
-typedef vec_t vec4_t[4];
-
-typedef struct {
-	vec_t s;
-	vec3_t v;
-} quat_t;
-
 extern int error;
 
 int common_getTimeNs(long *ns);
@@ -64,11 +51,5 @@ int common_getTimeNs(long *ns);
 int l_puts(lua_State*);
 
 int MSB(int n);
-
-void vec3_copy(vec3_t *destination, vec3_t *source);
-void vec3_dotProduct(vec_t *result, vec3_t *a, vec3_t *b);
-void vec3_crossProduct(vec3_t *result, vec3_t *a, vec3_t *b);
-void vec3_subtract(vec3_t *result, vec3_t *a, vec3_t *b);
-int vec3_normalize(vec3_t *v);
 
 #endif
