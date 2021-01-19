@@ -13,9 +13,17 @@ int vec3_normalize(vec3_t *v);
 void quat_copy(quat_t *out, quat_t *in);
 void quat_hamilton(quat_t *out, quat_t *q0, quat_t *q1);
 void quat_conjugate(quat_t *q);
+vec_t quat_norm(quat_t *q);
 int quat_normalize(quat_t *q);
 void quat_inverse(quat_t *q);
 #define quat_unitInverse(q) quat_conjugate(q)
 void vec3_rotate(vec3_t *v, quat_t *q);
+void quat_print(quat_t *q);
+
+/* Lua */
+/* === */
+
+int l_hamiltonProduct(lua_State *luaState);
+int l_quatNormalize(lua_State *luaState);
 
 #endif

@@ -30,4 +30,6 @@ int network_ipv4ToString(char **string, uint32_t ipAddress);
 
 int network_handle_connectionTimeout(cfg_var_t *var);
 
+uint32_t network_generateChecksum(uint8_t *data, size_t length);
+
 #endif

@@ -7,6 +7,7 @@
 #include "../common/network.h"
 #include "server.h"
 #include "../common/entity.h"
+#include "../common/vector.h"
 
 // client_t g_clients[MAX_CLIENTS];
 // UDPsocket g_serverSocket;
@@ -288,9 +289,22 @@ static int snetwork_sendEntityList(void) {
 	ENetPacket *packet;
 	size_t packetlength = 0;
 	enet_uint8 *data;
+	enet_uint8 *dataStart;
 	entityList_t *entityList;
 	entity_t *entities;
-	
+	uint32_t checksum;
+	static quat_t lastQuat = {
+		.s = 1,
+		.v = {
+			0,
+			0,
+			0
+		}
+	};
+	static uint32_t packetID = 0;
+		
+	packetlength += sizeof(uint32_t);   // Checksum
+	packetlength += sizeof(uint32_t);   // Packet counter
 	packetlength += sizeof(entityList_t);
 	packetlength += g_entityList.entities_length * sizeof(entity_t);
 	packetlength += g_entityList.deletedEntities_length * sizeof(int);
@@ -305,7 +319,12 @@ static int snetwork_sendEntityList(void) {
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
-	data = packet->data;
+	data = packet->data + sizeof(uint32_t); // packet->data + checksum
+	dataStart = data;
+	
+	memcpy(data, &packetID, sizeof(uint32_t));
+	packetID++;
+	data += sizeof(uint32_t);
 	
 	memcpy(data, &g_entityList, sizeof(entityList_t));
 	entityList = (entityList_t *) data;
@@ -341,7 +360,26 @@ static int snetwork_sendEntityList(void) {
 		memcpy(data, g_entityList.entities[i].children, g_entityList.entities[i].children_length * sizeof(int));
 		entities[i].children = (int *) (data - packet->data);
 		data += g_entityList.entities[i].children_length * sizeof(int);
+		if (i == 1) {
+			// quat_print(&g_entityList.entities[i].orientation);
+			// printf("%f\n", quat_norm(&g_entityList.entities[i].orientation));
+			
+			quat_t q0, q1;
+			quat_copy(&q0, &lastQuat);
+			quat_unitInverse(&q0);
+			quat_hamilton(&q1, &g_entityList.entities[i].orientation, &q0);
+			quat_copy(&lastQuat, &g_entityList.entities[i].orientation);
+			// quat_print(&q1);
+			// if (q1.s < 0.99992) {
+			// 	printf("\t");
+			// 	quat_print(&g_entityList.entities[i].orientation);
+			// }
+		}
 	}
+	
+	// Put checksum at the start of the packet.
+	checksum = network_generateChecksum(dataStart, data - dataStart);
+	memcpy(packet->data, &checksum, sizeof(uint32_t));
 	
 	enet_host_broadcast(g_server.host, ENET_CHANNEL0, packet);
 	

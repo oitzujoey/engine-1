@@ -1,5 +1,6 @@
 
 #include <SDL2/SDL.h>
+#include <lua.h>
 
 #ifndef TYPES_H
 #define TYPES_H

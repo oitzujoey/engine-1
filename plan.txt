@@ -332,6 +332,8 @@ The purpose of the console is to do basic configuration of the client and server
 
 Server discovery will happen over TCP.
 
+It might be a good idea to use entity 0 (world) to orient the camera. The client would set the position and orientation of entity 0, and the renderer would automatically render the correct view.
+
 
 
 Files to rewrite when it is somewhat working:
@@ -365,11 +367,11 @@ Files to rewrite when it is somewhat working:
 [ ] (All)    Get on those TODOs (ugly ones)
 [*] (Client) Render entity tree in basic 3D using OpenGL
 -------------------------------------------------------------
-[ ] (Client) Pass entity tree through VM and back to renderer
+![ ] (Client) Pass entity tree through VM and back to renderer
 [*] (Server) Send entity tree every second
-[ ] (Server) Animate entity tree
+[*] (Server) Animate entity tree
 [ ] (All)    Get on those TODOs (ugly ones)
-[ ] (Client) Render tree every time it is received
+[*] (Client) Render tree every time it is received
 --------------------------------------------------
 [/] (Client) Get keyboard input
 [/] (Client) Get mouse input

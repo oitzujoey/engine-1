@@ -184,9 +184,9 @@ int render_initOpenGL(void) {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
-	// glEnable(GL_CULL_FACE);
-	// glCullFace(GL_BACK);
-	// glFrontFace(GL_CW);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	glFrontFace(GL_CCW);
 	
 	g_VertexVbo = 0;
 	glGenBuffers(1, &g_VertexVbo);
@@ -253,6 +253,7 @@ int render_initOpenGL(void) {
 		"  frag_colour = vec4(abs(dot), abs(dot), abs(dot), 1.0);"
 		// "  frag_colour = vec4(length(color), length(color), length(color), 1.0);"
 		// "  frag_colour = vec4(color.x, color.y, color.z, 1.0);"
+		// "  frag_colour = vec4(abs(color.x * dot), abs(color.y * dot), abs(color.z * dot), 1.0);"
 		"}";
 	
 	const char* fragmentShaderSource1 =

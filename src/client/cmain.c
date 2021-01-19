@@ -88,7 +88,7 @@ static int l_main_housekeeping(lua_State *luaState) {
 	//     entity_printEntity(i);
 	// }
 
-	SDL_Delay(10);
+	// SDL_Delay(10);
 	
 	error = ERR_OK;
 	cleanup_l:

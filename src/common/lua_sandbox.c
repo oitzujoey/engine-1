@@ -27,7 +27,9 @@ int lua_sandbox_init(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename) 
     
     *Lua = luaL_newstate();
     /* Only include this if you are insane. */
-    /* luaL_openlibs(Lua); */
+#ifdef DEBUG
+    luaL_openlibs(*Lua);
+#endif
     
     const luaL_Reg *lib;
     for (lib = luaLibs; lib->func; lib++) {

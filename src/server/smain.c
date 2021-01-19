@@ -16,6 +16,7 @@
 #include "../common/lua_common.h"
 #include "../common/entity.h"
 #include "../common/network.h"
+#include "../common/vector.h"
 
 static int l_main_housekeeping(lua_State *luaState);
 int l_main_checkQuit(lua_State *luaState);
@@ -36,6 +37,8 @@ luaCFunc_t luaCFunctions[] = {
 	{.func = l_entity_setOrientation,   .name = "l_entity_setOrientation"   },
 	{.func = l_main_housekeeping,       .name = "l_main_housekeeping"       },
 	{.func = l_main_checkQuit,          .name = "l_checkQuit"               },
+	{.func = l_hamiltonProduct,         .name = "l_hamiltonProduct"         },
+	{.func = l_quatNormalize,           .name = "l_quatNormalize"           },
 	{.func = NULL,                      .name = NULL                        }
 };
 
@@ -92,7 +95,7 @@ static int l_main_housekeeping(lua_State *luaState) {
 		g_cfg.quit = true;
 	}
 	
-	SDL_Delay(10);
+	SDL_Delay(8);
 	
 	return 0;
 }

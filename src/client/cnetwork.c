@@ -7,6 +7,7 @@
 #include "../common/network.h"
 #include "../common/str.h"
 #include "../common/entity.h"
+#include "../common/vector.h"
 
 // UDPsocket g_serverSocket;
 // UDPsocket g_clientSocket;
@@ -278,8 +279,22 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 	ENetPacket *packet;
 	int length;
 	enet_uint8 *data;
-	entityList_t *entityList;
+	enet_uint8 *dataStart;
+	// entityList and entities in the packet must be preserved for checksum calculation, so we use these copies instead.
+	entityList_t entityList;
 	entity_t *entities;
+	static quat_t lastQuat = {
+		.s = 1,
+		.v = {
+			0,
+			0,
+			0
+		}
+	};
+	uint32_t checksum, calculatedChecksum;
+	static int trap = 0;
+	static uint32_t lastPacketID = 0;
+	uint32_t packetID;
 	
 	packet = event.packet;
 	data = packet->data;
@@ -290,39 +305,47 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
-	entityList = (entityList_t *) data;
+	
+	memcpy(&checksum, data, sizeof(uint32_t));
+	data += sizeof(uint32_t);
+	dataStart = data;
+	
+	memcpy(&packetID, data, sizeof(uint32_t));
+	data += sizeof(uint32_t);
+	
+	memcpy(&entityList, data, sizeof(entityList_t));
 	data += sizeof(entityList_t);
 	
-	if (entityList->entities_length > g_entityList.entities_length) {
-		entityList->entities = realloc(g_entityList.entities, entityList->entities_length * sizeof(entity_t));
-		if (entityList->entities == NULL) {
+	if (entityList.entities_length > g_entityList.entities_length) {
+		entityList.entities = realloc(g_entityList.entities, entityList.entities_length * sizeof(entity_t));
+		if (entityList.entities == NULL) {
 			critical_error("Out of memory.", "");
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}
 		
 		// Initialize new entities to zero.
-		memset((entityList->entities + g_entityList.entities_length), 0, (entityList->entities_length - g_entityList.entities_length) * sizeof(entity_t));
+		memset((entityList.entities + g_entityList.entities_length), 0, (entityList.entities_length - g_entityList.entities_length) * sizeof(entity_t));
 	}
 	else {
-		entityList->entities = g_entityList.entities;
+		entityList.entities = g_entityList.entities;
 	}
 	
-	if (entityList->deletedEntities_length > g_entityList.deletedEntities_length_allocated) {
-		entityList->deletedEntities = realloc(g_entityList.deletedEntities, entityList->deletedEntities_length * sizeof(int));
-		if (entityList->deletedEntities == NULL) {
+	if (entityList.deletedEntities_length > g_entityList.deletedEntities_length_allocated) {
+		entityList.deletedEntities = realloc(g_entityList.deletedEntities, entityList.deletedEntities_length * sizeof(int));
+		if (entityList.deletedEntities == NULL) {
 			critical_error("Out of memory.", "");
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}
-		entityList->deletedEntities_length_allocated = entityList->deletedEntities_length;
+		entityList.deletedEntities_length_allocated = entityList.deletedEntities_length;
 		
 	}
 	else {
-		entityList->deletedEntities = g_entityList.deletedEntities;
+		entityList.deletedEntities = g_entityList.deletedEntities;
 	}
 	
-	memcpy(&g_entityList, entityList, sizeof(entityList_t));
+	memcpy(&g_entityList, &entityList, sizeof(entityList_t));
 	
 	
 	// This uses newly updated length;
@@ -331,7 +354,17 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
-	entities = (entity_t *) data;
+	
+	// entities = (entity_t *) data;
+	entities = calloc(g_entityList.entities_length, sizeof(entity_t));
+	if (entities == NULL) {
+		critical_error("Out of memory", "");
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	
+	memcpy(entities, data, g_entityList.entities_length * sizeof(entity_t));
+	
 	data += g_entityList.entities_length * sizeof(entity_t);
 	if (data - packet->data >= length) {
 		error("Malformed entity packet", "");
@@ -354,6 +387,7 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 	}
 	
 	memcpy(g_entityList.entities, entities, g_entityList.entities_length * sizeof(entity_t));
+	free(entities);
 	
 	
 	if (data - packet->data >= length) {
@@ -373,7 +407,45 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 		}
 		memcpy(g_entityList.entities[i].children, data, g_entityList.entities[i].children_length * sizeof(int));
 		data += g_entityList.entities[i].children_length * sizeof(int);
+		if (i == 1) {
+			// quat_print(&g_entityList.entities[i].orientation);
+			// printf("%f\n", quat_norm(&g_entityList.entities[i].orientation));
+			
+			quat_t q0, q1;
+			quat_copy(&q0, &lastQuat);
+			quat_unitInverse(&q0);
+			quat_hamilton(&q1, &g_entityList.entities[i].orientation, &q0);
+			quat_copy(&lastQuat, &g_entityList.entities[i].orientation);
+			quat_print(&q1);
+			if (q1.s < 0.99992) {
+				printf("\t");
+				quat_print(&g_entityList.entities[i].orientation);
+				if (trap == 1) {
+					trap++;
+				}
+				else {
+					trap++;
+				}
+			}
+		}
 	}
+	
+	if (lastPacketID + 1 < packetID) {
+		warning("Lost %lu packets.", packetID - lastPacketID - 1);
+	}
+	else if (lastPacketID + 1 < packetID) {
+		warning("Possibly %lu out-of-order packets.", lastPacketID + 1 - packetID);
+	}
+	
+	lastPacketID = packetID;
+	
+	calculatedChecksum = network_generateChecksum(dataStart, data - dataStart);
+	
+	if (checksum != calculatedChecksum) {
+		warning("Calculated bad checksum of %0X. Should be %0X", calculatedChecksum, checksum);
+	}
+	fflush(stdout);
+	fflush(stderr);
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -482,7 +554,10 @@ int cnetwork_runEvents(void) {
 		}
 	}
 	
-	error = enet_host_service(clientHost, &event, 0);
+	error = 0;
+	while (error == 0) {
+		error = enet_host_service(clientHost, &event, 0);
+	}
 	if (error > 0) {
 		switch (event.type) {
 		case ENET_EVENT_TYPE_CONNECT:

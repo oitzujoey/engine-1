@@ -170,3 +170,22 @@ int network_handle_connectionTimeout(cfg_var_t *var) {
 	
 	return ERR_OK;
 }
+
+uint32_t network_generateChecksum(uint8_t *data, size_t length) {
+	// Adler-32
+	const uint32_t prime = 65521;
+	uint32_t a = 1, b = 0;
+	for (int i = 0; i < length; i++) {
+		a += data[i];
+		// Could also replace with modulo.
+		if (a >= prime) {
+			a -= prime;
+		}
+		b += a;
+		if (b >= prime) {
+			b -= prime;
+		}
+	}
+	
+	return (b << 16) + a;
+}
