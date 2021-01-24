@@ -283,16 +283,16 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 	// entityList and entities in the packet must be preserved for checksum calculation, so we use these copies instead.
 	entityList_t entityList;
 	entity_t *entities;
-	static quat_t lastQuat = {
-		.s = 1,
-		.v = {
-			0,
-			0,
-			0
-		}
-	};
+	// static quat_t lastQuat = {
+	// 	.s = 1,
+	// 	.v = {
+	// 		0,
+	// 		0,
+	// 		0
+	// 	}
+	// };
 	uint32_t checksum, calculatedChecksum;
-	static int trap = 0;
+	// static int trap = 0;
 	static uint32_t lastPacketID = 0;
 	uint32_t packetID;
 	
@@ -407,27 +407,27 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 		}
 		memcpy(g_entityList.entities[i].children, data, g_entityList.entities[i].children_length * sizeof(int));
 		data += g_entityList.entities[i].children_length * sizeof(int);
-		if (i == 1) {
-			// quat_print(&g_entityList.entities[i].orientation);
-			// printf("%f\n", quat_norm(&g_entityList.entities[i].orientation));
+		// if (i == 1) {
+		// 	// quat_print(&g_entityList.entities[i].orientation);
+		// 	// printf("%f\n", quat_norm(&g_entityList.entities[i].orientation));
 			
-			quat_t q0, q1;
-			quat_copy(&q0, &lastQuat);
-			quat_unitInverse(&q0);
-			quat_hamilton(&q1, &g_entityList.entities[i].orientation, &q0);
-			quat_copy(&lastQuat, &g_entityList.entities[i].orientation);
-			quat_print(&q1);
-			if (q1.s < 0.99992) {
-				printf("\t");
-				quat_print(&g_entityList.entities[i].orientation);
-				if (trap == 1) {
-					trap++;
-				}
-				else {
-					trap++;
-				}
-			}
-		}
+		// 	quat_t q0, q1;
+		// 	quat_copy(&q0, &lastQuat);
+		// 	quat_unitInverse(&q0);
+		// 	quat_hamilton(&q1, &g_entityList.entities[i].orientation, &q0);
+		// 	quat_copy(&lastQuat, &g_entityList.entities[i].orientation);
+		// 	quat_print(&q1);
+		// 	if (q1.s < 0.99992) {
+		// 		printf("\t");
+		// 		quat_print(&g_entityList.entities[i].orientation);
+		// 		if (trap == 1) {
+		// 			trap++;
+		// 		}
+		// 		else {
+		// 			trap++;
+		// 		}
+		// 	}
+		// }
 	}
 	
 	if (lastPacketID + 1 < packetID) {

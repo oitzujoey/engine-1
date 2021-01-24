@@ -6,6 +6,7 @@ Remote map option?
 
 Surface attributes
 	Friction
+	Friction curve/type?
 	Bounciness (OVERCLIP)
 	Collision type (Noclip, Clip, Overbounce)
 	
@@ -41,3 +42,44 @@ applyFriction:
 		normalize(projection)
 		velocity += speed * projection
 	}
+
+Friction is applied when touching *any* surface. Friction is equal to force times the coefficient, so friction is applied when the player is on the ground, but also when the player is trying to move into a wall or even the ceiling.
+
+A player's speed going into a teleporter is the same that comes out.
+A player's velocity is rotated by the rotation attribute when teleporting.
+
+World attributes:
+	gravity
+	tool effects multiplier
+	acceleration
+
+Movement:
+	Q3?
+	QW?
+	No CPM
+	No origami
+	Glitch-like?
+	QW/Glitch-like?
+	No air acceleration
+	Preliminary:
+		No air acceleration
+		
+Tools:
+	Slots for 4 tools
+	Tools are user configured using tool files.
+	Tools are partially map configured.
+	Tools are specified by allocating a certain percentage to each attribute.
+	Damage is calculated from projectile speed and knockback.
+	Any number can be assigned to an analog attribute, but the vector that describes the attributes will be normalized after the tools file is parsed.
+	Characteristics:
+		Knockback (1 part/order of magnitude)
+		Projectile speed (1 part/order of magnitude)
+		Fire rate (1 part/order of magnitude)
+		Is sticky (1 part)
+		Bounces (1 part)
+		Color (0 parts)
+		Damage = (knockback) * vec3_dotProduct((projectile velocity), (player velocity))
+
+A limited set of configurable tools allows many more weapon types than Q3A, but also keeps the player's set of choices low. It is expected that the players will keep several different configurations handy to easily swap tools out. A default set of tool configs will be supplied with the game.
+
+Modes will be provided that allow or disallow client scripting.

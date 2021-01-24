@@ -11,3 +11,4 @@ Makefile
 *.cmake
 *.cap
 log*.txt
+callgrind.out.*

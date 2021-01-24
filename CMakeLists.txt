@@ -20,6 +20,9 @@ add_compile_options(-DLINUX)
 add_executable(sengine-1)
 add_executable(cengine-1)
 
+target_compile_options(sengine-1 PRIVATE -DSERVER)
+target_compile_options(cengine-1 PRIVATE -DCLIENT)
+
 add_subdirectory(src)
 
 target_link_libraries(sengine-1 SDL2 lua m enet)

@@ -14,7 +14,8 @@ Dependencies:
     GLEW
 
 To build:
-    $ cmake .
+    $ mkdir build && cd build
+    $ cmake ..
     $ make
 
 Currently implemented:
@@ -26,6 +27,7 @@ Partially implemented:
     Model list
     Entity tree
     Networking
+    Rendering
 
 Needs to be rewritten:
     Everything

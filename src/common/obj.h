@@ -5,15 +5,7 @@
 #include <lua.h>
 #include "common.h"
 #include "str.h"
-
-typedef struct {
-    // string_t name;
-    vec3_t *vertices;
-    int vertices_length;
-    int **faces;
-    int faces_length;
-    vec3_t *surface_normals;    // Same length as faces.
-} model_t;
+#include "types.h"
 
 typedef struct {
 	model_t *models;

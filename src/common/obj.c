@@ -122,6 +122,10 @@ void model_free(model_t *model) {
 		insane_free(model->faces[i]);
 	}
 	insane_free(model->faces);
+#ifdef CLIENT
+	insane_free(model->glVertices);
+	insane_free(model->glNormals);
+#endif
 	model->faces_length = 0;
 }
 
@@ -534,6 +538,37 @@ int obj_loadOoliteDAT(const string_t *filePath, int *index) {
 			goto cleanup_l;
 		}
 	}
+	
+#ifdef CLIENT
+	// Load vertices and normals into arrays now to save time when rendering.
+	model->glVertices = malloc(3 * 3 * model->faces_length * sizeof(vec_t));
+	if (model->glVertices == NULL) {
+		critical_error("Out of memory.", "");
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	
+	model->glNormals = malloc(3 * 3 * model->faces_length * sizeof(vec_t));
+	if (model->glNormals == NULL) {
+		critical_error("Out of memory.", "");
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	
+	// For each face...
+	for (int k = 0; k < model->faces_length; k++) {
+		// For each face vertex...
+		for (int l = 0; l < 3; l++) {
+			// For each vertex axis...
+			for (int m = 0; m < 3; m++) {
+				model->glVertices[3 * 3 * k + 3 * l + m] = model->vertices[model->faces[k][l]][m];// * screen[m];
+				
+				// Each normal will be duplicated at least three times. :(
+				model->glNormals[3 * 3 * k + 3 * l + m] = model->surface_normals[k][m];
+			}
+		}
+	}
+#endif
 	
 	error = ERR_OK;
 	cleanup_l:

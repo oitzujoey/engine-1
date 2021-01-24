@@ -15,6 +15,8 @@ SDL_DisplayMode g_displayMode;
 SDL_GLContext g_GLContext;
 GLuint g_VertexVbo;
 GLuint g_colorVbo;
+GLint g_orientationUniform;
+GLint g_positionUniform;
 GLuint g_vao;
 GLuint g_shaderProgram[2];
 char *g_openglLogFileName;
@@ -104,6 +106,8 @@ int render_initOpenGL(void) {
 		goto cleanup_l;
 	}
 	
+	/* Brag about GPU capabilities. */
+	
 	const GLubyte *renderer = glGetString(GL_RENDERER);
 	info("Renderer: %s", renderer);
 	
@@ -181,6 +185,8 @@ int render_initOpenGL(void) {
 	}
 	info("%s %i", names[11], values[0]);
 	
+	/* Turn on some optimizations. */
+	
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	
@@ -188,58 +194,71 @@ int render_initOpenGL(void) {
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 	
+	/* Setup shader variables. */
+	
 	g_VertexVbo = 0;
 	glGenBuffers(1, &g_VertexVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
-	// glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), g_points, GL_STATIC_DRAW);
-	// glBufferData(GL_ARRAY_BUFFER, 27 * sizeof(float), g_points, GL_DYNAMIC_DRAW);
-	// glError = glGetError();
-	// if (glError) {
-	// 	error("glBufferData returned with errors.", "");
-	// 	while (glError) {
-	// 		error("OpenGL error: %s", render_glGetErrorString(glError));
-	// 		glError = glGetError();
-	// 	}
-	// 	error = ERR_CRITICAL;
-	// 	goto cleanup_l;
-	// }
 	
 	g_colorVbo = 0;
 	glGenBuffers(1, &g_colorVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
-	// glBufferData(GL_ARRAY_BUFFER, 9 * sizeof(float), g_points, GL_STATIC_DRAW);
-	// glBufferData(GL_ARRAY_BUFFER, 27 * sizeof(float), g_points, GL_DYNAMIC_DRAW);
-	// glError = glGetError();
-	// if (glError) {
-	// 	error("glBufferData returned with errors.", "");
-	// 	while (glError) {
-	// 		error("OpenGL error: %s", render_glGetErrorString(glError));
-	// 		glError = glGetError();
-	// 	}
-	// 	error = ERR_CRITICAL;
-	// 	goto cleanup_l;
-	// }
+	
 	
 	g_vao = 0;
 	glGenVertexArrays(1, &g_vao);
 	glBindVertexArray(g_vao);
+	
 	glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	
 	glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+	
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
+	
+	/* Shaders */
 	
 	const char* vertexShaderSource0 =
 		"#version 400\n"
 		"layout(location = 0) in vec3 vp;"
-		"layout(location = 1) in vec3 vc;"
+		"layout(location = 1) in vec3 normal;"
+		"uniform vec4 orientation;"
+		"uniform vec3 position;"
 		"out vec3 color;"
+		
+		"vec4 conjugate(vec4 a) {"
+		"  return vec4("
+		"    -a.x,"
+		"    -a.y,"
+		"    -a.z,"
+		"    a.w"
+		"  );"
+		"}"
+		
+		"vec4 hamilton(vec4 a, vec4 b) {"
+		"  return vec4("
+		"    a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,"
+		"    a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,"
+		"    a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,"
+		"    a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z"
+		"  );"
+		"}"
+		
+		"vec3 rotate(vec3 v, vec4 q) {"
+		"  vec4 v4 = vec4(v, 0);"
+		"  v4 = hamilton(hamilton(q, v4), conjugate(q));"
+		"  return vec3(v4.x, v4.y, v4.z);"
+		"}"
+		
 		"void main() {"
 		"  vec3 vertex;"
-		"  vertex = vp;"
+		"  vertex = rotate(vp, orientation);"
+		"  vertex += position;"
+		"  vertex *= 0.015;"
 		"  gl_Position = vec4(vertex, 1.0);"
-		"  color = vc;"
+		"  color = rotate(normal, orientation);"
 		"}";
 	
 	const char* fragmentShaderSource0 =
@@ -256,13 +275,7 @@ int render_initOpenGL(void) {
 		// "  frag_colour = vec4(abs(color.x * dot), abs(color.y * dot), abs(color.z * dot), 1.0);"
 		"}";
 	
-	const char* fragmentShaderSource1 =
-		"#version 400\n"
-		"out vec4 frag_colour;"
-		"in vec3 color;"
-		"void main() {"
-		"  frag_colour = vec4(0.0, 0.0, 0.0, 1.0);"
-		"}";
+	/* Compile shaders and link program. */
 	
 	for (int i = 0; i < 2; i++) {
 		g_shaderProgram[i] = glCreateProgram();
@@ -328,37 +341,23 @@ int render_initOpenGL(void) {
 		goto cleanup_l;
 	}
 	
-	GLuint fragmentShader1 = glCreateShader(GL_FRAGMENT_SHADER);
-	if (fragmentShader1 == 0) {
-		glError = glGetError();
-		error("glCreateShader returned with errors.", "");
-		while (glError) {
-			error("OpenGL error: %s", render_glGetErrorString(glError));
-			glError = glGetError();
-		}
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	glShaderSource(fragmentShader1, 1, &fragmentShaderSource1, NULL);
-	glCompileShader(fragmentShader1);
-	glGetShaderiv(fragmentShader1, GL_COMPILE_STATUS, &compileStatus);
-	if (compileStatus == GL_FALSE) {
-		error("Fragment shader failed to compile.", "");
-		render_logShaderInfo(fragmentShader1);
+	/* Find uniform variable locations. */
+	
+	g_orientationUniform = glGetUniformLocation(g_shaderProgram[0], "orientation");
+	if (g_orientationUniform < 0) {
+		critical_error("Could not get uniform from program.", "");
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 	
-	glAttachShader(g_shaderProgram[1], vertexShader0);
-	glAttachShader(g_shaderProgram[1], fragmentShader1);
-	glLinkProgram(g_shaderProgram[1]);
-	glGetProgramiv(g_shaderProgram[1],  GL_LINK_STATUS, &compileStatus);
-	if (compileStatus == GL_FALSE) {
-		error("Program failed to link.", "");
-		render_logProgramInfo(g_shaderProgram[1]);
+	g_positionUniform = glGetUniformLocation(g_shaderProgram[0], "position");
+	if (g_positionUniform < 0) {
+		critical_error("Could not get uniform from program.", "");
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
+	
+	/* Set background color. */
 	
 	glClearColor(0.1, 0.1, 0.1, 1.0);
 	
@@ -369,10 +368,6 @@ int render_initOpenGL(void) {
 
 int render(lua_State *L) {
 
-	// SDL_FillRect(g_screenSurface, NULL, SDL_MapRGB(g_screenSurface->format, 0xFF, 0xFF, 0xFF));
-	
-	// SDL_UpdateWindowSurface(g_window);
-	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	// For each entity...
@@ -387,64 +382,53 @@ int render(lua_State *L) {
 			continue;
 		}
 		
+		/* @TODO:
+			Honestly, the four nested loops below are all a waste and should be done during model loading.
+			They are probably the reason why this function is so slow. We'll see once they get moved.
+		*/
+		
 		// For each model...
 		for (int j = 0; j < g_entityList.entities[i].children_length; j++) {
 			
 			int modelIndex = g_entityList.entities[i].children[j];
 			model_t model = g_modelList.models[modelIndex];
-			GLsizeiptr facesLength = model.faces_length;
-			float points[9 * facesLength];
-			float normals[9 * facesLength];
 			
-			const vec_t scale = 0.015f;
+			// const vec_t scale = 0.015f;
 			
-			// For each face...
-			for (int k = 0; k < facesLength; k++) {
-				// For each face vertex...
-				for (int l = 0; l < 3; l++) {
-					vec3_t point;
-					vec3_t normal;
-					const vec3_t screen = {
-						(vec_t) g_displayMode.h / (vec_t) g_displayMode.w,
-						1.0,
-						1.0
-					};
-					
-					vec3_copy(&normal, &model.surface_normals[k]);
-					vec3_rotate(&normal, &g_entityList.entities[i].orientation);
-					
-					vec3_copy(&point, &model.vertices[model.faces[k][l]]);
-					vec3_rotate(&point, &g_entityList.entities[i].orientation);
-					
-					// For each vertex axis...
-					for (int m = 0; m < 3; m++) {
-						points[9 * k + 3 * l + m] = point[m] * screen[m] * scale;
-						
-						// Each normal will be duplicated at least three times.
-						normals[9 * k + 3 * l + m] = normal[m];
-					}
-				}
-			}
+			// // For each point...
+			// for (int k = 0; k < 3 * facesLength; k++) {
+			// 	for (int l = 0; l < 3; l++) {
+			// 		points[3 * k + l] *= scale;
+			// 	}
+			// }
 			
-			// For each point...
-			for (int k = 0; k < 3 * facesLength; k++) {
-				for (int l = 0; l < 3; l++) {
-					points[3 * k + l] += g_entityList.entities[i].position[l] * scale;
-				}
-			}
+			/* Render */
 			
 			glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
-			glBufferData(GL_ARRAY_BUFFER, 9 * facesLength * sizeof(float), points, GL_DYNAMIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glVertices, GL_DYNAMIC_DRAW);
+			
 			glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
-			glBufferData(GL_ARRAY_BUFFER, 9 * facesLength * sizeof(float), normals, GL_DYNAMIC_DRAW);
+			glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glNormals, GL_DYNAMIC_DRAW);
+			
+			glUniform4f(g_orientationUniform, 
+				g_entityList.entities[i].orientation.v[0],
+				g_entityList.entities[i].orientation.v[1],
+				g_entityList.entities[i].orientation.v[2],
+				g_entityList.entities[i].orientation.s
+			);
+			glUniform3f(g_positionUniform, 
+				g_entityList.entities[i].position[0],
+				g_entityList.entities[i].position[1],
+				g_entityList.entities[i].position[2]
+			);
+			
 			glUseProgram(g_shaderProgram[0]);
 			glBindVertexArray(g_vao);
-			glDrawArrays(GL_TRIANGLES, 0, 3 * facesLength);
-			// glUseProgram(g_shaderProgram[1]);
-			// glBindVertexArray(g_vao);
-			// glDrawArrays(GL_LINE_STRIP, 0, 3 * facesLength);
+			glDrawArrays(GL_TRIANGLES, 0, 3 * model.faces_length);
 		}
 	}
+	
+	/* Show */
 	
 	SDL_GL_SwapWindow(g_window);
 	
