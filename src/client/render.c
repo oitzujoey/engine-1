@@ -404,11 +404,15 @@ int render(lua_State *L) {
 			
 			/* Render */
 			
+#ifdef CLIENT
 			glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
 			glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glVertices, GL_DYNAMIC_DRAW);
 			
 			glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
 			glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glNormals, GL_DYNAMIC_DRAW);
+#else
+#error  Must be compiled with -DCLIENT
+#endif
 			
 			glUniform4f(g_orientationUniform, 
 				g_entityList.entities[i].orientation.v[0],
