@@ -2,11 +2,7 @@
 #ifndef STR_H
 #define STR_H
 
-typedef struct {
-    char *value;
-    unsigned int length;
-    unsigned int memsize;
-} string_t;
+#include "types.h"
 
 /* To use:
 

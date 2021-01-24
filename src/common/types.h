@@ -1,9 +1,12 @@
 
+#ifndef TYPES_H
+#define TYPES_H
+
 #include <SDL2/SDL.h>
 #include <lua.h>
 
-#ifndef TYPES_H
-#define TYPES_H
+/* Vector math structures */
+/* ====================== */
 
 #ifdef DOUBLE_VEC
 typedef double vec_t;
@@ -19,6 +22,18 @@ typedef struct {
 	vec3_t v;
 } quat_t;
 
+/* String structure */
+/* ================ */
+
+typedef struct {
+    char *value;
+    unsigned int length;
+    unsigned int memsize;
+} string_t;
+
+/* Internal model structure */
+/* ======================== */
+
 typedef struct {
     // string_t name;
     vec3_t *vertices;
@@ -33,5 +48,49 @@ typedef struct {
 	vec_t *glNormals;
 #endif
 } model_t;
+
+typedef struct {
+	model_t *models;
+	int models_length;
+	int models_length_actual;
+} modelList_t;
+
+/* Wavefront OBJ structure */
+/* ======================= */
+
+typedef struct {
+    int geometric_vertex;
+    int texture_vertex;
+    int vertex_normal;
+} face_t;
+
+typedef struct {
+    face_t *faces;
+    int faces_length;
+} faceset_t;
+
+typedef struct {
+    string_t object_name;
+    string_t material_library;
+    vec4_t *geometric_vertices;
+    int geometric_vertices_length;
+    vec3_t *texture_vertices;
+    int texture_vertices_length;
+    vec3_t *vertex_normals;
+    int vertex_normals_length;
+    string_t material_name;
+    int smoothing_group;
+    /* Note: Width will come before length. */
+    faceset_t *facesets;
+    int facesets_length;
+} obj_t;
+
+
+/* Wavefront MTL structure */
+/* ======================= */
+
+typedef struct {
+    string_t material_name;
+} mtl_t;
 
 #endif
