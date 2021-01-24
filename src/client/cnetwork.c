@@ -554,31 +554,31 @@ int cnetwork_runEvents(void) {
 		}
 	}
 	
-	error = 0;
-	while (error == 0) {
+	do {
 		error = enet_host_service(clientHost, &event, 0);
-	}
-	if (error > 0) {
-		switch (event.type) {
-		case ENET_EVENT_TYPE_CONNECT:
-			cnetwork_connect(event);
-			break;
-		case ENET_EVENT_TYPE_RECEIVE:
-			cnetwork_receive(event);
-			break;
-		case ENET_EVENT_TYPE_DISCONNECT:
-			cnetwork_disconnect(event);
-			break;
-		default:
-			critical_error("Can't happen.", "");
-			error = ERR_CRITICAL;
+		
+		if (error > 0) {
+			switch (event.type) {
+			case ENET_EVENT_TYPE_CONNECT:
+				cnetwork_connect(event);
+				break;
+			case ENET_EVENT_TYPE_RECEIVE:
+				cnetwork_receive(event);
+				break;
+			case ENET_EVENT_TYPE_DISCONNECT:
+				cnetwork_disconnect(event);
+				break;
+			default:
+				critical_error("Can't happen.", "");
+				error = ERR_CRITICAL;
+				goto cleanup_l;
+			}
+		}
+		if (error < 0) {
+			error = ERR_GENERIC;
 			goto cleanup_l;
 		}
-	}
-	if (error < 0) {
-		error = ERR_GENERIC;
-		goto cleanup_l;
-	}
+	} while (error != 0);
 	
 	error = ERR_OK;
 	cleanup_l:
