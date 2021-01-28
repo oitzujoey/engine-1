@@ -10,10 +10,10 @@ Order of implementation:
     Engine - Game
         Server - Client
         Sgame - Cgame
-    Mod loader
     Supervisor
     Master server
     Server browser
+    Mod loader
 
 VM
     What we want to avoid:

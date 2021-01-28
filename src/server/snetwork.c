@@ -444,6 +444,8 @@ int snetwork_init(void) {
 		goto cleanup_l;
 	}
 	
+	enet_host_compress_with_range_coder(g_server.host);
+	
 	// Initialize client array.
 	for (int i = 0; i < MAX_CLIENTS; i++) {
 		g_clients[i].inUse = false;

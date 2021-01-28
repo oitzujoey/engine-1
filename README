@@ -10,6 +10,7 @@ Dependencies:
     SDL2
     Lua
     ENet
+    [Client only]
     GL
     GLEW
 

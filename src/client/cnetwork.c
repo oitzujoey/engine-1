@@ -608,6 +608,8 @@ int cnetwork_init(void) {
 		goto cleanup_l;
 	}
 	
+	enet_host_compress_with_range_coder(clientHost);
+	
 	error = ERR_OK;
 	cleanup_l:
 	return error;
