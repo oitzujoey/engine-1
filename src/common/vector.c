@@ -27,6 +27,12 @@ void vec3_crossProduct(vec3_t *result, vec3_t *a, vec3_t *b) {
 	(*result)[2] = (*a)[0]*(*b)[1] - (*a)[1]*(*b)[0];
 }
 
+void vec3_add(vec3_t *result, vec3_t *a, vec3_t *b) {
+	(*result)[0] = (*a)[0] + (*b)[0];
+	(*result)[1] = (*a)[1] + (*b)[1];
+	(*result)[2] = (*a)[2] + (*b)[2];
+}
+
 void vec3_subtract(vec3_t *result, vec3_t *a, vec3_t *b) {
 	(*result)[0] = (*a)[0] - (*b)[0];
 	(*result)[1] = (*a)[1] - (*b)[1];

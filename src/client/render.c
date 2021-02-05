@@ -194,6 +194,8 @@ int render_initOpenGL(void) {
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 	
+	// glDepthRange(0, 1);
+	
 	/* Setup shader variables. */
 	
 	g_VertexVbo = 0;
@@ -256,7 +258,8 @@ int render_initOpenGL(void) {
 		"  vec3 vertex;"
 		"  vertex = rotate(vp, orientation);"
 		"  vertex += position;"
-		"  vertex *= 0.015;"
+		"  vertex *= 0.01;"
+		"  vertex.z = 2.0 * (vertex.z - 0.5);"
 		"  gl_Position = vec4(vertex, 1.0);"
 		"  color = rotate(normal, orientation);"
 		"}";
@@ -366,71 +369,76 @@ int render_initOpenGL(void) {
 	return error;
 }
 
+void renderModels(entity_t entity, vec3_t position, quat_t orientation) {
+	// For each model...
+	for (int j = 0; j < entity.children_length; j++) {
+		
+		int modelIndex = entity.children[j];
+		model_t model = g_modelList.models[modelIndex];
+		
+		/* Render */
+		
+#ifdef CLIENT
+		glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
+		glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glVertices, GL_DYNAMIC_DRAW);
+		
+		glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
+		glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glNormals, GL_DYNAMIC_DRAW);
+#else
+#error  Must be compiled with -DCLIENT
+#endif
+
+		glUniform4f(g_orientationUniform, 
+			orientation.v[0],
+			orientation.v[1],
+			orientation.v[2],
+			orientation.s
+		);
+		glUniform3f(g_positionUniform, 
+			position[0],
+			position[1],
+			position[2]
+		);
+		
+		glUseProgram(g_shaderProgram[0]);
+		glBindVertexArray(g_vao);
+		glDrawArrays(GL_TRIANGLES, 0, 3 * model.faces_length);
+	}
+}
+
+void renderEntity(entity_t entity, vec3_t *position, quat_t *orientation) {
+
+	vec3_t localPosition;
+	quat_t localOrientation;
+
+	if (!entity.inUse) {
+		// Don't draw deleted entities.
+		warning("Attempted to draw deleted entity %i.", (int) (&entity - g_entityList.entities));
+		return;
+	}
+	
+	vec3_add(&localPosition, position, &entity.position);
+	vec3_rotate(&localPosition, orientation);
+	quat_hamilton(&localOrientation, orientation, &entity.orientation);
+	
+	if (entity.childType == entity_childType_model) {
+		renderModels(entity, localPosition, localOrientation);
+	}
+	else if (entity.childType == entity_childType_entity) {
+		for (int i = 0; i < entity.children_length; i++) {
+			renderEntity(g_entityList.entities[entity.children[i]], &localPosition, &localOrientation);
+		}
+	}
+}
+
 int render(lua_State *L) {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	// For each entity...
-	for (int i = 0; i < g_entityList.entities_length; i++) {
-		if (!g_entityList.entities[i].inUse) {
-			// Don't draw deleted entities.
-			continue;
-		}
-		
-		if (g_entityList.entities[i].childType != entity_childType_model) {
-			// Literally nothing to see here.
-			continue;
-		}
-		
-		/* @TODO:
-			Honestly, the four nested loops below are all a waste and should be done during model loading.
-			They are probably the reason why this function is so slow. We'll see once they get moved.
-		*/
-		
-		// For each model...
-		for (int j = 0; j < g_entityList.entities[i].children_length; j++) {
-			
-			int modelIndex = g_entityList.entities[i].children[j];
-			model_t model = g_modelList.models[modelIndex];
-			
-			// const vec_t scale = 0.015f;
-			
-			// // For each point...
-			// for (int k = 0; k < 3 * facesLength; k++) {
-			// 	for (int l = 0; l < 3; l++) {
-			// 		points[3 * k + l] *= scale;
-			// 	}
-			// }
-			
-			/* Render */
-			
-#ifdef CLIENT
-			glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
-			glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glVertices, GL_DYNAMIC_DRAW);
-			
-			glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
-			glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glNormals, GL_DYNAMIC_DRAW);
-#else
-#error  Must be compiled with -DCLIENT
-#endif
-			
-			glUniform4f(g_orientationUniform, 
-				g_entityList.entities[i].orientation.v[0],
-				g_entityList.entities[i].orientation.v[1],
-				g_entityList.entities[i].orientation.v[2],
-				g_entityList.entities[i].orientation.s
-			);
-			glUniform3f(g_positionUniform, 
-				g_entityList.entities[i].position[0],
-				g_entityList.entities[i].position[1],
-				g_entityList.entities[i].position[2]
-			);
-			
-			glUseProgram(g_shaderProgram[0]);
-			glBindVertexArray(g_vao);
-			glDrawArrays(GL_TRIANGLES, 0, 3 * model.faces_length);
-		}
-	}
+	// For each entity in the tree...
+	
+	// Render world entity.
+	renderEntity(g_entityList.entities[0], &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}});
 	
 	/* Show */
 	

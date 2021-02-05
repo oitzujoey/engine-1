@@ -26,7 +26,7 @@ if cobra3Model ~= -1 then
 	cobra3Entity, error = l_createEntity(type_model)
 	error = l_entity_linkChild(worldEntity, cobra3Entity)
 	error = l_entity_linkChild(cobra3Entity, cobra3Model)
-	l_entity_setPosition(cobra3Entity, {x=0, y=0, z=20})
+	l_entity_setPosition(cobra3Entity, {x=0, y=0, z=50})
 	-- l_entity_setOrientation(cobra3Entity, {w=1, x=0, y=0, z=0})
 	
 	-- l_snetwork_sendEntityTree()
@@ -44,14 +44,25 @@ end
 
 l_log_info("main", "Starting game")
 
+-- Rotate the world around the camera a bit.
+
 rotation = {w=0.99985, x=-0.005, y=-0.01, z=0.005}
 orientation = {w=1.0, x=0.0, y=0.0, z=0.0}
+worldRotation = {w=0.99985, x=0.005, y=0.01, z=-0.005}
+worldOrientation = {w=1.0, x=0.0, y=0.0, z=0.0}
 
+-- Main program loop. l_checkQuit() checks if the program is supposed to end and ends it if needed.
 while l_checkQuit() == 0 do
-	orientation, error = l_hamiltonProduct(orientation, rotation)
-	orientation, error = l_quatNormalize(orientation)
-	-- l_log_info("main", orientation.w .. " " .. orientation.x .. " " .. orientation.y .. " " .. orientation.z)
-	l_entity_setOrientation(cobra3Entity, orientation)
+	-- orientation, error = l_hamiltonProduct(orientation, rotation)
+	-- orientation, error = l_quatNormalize(orientation)
+	-- -- l_log_info("main", orientation.w .. " " .. orientation.x .. " " .. orientation.y .. " " .. orientation.z)
+	-- l_entity_setOrientation(cobra3Entity, orientation)
+	
+	worldOrientation, error = l_hamiltonProduct(worldOrientation, worldRotation)
+	worldOrientation, error = l_quatNormalize(worldOrientation)
+	l_entity_setOrientation(worldEntity, worldOrientation)
+	
+	-- This runs once per loop. It does tasks such as read from the terminal and send and receive packets.
 	l_main_housekeeping()
 end
 
