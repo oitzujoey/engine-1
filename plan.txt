@@ -338,7 +338,21 @@ Perhaps I should use a uniform variable when passing the orientation to the vert
 
 I might need a new type of model to store hitboxes/clip models in.
 
+Player is the center of the universe and always looks in the same direction.
 
+Allow multiple viewports using what are essentially copies of the world entity. This will be known as a camera object and will be another entity child type.
+
+
+
+Graphics stuff I dream of adding:
+    Light map?
+    Dynamic lighting
+    Textures
+    Curves
+    Bump mapping
+    HDR or similar
+    Ray tracing or similar
+    Parallax mapping
 
 Files to rewrite when it is somewhat working:
     obj
@@ -347,7 +361,7 @@ Files to rewrite when it is somewhat working:
     str
     cfg (maybe)
 
-[/] (Client) Get something on the screen using SDL
+[*] (Client) Get something on the screen using SDL
 --------------------------------------------------
 [*] (Client) Call C functions from Lua
 [*] (Server) Call C functions from Lua
@@ -360,7 +374,7 @@ Files to rewrite when it is somewhat working:
     [*] (Common) Only allow file paths that remain in the workspace
 [/] (Common) Load and parse Wavefront MTL files
 [/] (Common) Load and parse Oolite DAT files
-[/] (Common) Create entity tree from Lua
+[*] (Common) Create entity tree from Lua
     [*] (Common) Set position and orientation from Lua.
 [/] (Server) Send entity tree over the network
     [*] (All) Decide on network protocol
@@ -368,25 +382,40 @@ Files to rewrite when it is somewhat working:
     [/] (Client Server) Sand and receive packets reliably over the network.
     [*] (Server) Send entity tree over the network.
 [*] (Client) Receive entity tree from the network
-[ ] (All)    Get on those TODOs (ugly ones)
+![ ] (All)    Get on those TODOs (ugly ones)
 [*] (Client) Render entity tree in basic 3D using OpenGL
 -------------------------------------------------------------
 ![ ] (Client) Pass entity tree through VM and back to renderer
 [*] (Server) Send entity tree every second
 [*] (Server) Animate entity tree
-[ ] (All)    Get on those TODOs (ugly ones)
+![ ] (All)    Get on those TODOs (ugly ones)
 [*] (Client) Render tree every time it is received
-[ ] (Client) Optimize rendering
+[*] (Client) Optimize rendering
 --------------------------------------------------
 [/] (Client) Get keyboard input
 [/] (Client) Get mouse input
 [ ] (Client) Send input
-[ ] (All)    Get on those TODOs (ugly ones)
+![ ] (All)    Get on those TODOs (ugly ones)
 [ ] (Server) Receive input
 [ ] (Server) Make an entity move based on input
 -----------------------------------------------
 [ ] (Client) Attach camera to moving entity
--------------------------------------------
+=================================================
+* * engine-1 is now officially a game engine. ***
+=================================================
+[ ] (Common) Implement proper VFS.
+[ ] (Common) Redo config scripting system.
+[ ] (Client) Load GLSL from files.
+[ ] (Client) Allow GLSL to include GLSL libraries (preprocessor).
+[ ] (Common) Allow Lua to include Lua source code.
+===========================
+* * Start work on game. ***
+===========================
+[ ] (Lua)    Load Asteroid model.
+[ ] (Lua)    Procedurally generate universe.
+[ ] (Client) Create 2D reference entities.
+[ ] (Client) Create 3D reference entities.
+[ ] (Lua)    Implement radar.
 
 Expected leaks:
     220B    SDL_Init()
