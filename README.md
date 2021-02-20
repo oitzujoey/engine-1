@@ -99,9 +99,9 @@ An entity is a node in the entity tree. Each entity has a type, and only objects
 | none | Nothing can be bound to this entity. |
 | entity | Entities can be bound to this entity. |
 | model | Models can be bound to this entity. |
-| ... | More coming soon! [^1] |
+| ... | More coming soon! <sup id="a1">[1](#f1)</sup> |
 
-The structure of an entities are very general due to the variety of objects that can be bound to them, so not all elements will be used in all situations.
+The structure of entities are very general due to the variety of objects that can be bound to them, so not all members will be used in all situations.
 
 #### Entity structure
 
@@ -124,4 +124,4 @@ Note that position and orientation are cumulative. This allows multiple models t
 | l_entity_setPosition(int entityIndex, {x, y, z} position) | Sets the position of the given entity. |
 | l_entity_setOrientation(int entityIndex, {w, x, y, z} orientation) | Sets the orientation of the given entity. |
 
-[^1]: Jesus is also coming soon. Expect the time frame to be about the same.
+<b id="f1">[1](#a1)</b> Jesus is also coming soon. Expect the time frame to be about the same.
