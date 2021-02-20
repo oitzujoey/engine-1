@@ -14,11 +14,67 @@
 
 string_t g_consoleCommand;
 string_t *g_commandHistory;
+int g_commandHistoryLength = 0;
 string_t g_commandComplete;
 
 int terminal_getHistoryLine(string_t *line, int *index);
 int terminal_addLineToHistory(const string_t *line);
 void terminal_logCommandFrequency(const string_t *line);
+
+/* Terminal callbacks */
+/* ================== */
+
+int terminal_callback_updateCommandHistoryLength(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	static int lastLength = CFG_HISTORY_LENGTH_DEFAULT;
+	
+	g_commandHistoryLength = var->integer;
+	
+	if (g_commandHistoryLength <= 0) {
+		var->integer = 1;
+		g_commandHistoryLength = var->integer;
+		warning(CFG_HISTORY_LENGTH" is not a whole number. Setting to %i.", var->integer);
+	}
+	
+	if (g_commandHistoryLength != lastLength) {
+	
+		if (g_commandHistoryLength < lastLength) {
+			// Need to free.
+			for (int i = g_commandHistoryLength; i < lastLength; i++) {
+				string_free(&g_commandHistory[i]);
+			}
+		}
+	
+		g_commandHistory = realloc(g_commandHistory, g_commandHistoryLength * sizeof(string_t));
+		if (g_commandHistory == NULL) {
+			critical_error("Out of memory", "");
+			error = ERR_OUTOFMEMORY;
+			goto cleanup_l;
+		}
+		
+		if (g_commandHistoryLength > lastLength) {
+			// Need to allocate.
+			for (int i = lastLength; i < g_commandHistoryLength; i++) {
+				error = string_init(&g_commandHistory[i]);
+				if (error) {
+					critical_error("Out of memory", "");
+					goto cleanup_l;
+				}
+			}
+		}
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	lastLength = g_commandHistoryLength;
+	
+	return error;
+}
+
+/* Terminal functions */
+/* ================== */
 
 int terminal_terminalInit(void) {
 	int error = ERR_CRITICAL;
@@ -73,55 +129,11 @@ int terminal_terminalInit(void) {
 	return error;
 }
 
-int terminal_callback_updateCommandHistoryLength(cfg2_var_t *var, const char *command, lua_State *luaState) {
-	int error = ERR_CRITICAL;
-	
-	static int lastLength = CFG_HISTORY_LENGTH_DEFAULT;
-	int length = var->integer;
-	
-	if (length <= 0) {
-		var->integer = 1;
-		length = var->integer;
-		warning(CFG_HISTORY_LENGTH" is not a whole number. Setting to %i.", var->integer);
-	}
-	
-	if (length != lastLength) {
-	
-		if (length < lastLength) {
-			// Need to free.
-			for (int i = length; i < lastLength; i++) {
-				string_free(&g_commandHistory[i]);
-			}
-		}
-	
-		g_commandHistory = realloc(g_commandHistory, length * sizeof(string_t));
-		if (g_commandHistory == NULL) {
-			critical_error("Out of memory", "");
-			error = ERR_OUTOFMEMORY;
-			goto cleanup_l;
-		}
-		
-		if (length > lastLength) {
-			// Need to allocate.
-			for (int i = lastLength; i < length; i++) {
-				error = string_init(&g_commandHistory[i]);
-				if (error) {
-					critical_error("Out of memory", "");
-					goto cleanup_l;
-				}
-			}
-		}
-	}
-	
-	error = ERR_OK;
-	cleanup_l:
-	
-	lastLength = length;
-	
-	return error;
+// This is for the function below.
+static int terminal_intCompare(const void *left, const void *right) {
+	return g_cfg2.vars[*((int *) left)].frequency < g_cfg2.vars[*((int *) right)].frequency;
 }
 
-// @TODO: This is horrible! Rewrite!! FIXME!!! -- Is this still the case? Commands have been completely removed in this system.
 /* terminal_fragmentCompletion
 Completes a command fragment. badComplete is set if multiple options have been
 found. Tabs allow selection when multiple options are available.
@@ -132,19 +144,25 @@ tabs:           The number of times the user has pressed <tab> so far.
 static int terminal_fragmentCompletion(string_t *fragment, bool *badComplete, int *tabs) {
 	int error = ERR_CRITICAL;
 
-	bool variablePotentials[g_cfg2.vars_length];
+	const int maxPotentials = 10;
+	int variablePotentials[maxPotentials];
 	int variablePotentialsCount = 0;
 	int tabIndex = 0;
-	const int maxPotentials = 10;
-	int potentialsLoopCounter = 0;
 	
-	// Find matching variables.
-	for (int i = 0; i < g_cfg2.vars_length; i++) {
-		variablePotentials[i] = !strncmp(fragment->value, g_cfg2.vars[i].name, fragment->length);
-		if (variablePotentials[i]) {
+	// Find matching completions.
+	
+	for (int i = 0; (i < g_cfg2.vars_length) && (variablePotentialsCount < maxPotentials); i++) {
+		if (!strncmp(fragment->value, g_cfg2.vars[i].name, fragment->length)) {
+			variablePotentials[variablePotentialsCount] = i;
 			variablePotentialsCount++;
 		}
 	}
+	
+	// Sort completions by frequency used.
+	
+	qsort(variablePotentials, variablePotentialsCount, sizeof(int), terminal_intCompare);
+	
+	// Limit number of completions that are shown.
 	
 	if (variablePotentialsCount > maxPotentials) {
 		variablePotentialsCount = maxPotentials;
@@ -159,30 +177,32 @@ static int terminal_fragmentCompletion(string_t *fragment, bool *badComplete, in
 		*tabs = 0;
 	}
 	
-	for (int i = 0; (i < g_cfg2.vars_length) && (potentialsLoopCounter < variablePotentialsCount); i++) {
-		if (variablePotentials[i]) {
-			// One correction
-			if (variablePotentialsCount == 1) {
-				error = string_copy_c(fragment, g_cfg2.vars[i].name);
-				if (error) {
-					goto cleanup_l;
-				}
-				break;
+	// Complete or display completions.
+	
+	for (int i = 0; i < variablePotentialsCount; i++) {
+		
+		// One correction
+		if (variablePotentialsCount == 1) {
+			error = string_copy_c(fragment, g_cfg2.vars[variablePotentials[i]].name);
+			if (error) {
+				goto cleanup_l;
 			}
-			// Multiple corrections
+			break;
+		}
+		// Multiple corrections
+		else {
+			if (tabIndex == *tabs) {
+				string_copy_c(&g_commandComplete, g_cfg2.vars[variablePotentials[i]].name);
+				printf(COLOR_BLACK B_COLOR_WHITE"%s"COLOR_NORMAL"\n", g_cfg2.vars[variablePotentials[i]].name);
+			}
 			else {
-				if (tabIndex == *tabs) {
-					string_copy_c(&g_commandComplete, g_cfg2.vars[i].name);
-					printf(COLOR_BLACK B_COLOR_WHITE"%s"COLOR_NORMAL"\n", g_cfg2.vars[i].name);
-				}
-				else {
-					puts(g_cfg2.vars[i].name);
-				}
-				tabIndex++;
+				puts(g_cfg2.vars[variablePotentials[i]].name);
 			}
-			potentialsLoopCounter++;
+			tabIndex++;
 		}
 	}
+	
+	// Print prompt, or do single completion.
 	
 	if (variablePotentialsCount > 1) {
 		printf("> ");
