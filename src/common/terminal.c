@@ -17,6 +17,8 @@ string_t *g_commandHistory;
 string_t g_commandComplete;
 
 int terminal_getHistoryLine(string_t *line, int *index);
+int terminal_addLineToHistory(const string_t *line);
+void terminal_logCommandFrequency(const string_t *line);
 
 int terminal_terminalInit(void) {
 	int error = ERR_CRITICAL;
@@ -158,26 +160,28 @@ static int terminal_fragmentCompletion(string_t *fragment, bool *badComplete, in
 	}
 	
 	for (int i = 0; (i < g_cfg2.vars_length) && (potentialsLoopCounter < variablePotentialsCount); i++) {
-		// One correction
-		if ((variablePotentialsCount == 1) && (variablePotentialsCount == 1)) {
-			error = string_copy_c(fragment, g_cfg2.vars[i].name);
-			if (error) {
-				goto cleanup_l;
+		if (variablePotentials[i]) {
+			// One correction
+			if (variablePotentialsCount == 1) {
+				error = string_copy_c(fragment, g_cfg2.vars[i].name);
+				if (error) {
+					goto cleanup_l;
+				}
+				break;
 			}
-			break;
-		}
-		// Multiple corrections
-		else {
-			if (tabIndex == *tabs) {
-				string_copy_c(&g_commandComplete, g_cfg2.vars[i].name);
-				printf(COLOR_BLACK B_COLOR_WHITE"%s"COLOR_NORMAL"\n", g_cfg2.vars[i].name);
-			}
+			// Multiple corrections
 			else {
-				puts(g_cfg2.vars[i].name);
+				if (tabIndex == *tabs) {
+					string_copy_c(&g_commandComplete, g_cfg2.vars[i].name);
+					printf(COLOR_BLACK B_COLOR_WHITE"%s"COLOR_NORMAL"\n", g_cfg2.vars[i].name);
+				}
+				else {
+					puts(g_cfg2.vars[i].name);
+				}
+				tabIndex++;
 			}
-			tabIndex++;
+			potentialsLoopCounter++;
 		}
-		potentialsLoopCounter++;
 	}
 	
 	if (variablePotentialsCount > 1) {
@@ -447,6 +451,12 @@ int terminal_runTerminalCommand(void) {
 			if (error == ERR_CRITICAL) {
 				goto cleanup_l;
 			}
+			
+			error = terminal_addLineToHistory(&g_consoleCommand);
+			if (error) {
+				goto cleanup_l;
+			}
+			terminal_logCommandFrequency(&g_consoleCommand);
 			
 			printedPrompt = false;
 			historyIndex = -1;

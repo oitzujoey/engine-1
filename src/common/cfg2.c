@@ -674,7 +674,7 @@ int cfg2_callback_adminLevel(cfg2_var_t *var, const char *command, lua_State *lu
 		return ERR_OK;
 	}
 	
-	printf(COLOR_CYAN"You are a level %i admin.\n"COLOR_NORMAL, g_cfg2.adminLevel);
+	printf(COLOR_CYAN"You are a level %i admin."COLOR_NORMAL"\n", g_cfg2.adminLevel);
 	
 	return ERR_OK;
 }
@@ -713,7 +713,7 @@ int cfg2_callback_su(cfg2_var_t *var, const char *command, lua_State *luaState) 
 		warning("You are now in supervisor mode. All variables are unlocked.", "");
 	}
 	
-	printf(COLOR_CYAN"You are a level %i admin.\n"COLOR_NORMAL, g_cfg2.adminLevel);
+	printf(COLOR_CYAN"You are a level %i admin."COLOR_NORMAL"\n", g_cfg2.adminLevel);
 	
 	cleanup_l:
 	
