@@ -120,6 +120,13 @@ int cfg2_callback_default(cfg2_var_t *var, const char *command, lua_State *luaSt
 int cfg2_callback_set(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+	
 	// At this point, var->command has been set to the command string. Nothing else has been modified.
 	
 	// // First, let's get rid of var->name in the string.
@@ -211,8 +218,6 @@ int cfg2_callback_set(cfg2_var_t *var, const char *command, lua_State *luaState)
 		}
 	}
 	
-	cfg2_printVar(var1, "cfg2");
-	
 	error = ERR_OK;
 	cleanup_l:
 	
@@ -224,13 +229,15 @@ int cfg2_callback_set(cfg2_var_t *var, const char *command, lua_State *luaState)
 int cfg2_callback_ifdef(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
-	// At this point, var->command has been set to the command string. Nothing else has been modified.
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
 	
-	// // First, let's get rid of var->name in the string.
-	// char *start = strchr(var->command, ' ') + 1;
-	// int offset = start - var->command;
-	char *arg1 = NULL, *arg2 = NULL, *arg3 = NULL;
-	cfg2_var_t *var1 = NULL, *var2 = NULL;
+	char *arg1 = NULL, *arg2 = NULL;
+	cfg2_var_t *var1 = NULL;
 	
 	char *commandCopy = malloc((strlen(command) + 1) * sizeof(char));
 	if (commandCopy == NULL) {
@@ -238,11 +245,6 @@ int cfg2_callback_ifdef(cfg2_var_t *var, const char *command, lua_State *luaStat
 		goto cleanup_l;
 	}
 	strcpy(commandCopy, command);
-	
-	// // Delete var->name + ' '.
-	// for (int i = 0; i < strlen(var->command) + 1 - offset; i++) {
-	// 	var->command[i] = var->command[i + offset];
-	// }
 	
 	// Now execute the command.
 	arg1 = strtok(commandCopy, " ");
@@ -259,15 +261,8 @@ int cfg2_callback_ifdef(cfg2_var_t *var, const char *command, lua_State *luaStat
 		goto cleanup_l;
 	}
 	
-	arg3 = strtok(NULL, " ");
-	if (arg3 == NULL) {
-		warning("Bad syntax for command \"%s\". (2)", var->name);
-		error = ERR_OK;
-		goto cleanup_l;
-	}
-	
 	// I'm doing this wrong. D: I need to write a proper string library.
-	arg3 = arg2 + strlen(arg2) + 1 + (command - commandCopy);
+	arg2 = arg1 + strlen(arg1) + 1 + (command - commandCopy);
 	
 	var1 = cfg2_findVar(arg1);
 	if (var1 == NULL) {
@@ -275,25 +270,11 @@ int cfg2_callback_ifdef(cfg2_var_t *var, const char *command, lua_State *luaStat
 		goto cleanup_l;
 	}
 	
-	var2 = cfg2_findVar(arg2);
-	if (var2 == NULL) {
-		warning("Variable \"%s\" does not exist.", arg2);
-		error = ERR_OK;
+	error = cfg2_execString(string_const(arg2), NULL, 0);
+	// No variable pointers are safe beyond this point.
+	if (error) {
 		goto cleanup_l;
 	}
-	
-	// Run callback.
-	if (var2->callback != NULL) {
-		error = var2->callback(var2, arg3, luaState);
-		if (error) {
-			goto cleanup_l;
-		}
-	}
-	else {
-		warning("\"%s\" is not a command.", arg2);
-	}
-	
-	cfg2_printVar(var1, "cfg2");
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -305,6 +286,13 @@ int cfg2_callback_ifdef(cfg2_var_t *var, const char *command, lua_State *luaStat
 
 int cfg2_callback_exec(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
+	
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
 	
 	// At this point, var->command has been set to the command string. Nothing else has been modified.
 	
@@ -352,6 +340,386 @@ int cfg2_callback_exec(cfg2_var_t *var, const char *command, lua_State *luaState
 	return error;
 }
 
+int cfg2_callback_create(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+	
+	char *arg1 = NULL, *arg2 = NULL, *arg3 = NULL;
+	cfg2_var_t *var2 = NULL;
+	cfg2_var_type_t type2;
+	
+	char *commandCopy = malloc((strlen(command) + 1) * sizeof(char));
+	if (commandCopy == NULL) {
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	strcpy(commandCopy, command);
+	
+	// Now execute the command.
+	arg1 = strtok(commandCopy, " ");
+	if (arg1 == NULL) {
+		warning("Bad syntax for command \"%s\". (1)", var->name);
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	arg2 = strtok(NULL, " ");
+	if (arg2 == NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	arg3 = strtok(NULL, " ");
+	if (arg3 != NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	// I'm doing this wrong. D: I need to write a proper string library.
+	// arg3 = arg2 + strlen(arg2) + 1 + (command - commandCopy);
+	
+	if (!strcmp(arg1, "none")) {
+		type2 = cfg2_var_type_none;
+	}
+	else if (!strcmp(arg1, "integer")) {
+		type2 = cfg2_var_type_integer;
+	}
+	else if (!strcmp(arg1, "vector")) {
+		type2 = cfg2_var_type_vector;
+	}
+	else if (!strcmp(arg1, "string")) {
+		type2 = cfg2_var_type_string;
+	}
+	else {
+		warning("Bad type \"%s\".", arg1);
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	var2 = cfg2_findVar(arg2);
+	if (var2 != NULL) {
+		warning("Variable \"%s\" already exists.", arg2);
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	info("Creating %s \"%s\" with permission level %i.", arg1, arg2, g_cfg2.adminLevel);
+	cfg2_createVariable(var2, arg2, type2, g_cfg2.adminLevel);
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	free(commandCopy);
+	
+	return error;
+}
+
+int cfg2_callback_quit(cfg2_var_t *var, const char *command, lua_State *luaState) {
+
+	// Prevent execution on creation.
+	static int created = 0;
+	// 2, because there are two commands: quit and exit.
+	if (created < 2) {
+		created++;
+		return ERR_OK;
+	}
+	
+	g_cfg2.quit = true;
+	return ERR_OK;
+}
+
+int cfg2_callback_vars(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	int error = ERR_CRITICAL;
+
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+	
+	const char treeMiddle[] = "├─ ";
+	const char treeEnd[]    = "└─ ";
+	char treeChars[]        = "── ";
+	int j = 0;
+	
+	// printf(COLOR_CYAN"%s:"COLOR_NORMAL"\n", NULL);
+	
+	for (int i = 0; i < g_cfg2.vars_length; i++) {
+		if (g_cfg2.adminLevel >= g_cfg2.vars[i].permissionRead) {
+			if (i == g_cfg2.vars_length - 1) {
+				strcpy(treeChars, treeEnd);
+			}
+			else {
+				strcpy(treeChars, treeMiddle);
+			}
+			j++;
+			
+			switch (g_cfg2.vars[i].type) {
+				case cfg2_var_type_none:
+					printf(COLOR_CYAN"%s"COLOR_BLUE"n[%s]"COLOR_NORMAL"\n", treeChars, g_cfg2.vars[i].name);
+					break;
+				case cfg2_var_type_vector:
+					printf(COLOR_CYAN"%s"COLOR_BLUE"v[%s]"COLOR_CYAN" %f"COLOR_NORMAL"\n", treeChars, g_cfg2.vars[i].name, g_cfg2.vars[i].vector);
+					break;
+				case cfg2_var_type_integer:
+					printf(COLOR_CYAN"%s"COLOR_BLUE"i[%s]"COLOR_CYAN" %i"COLOR_NORMAL"\n", treeChars, g_cfg2.vars[i].name, g_cfg2.vars[i].integer);
+					break;
+				case cfg2_var_type_string:
+					printf(COLOR_CYAN"%s"COLOR_BLUE"s[%s]"COLOR_CYAN" \"%s\""COLOR_NORMAL"\n", treeChars, g_cfg2.vars[i].name, g_cfg2.vars[i].string);
+					break;
+				default:
+					log_error(__func__, "Can't happen");
+					error = 1;
+					goto cleanup_l;
+			}
+		}
+		else {
+			warning("Insufficient permission to read variable \"%s\".", g_cfg2.vars[i].name);
+		}
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
+}
+
+int cfg2_callback_copy(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+	
+	char *arg1 = NULL, *arg2 = NULL, *arg3 = NULL;
+	cfg2_var_t *var1 = NULL, *var2 = NULL;
+	char *tempString = NULL;
+	
+	char *commandCopy = malloc((strlen(command) + 1) * sizeof(char));
+	if (commandCopy == NULL) {
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	strcpy(commandCopy, command);
+	
+	// Now execute the command.
+	arg1 = strtok(commandCopy, " ");
+	if (arg1 == NULL) {
+		warning("Bad syntax for command \"%s\". (1)", var->name);
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	arg2 = strtok(NULL, " ");
+	if (arg2 == NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	arg3 = strtok(NULL, " ");
+	if (arg3 != NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	// I'm doing this wrong. D: I need to write a proper string library.
+	// arg3 = arg2 + strlen(arg2) + 1 + (command - commandCopy);
+	
+	var1 = cfg2_findVar(arg1);
+	if (var1 == NULL) {
+		warning("Variable \"%s\" does not exist.", arg1);
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	var2 = cfg2_findVar(arg2);
+	if (var2 == NULL) {
+		warning("Variable \"%s\" does not exist.", arg2);
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	if (g_cfg2.adminLevel < var1->permissionWrite) {
+		warning("Insufficient permission to write variable \"%s\".", var1->name);
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	if (g_cfg2.adminLevel < var2->permissionRead) {
+		warning("Insufficient permission to read variable \"%s\".", var2->name);
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	switch (var1->type) {
+	case cfg2_var_type_none:
+		error("Cannot copy variable \"%s\" since is of type \"none\".", var1->name);
+		break;
+	case cfg2_var_type_string:
+		switch(var2->type) {
+		case cfg2_var_type_none:
+			error("Cannot copy variable \"%s\" since is of type \"none\".", var1->name);
+			break;
+		case cfg2_var_type_string:
+			// cfg_setVarString(var1, var2->string.value);
+			var1->string = realloc(var1->string, (strlen(var2->string) + 1) * sizeof(char));
+			if (var1->string == NULL) {
+				error = ERR_OUTOFMEMORY;
+				goto cleanup_l;
+			}
+			strcpy(var1->string, var2->string);
+			break;
+		case cfg2_var_type_integer:
+			tempString = malloc((3 * sizeof(int) + 1) * sizeof(char));
+			sprintf(tempString, "%i", var2->integer);
+			var1->string = realloc(var1->string, (strlen(tempString) + 1) * sizeof(char));
+			if (var1->string == NULL) {
+				error = ERR_OUTOFMEMORY;
+				goto cleanup_l;
+			}
+			strcpy(var1->string, tempString);
+			insane_free(tempString);
+			break;
+		case cfg2_var_type_vector:
+			tempString = malloc((3 * sizeof(int) + 1) * sizeof(char));
+			sprintf(tempString, "%f", var2->vector);
+			var1->string = realloc(var1->string, (strlen(tempString) + 1) * sizeof(char));
+			if (var1->string == NULL) {
+				error = ERR_OUTOFMEMORY;
+				goto cleanup_l;
+			}
+			strcpy(var1->string, tempString);
+			insane_free(tempString);
+			break;
+		default:
+			log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", var1->type, var1->name);
+			error = ERR_CRITICAL;
+			goto cleanup_l;
+		}
+		break;
+	case cfg2_var_type_integer:
+		switch(var2->type) {
+		case cfg2_var_type_none:
+			error("Cannot copy variable \"%s\" since is of type \"none\".", var1->name);
+			break;
+		case cfg2_var_type_string:
+			var1->integer = strtol(var2->string, NULL, 10);
+			break;
+		case cfg2_var_type_integer:
+			var1->integer = var2->integer;
+			break;
+		case cfg2_var_type_vector:
+			var1->integer = round(var2->vector);
+			break;
+		default:
+			log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", var1->type, var1->name);
+			error = ERR_CRITICAL;
+			goto cleanup_l;
+		}
+		break;
+	case cfg2_var_type_vector:
+		switch(var2->type) {
+		case cfg2_var_type_none:
+			error("Cannot copy variable \"%s\" since is of type \"none\".", var1->name);
+			break;
+		case cfg2_var_type_string:
+			var1->vector = strtod(var2->string, NULL);
+			break;
+		case cfg2_var_type_integer:
+			var1->vector = var2->integer;
+			break;
+		case cfg2_var_type_vector:
+			var1->vector = var2->vector;
+			break;
+		default:
+			log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", var1->type, var1->name);
+			error = ERR_CRITICAL;
+			goto cleanup_l;
+		}
+		break;
+	default:
+		log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", var1->type, var1->name);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	free(commandCopy);
+	
+	return error;
+}
+
+int cfg2_callback_adminLevel(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+	
+	printf(COLOR_CYAN"You are a level %i admin.\n"COLOR_NORMAL, g_cfg2.adminLevel);
+	
+	return ERR_OK;
+}
+
+int cfg2_callback_su(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+	
+	if (g_cfg2.adminLevel < cfg2_admin_administrator) {
+		warning("Cannot elevate privileges from game.", "");
+		goto cleanup_l;
+	}
+	
+	if (strcmp(command, "")) {
+		g_cfg2.adminLevel = strtol(command, NULL, 10);
+		if (g_cfg2.adminLevel < cfg2_admin_game) {
+			g_cfg2.adminLevel = cfg2_admin_game;
+		}
+		if (g_cfg2.adminLevel > cfg2_admin_supervisor) {
+			g_cfg2.adminLevel = cfg2_admin_supervisor;
+		}
+	}
+	else if (g_cfg2.adminLevel == cfg2_admin_administrator) {
+		g_cfg2.adminLevel = cfg2_admin_supervisor;
+	}
+	else if (g_cfg2.adminLevel == cfg2_admin_supervisor) {
+		g_cfg2.adminLevel = cfg2_admin_administrator;
+	}
+	
+	if (g_cfg2.adminLevel == cfg2_admin_supervisor) {
+		warning("You are now in supervisor mode. All variables are unlocked.", "");
+	}
+	
+	printf(COLOR_CYAN"You are a level %i admin.\n"COLOR_NORMAL, g_cfg2.adminLevel);
+	
+	cleanup_l:
+	
+	return ERR_OK;
+}
+
 /* cfg2 variable callbacks */
 /* ======================= */
 
@@ -375,18 +743,22 @@ int cfg2_printVar(cfg2_var_t *var, const char *tag) {
 		return ERR_OK;
 	}
 	
+	if (tag != NULL) {
+		printf(COLOR_CYAN"%s: ", tag);
+	}
+	
 	switch (var->type) {
 		case cfg2_var_type_none:
-			printf(COLOR_CYAN"%s: "COLOR_BLUE"n[%s]"COLOR_NORMAL"\n", tag, var->name);
+			printf(COLOR_BLUE"n[%s]"COLOR_NORMAL"\n", var->name);
 			break;
 		case cfg2_var_type_vector:
-			printf(COLOR_CYAN"%s: "COLOR_BLUE"v[%s]"COLOR_CYAN" %f"COLOR_NORMAL"\n", tag, var->name, var->vector);
+			printf(COLOR_BLUE"v[%s]"COLOR_CYAN" %f"COLOR_NORMAL"\n", var->name, var->vector);
 			break;
 		case cfg2_var_type_integer:
-			printf(COLOR_CYAN"%s: "COLOR_BLUE"i[%s]"COLOR_CYAN" %i"COLOR_NORMAL"\n", tag, var->name, var->integer);
+			printf(COLOR_BLUE"i[%s]"COLOR_CYAN" %i"COLOR_NORMAL"\n", var->name, var->integer);
 			break;
 		case cfg2_var_type_string:
-			printf(COLOR_CYAN"%s: "COLOR_BLUE"s[%s]"COLOR_CYAN" \"%s\""COLOR_NORMAL"\n", tag, var->name, var->string);
+			printf(COLOR_BLUE"s[%s]"COLOR_CYAN" \"%s\""COLOR_NORMAL"\n", var->name, var->string);
 			break;
 		default:
 			log_error(__func__, "Can't happen");
@@ -411,7 +783,7 @@ int cfg2_createVariable(cfg2_var_t *var, const char *name, cfg2_var_type_t type,
 	
 	memset(var, 0, sizeof(cfg2_var_t));
 	
-	var->callback = cfg2_callback_default;
+	var->callback = NULL;
 	var->integer = 0;
 	var->permissionRead = adminLevel;
 	var->permissionWrite = adminLevel;
@@ -478,28 +850,60 @@ cfg2_var_t *cfg2_findVar(const char *name) {
 int cfg2_setVariable(cfg2_var_t *var, const char *value, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
-	// Resize the destination string.
-	// var->command = realloc(var->command, (strlen(value) + 1) * sizeof(char));
-	// if (var->command == NULL) {
-	// 	error = ERR_OUTOFMEMORY;
-	// 	goto cleanup_l;
-	// }
-	
-	// Set.
-	if (g_cfg2.adminLevel < var->permissionWrite) {
-		warning("Permissions not high enough to set variable %s.", var->name);
-		error = ERR_OK;
-		goto cleanup_l;
-	}
-	
-	// strcpy(var->command, value);
-	
-	// Run callback.
-	if (var->callback != NULL) {
-		error = var->callback(var, value, luaState);
-		if (error) {
+	if (strcmp(value, "") || ((var->type == cfg2_var_type_none) && (var->callback != NULL))) {
+		// <variable> <value>
+		
+		if (g_cfg2.adminLevel < var->permissionWrite) {
+			warning("Permissions not high enough to set variable %s.", var->name);
+			error = ERR_OK;
 			goto cleanup_l;
 		}
+		
+		switch (var->type) {
+		case cfg2_var_type_none:
+			// Ignore it. This is a command.
+			break;
+		case cfg2_var_type_vector:
+#ifdef DOUBLE_VEC
+			var1->vector = strtod(value, NULL);
+#else
+			var->vector = strtof(value, NULL);
+#endif
+			break;
+		case cfg2_var_type_integer:
+			var->integer = strtol(value, NULL, 10);
+			break;
+		case cfg2_var_type_string:
+			var->string = realloc(var->string, (strlen(value) + 1) * sizeof(char));
+			if (var->string == NULL) {
+				error = ERR_OUTOFMEMORY;
+				goto cleanup_l;
+			}
+			strcpy(var->string, value);
+			break;
+		default:
+			critical_error("Bad variable type %i.", var->type);
+			error = ERR_CRITICAL;
+			goto cleanup_l;
+		}
+		
+		// Run callback.
+		if (var->callback != NULL) {
+			error = var->callback(var, value, luaState);
+			if (error) {
+				goto cleanup_l;
+			}
+		}
+	}
+	else {
+		// <variable>
+		if (g_cfg2.adminLevel < var->permissionRead) {
+			warning("Permissions not high enough to read variable %s.", var->name);
+			error = ERR_OK;
+			goto cleanup_l;
+		}
+		
+		cfg2_printVar(var, NULL);
 	}
 	
 	error = ERR_OK;
@@ -619,6 +1023,11 @@ int cfg2_createVariables(const cfg2_var_init_t *varInit) {
 		
 		// Set the remaining default values.
 		g_cfg2.vars[i + g_cfg2.vars_length].frequency = 0;
+		
+		// Run callback.
+		if (g_cfg2.vars[i + g_cfg2.vars_length].callback != NULL) {
+			g_cfg2.vars[i + g_cfg2.vars_length].callback(&g_cfg2.vars[i + g_cfg2.vars_length], "", NULL);
+		}
 	}
 	
 	// Allow functions to use the variables.
@@ -663,6 +1072,12 @@ int cfg2_execString(const string_t *line, const char *tag, const int recursionDe
 	
 	index = string_index_of(line, 0, ' ');
 	string_substring(&varName, line, 0, index - 0);
+	if (index >= 0) {
+		string_substring(&value, line, index + 1, -1);
+	}
+	else {
+		string_copy_c(&value, "");
+	}
 	
 	var = cfg2_findVar(varName.value);
 	if (var == NULL) {
@@ -670,8 +1085,6 @@ int cfg2_execString(const string_t *line, const char *tag, const int recursionDe
 		error = ERR_OK;
 		goto cleanup_l;
 	}
-	
-	string_substring(&value, line, index + 1, -1);
 	
 	error = cfg2_setVariable(var, value.value, g_cfg2.luaState);
 	if (error) {

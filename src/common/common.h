@@ -51,6 +51,7 @@
 #define CFG_PORT                "net_port"
 #define CFG_PORT_DEFAULT                8099
 #define CFG_IP_ADDRESS          "net_address"
+#define CFG_IP_ADDRESS_DEFAULT          "localhost"
 #define CFG_CONNECTION_TIMEOUT  "net_timeout"
 #define CFG_CONNECTION_TIMEOUT_DEFAULT  10000   // Milliseconds
 #define CFG_MAX_CLIENTS         "max_clients"

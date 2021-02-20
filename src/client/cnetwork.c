@@ -591,9 +591,23 @@ int cnetwork_runEvents(void) {
 int cnetwork_init(void) {
 	int error = ERR_CRITICAL;
 	
+	// cfg2_var_t *v_ipAddress;
+	
 	g_clientState.connected = false;
 	g_clientState.connectionState = cnetwork_connectionState_initial;
 	g_clientState.lastResponseTime = time(NULL);
+	
+	// v_ipAddress = cfg2_findVar(CFG_IP_ADDRESS);
+	// if (v_ipAddress == NULL) {
+	// 	critical_error("Variable \""CFG_IP_ADDRESS"\" does not exist.", "");
+	// 	error = ERR_CRITICAL;
+	// 	goto cleanup_l;
+	// }
+	
+	// error = cnetwork_callback_setIpAddress(v_ipAddress, "", NULL);
+	// if (error) {
+	// 	goto cleanup_l;
+	// }
 	
 	error = enet_initialize() != 0;
 	if (error != 0) {

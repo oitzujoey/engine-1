@@ -73,12 +73,24 @@ const cfg2_var_init_t g_clientVarInit[] = {
 		.vector = 0,
 		.integer = CFG_PORT_DEFAULT,
 		.string = "",
-		.type = cfg2_var_type_string,
-		.permissionRead = cfg2_admin_supervisor,
+		.type = cfg2_var_type_integer,
+		.permissionRead = cfg2_admin_game,
 		.permissionWrite = cfg2_admin_supervisor,
 		.permissionDelete = cfg2_admin_supervisor,
 		.permissionCallback = cfg2_admin_supervisor,
 		.callback = cnetwork_callback_setServerPort
+	},
+	{
+		.name = CFG_IP_ADDRESS,
+		.vector = 0,
+		.integer = 0,
+		.string = CFG_IP_ADDRESS_DEFAULT,
+		.type = cfg2_var_type_string,
+		.permissionRead = cfg2_admin_game,
+		.permissionWrite = cfg2_admin_supervisor,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = cnetwork_callback_setIpAddress
 	},
 	{
 		.name = NULL,
@@ -202,18 +214,6 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	
 	cfg2_init(luaState);
 	
-	error = cfg2_createVariables(g_clientVarInit);
-	if (error) {
-		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
-		error = ERR_GENERIC;
-		goto cleanup_l;
-	}
-	else if (error == ERR_OUTOFMEMORY) {
-		log_critical_error(__func__, "Out of memory.");
-		error = ERR_OUTOFMEMORY;
-		goto cleanup_l;
-	}
-
 	error = cfg2_createVariables(g_commonVarInit);
 	if (error == ERR_GENERIC) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
@@ -226,6 +226,18 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	
+	error = cfg2_createVariables(g_clientVarInit);
+	if (error) {
+		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	else if (error == ERR_OUTOFMEMORY) {
+		log_critical_error(__func__, "Out of memory.");
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+
 	if (file_exists(AUTOEXEC)) {
 		log_info(__func__, "Found \""AUTOEXEC"\"");
 		cfg2_execFile(AUTOEXEC, 0);

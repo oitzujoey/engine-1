@@ -77,12 +77,24 @@ const cfg2_var_init_t g_serverVarInit[] = {
 		.vector = 0,
 		.integer = CFG_PORT_DEFAULT,
 		.string = "",
-		.type = cfg2_var_type_string,
-		.permissionRead = cfg2_admin_supervisor,
+		.type = cfg2_var_type_integer,
+		.permissionRead = cfg2_admin_game,
 		.permissionWrite = cfg2_admin_supervisor,
 		.permissionDelete = cfg2_admin_supervisor,
 		.permissionCallback = cfg2_admin_supervisor,
 		.callback = snetwork_callback_setServerPort
+	},
+	{
+		.name = CFG_MAX_CLIENTS,
+		.vector = 0,
+		.integer = CFG_MAX_CLIENTS_DEFAULT,
+		.string = "",
+		.type = cfg2_var_type_integer,
+		.permissionRead = cfg2_admin_game,
+		.permissionWrite = cfg2_admin_supervisor,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = snetwork_callback_maxClients
 	},
 	{
 		.name = NULL,
@@ -153,7 +165,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	
 	cfg2_init(luaState);
 	
-	error = cfg2_createVariables(g_serverVarInit);
+	error = cfg2_createVariables(g_commonVarInit);
 	if (error == ERR_GENERIC) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
 		error = ERR_GENERIC;
@@ -165,7 +177,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	
-	error = cfg2_createVariables(g_commonVarInit);
+	error = cfg2_createVariables(g_serverVarInit);
 	if (error == ERR_GENERIC) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
 		error = ERR_GENERIC;

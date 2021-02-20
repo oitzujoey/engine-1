@@ -302,7 +302,8 @@ int terminal_runTerminalCommand(void) {
 	bool badComplete = false;
 	static int tabs = 0;
 	int tempInt;
-	cfg2_admin_t tempAdmin;
+	static cfg2_admin_t adminLevel = cfg2_admin_administrator;
+	cfg2_admin_t tempAdminLevel;
 	
 	if (!printedPrompt) {
 		printedPrompt = true;
@@ -431,12 +432,14 @@ int terminal_runTerminalCommand(void) {
 			putc('\n', stdout);
 			
 			// // Execute string as administrator.
-			// g_cfg.lock = false;
-			tempAdmin = g_cfg2.adminLevel;
-			g_cfg2.adminLevel = cfg2_admin_administrator;
+			tempAdminLevel = g_cfg2.adminLevel;
+			// The terminal has its own adminLevel.
+			g_cfg2.adminLevel = adminLevel;
 			error = cfg2_execString(&g_consoleCommand, "console", 0);
-			g_cfg2.adminLevel = tempAdmin;
-			// g_cfg.lock = true;
+			// adminLevel may have been modified by a command.
+			adminLevel = g_cfg2.adminLevel;
+			g_cfg2.adminLevel = tempAdminLevel;
+			
 			if (error == ERR_OUTOFMEMORY) {
 				critical_error("Out of memory", "");
 				goto cleanup_l;
