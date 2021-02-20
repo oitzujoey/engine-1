@@ -17,7 +17,7 @@ serverState_t g_server;
 client_t g_clients[MAX_CLIENTS];
 
 
-int snetwork_handle_setServerPort(cfg_var_t *var) {
+int snetwork_callback_setServerPort(cfg2_var_t *var, const char *command, lua_State *luaState) {
 
 	// Shouldn't have to check type because it will always be hard coded when this function is run.
 	if (var->integer < 1024) {
@@ -29,20 +29,20 @@ int snetwork_handle_setServerPort(cfg_var_t *var) {
 	return ERR_OK;
 }
 
-int snetwork_handle_enetMessage(cfg_var_t *var) {
+int snetwork_callback_enetMessage(cfg2_var_t *var, const char *command, lua_State *luaState) {
 
-	if (var->string.length == 0) {
+	if (strlen(var->string) == 0) {
 		goto cleanup_l; 
 	}
 	
-	ENetPacket *packet = enet_packet_create(var->string.value, var->string.length + 1, ENET_PACKET_FLAG_RELIABLE);
+	ENetPacket *packet = enet_packet_create(var->string, strlen(var->string) + 1, ENET_PACKET_FLAG_RELIABLE);
 	enet_host_broadcast(g_server.host, ENET_CHANNEL1, packet);
 	
 	cleanup_l:
 	return ERR_OK;
 }
 
-int snetwork_handle_maxClients(cfg_var_t *var) {
+int snetwork_callback_maxClients(cfg2_var_t *var, const char *command, lua_State *luaState) {
 
 	if (var->integer < 0) {
 		warning("Variable \"%s\" out of range. Setting to %i.", var->name, 0);

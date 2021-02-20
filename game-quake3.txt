@@ -8,7 +8,7 @@ Surface attributes
 	Friction
 	Friction curve/type?
 	Bounciness (OVERCLIP)
-	Collision type (Noclip, Clip, Overbounce)
+	Collision type (Noclip, Clip, Overbounce, Reverse)
 	
 collideNoclip:
 
@@ -29,6 +29,9 @@ collideOverbounce:
 		// Do something fun!
 	}
 	velocity *= originalSpeed * surface.bounciness
+
+collideReverse:
+	velocity = -velocity;
 
 applyFriction:
 	wish = normalize(wish)

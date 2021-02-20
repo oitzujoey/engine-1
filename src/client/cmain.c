@@ -10,12 +10,13 @@
 #include "../common/lua_sandbox.h"
 #include "cnetwork.h"
 #include "../common/log.h"
-#include "../common/cfg.h"
+#include "../common/cfg2.h"
 #include "../common/file.h"
 #include "../common/network.h"
 #include "../common/entity.h"
 #include "../common/obj.h"
 #include "../common/vfs.h"
+#include "../common/terminal.h"
 
 static int l_main_checkQuit(lua_State *luaState);
 static int l_main_housekeeping(lua_State *luaState);
@@ -38,22 +39,63 @@ luaCFunc_t luaCFunctions[] = {
 	{.func = NULL,                  .name = NULL}
 };
 
-const cfg_var_init_t initialConfigVars[] = {
-	{.name = "client",                  .vector = 0,    .integer = 0,                               .string = NULL,                         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
-	{.name = "lua_main",                .vector = 0,    .integer = 0,                               .string = "",                           .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-	{.name = "workspace",               .vector = 0,    .integer = 0,                               .string = "",                           .type = string,     .handle = vfs_handle_setWorkspace,                  .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_PORT,                  .vector = 0,    .integer = CFG_PORT_DEFAULT,                .string = "",                           .type = integer,    .handle = cnetwork_handle_setServerPort,            .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_CONNECTION_TIMEOUT,    .vector = 0,    .integer = CFG_CONNECTION_TIMEOUT_DEFAULT,  .string = "",                           .type = integer,    .handle = network_handle_connectionTimeout,         .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_IP_ADDRESS,            .vector = 0,    .integer = 0,                               .string = "localhost",                  .type = string,     .handle = cnetwork_handle_setIpAddress,             .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_MAX_RECURSION,         .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,       .string = "",                           .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
-	{.name = CFG_RUN_QUIET,             .vector = 0,    .integer = false,                           .string = "",                           .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
-	{.name = CFG_HISTORY_LENGTH,        .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,      .string = "",                           .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
-	{.name = CFG_OPENGL_LOG_FILE,       .vector = 0,    .integer = 0,                               .string = CFG_OPENGL_LOG_FILE_DEFAULT,  .type = string,     .handle = render_handle_updateLogFileName,          .permissions = CFG_VAR_FLAG_READ},
-	{.name = NULL,                      .vector = 0,    .integer = 0,                               .string = NULL,                         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
+// const cfg_var_init_t initialConfigVars[] = {
+// 	{.name = "client",                  .vector = 0,    .integer = 0,                               .string = NULL,                         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
+// 	{.name = "lua_main",                .vector = 0,    .integer = 0,                               .string = "",                           .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
+// 	{.name = "workspace",               .vector = 0,    .integer = 0,                               .string = "",                           .type = string,     .handle = vfs_handle_setWorkspace,                  .permissions = CFG_VAR_FLAG_READ},
+// 	{.name = CFG_PORT,                  .vector = 0,    .integer = CFG_PORT_DEFAULT,                .string = "",                           .type = integer,    .handle = cnetwork_handle_setServerPort,            .permissions = CFG_VAR_FLAG_READ},
+// 	{.name = CFG_CONNECTION_TIMEOUT,    .vector = 0,    .integer = CFG_CONNECTION_TIMEOUT_DEFAULT,  .string = "",                           .type = integer,    .handle = network_handle_connectionTimeout,         .permissions = CFG_VAR_FLAG_READ},
+// 	{.name = CFG_IP_ADDRESS,            .vector = 0,    .integer = 0,                               .string = "localhost",                  .type = string,     .handle = cnetwork_handle_setIpAddress,             .permissions = CFG_VAR_FLAG_READ},
+// 	{.name = CFG_MAX_RECURSION,         .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,       .string = "",                           .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
+// 	{.name = CFG_RUN_QUIET,             .vector = 0,    .integer = false,                           .string = "",                           .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
+// 	{.name = CFG_HISTORY_LENGTH,        .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,      .string = "",                           .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
+// 	{.name = CFG_OPENGL_LOG_FILE,       .vector = 0,    .integer = 0,                               .string = CFG_OPENGL_LOG_FILE_DEFAULT,  .type = string,     .handle = render_handle_updateLogFileName,          .permissions = CFG_VAR_FLAG_READ},
+// 	{.name = NULL,                      .vector = 0,    .integer = 0,                               .string = NULL,                         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
+// };
+
+const cfg2_var_init_t g_clientVarInit[] = {
+	// Commands
+	// Variables
+	{
+		.name = "client",
+		.vector = 0,
+		.integer = 0,
+		.string = "",
+		.type = cfg2_var_type_none,
+		.permissionRead = cfg2_admin_supervisor,
+		.permissionWrite = cfg2_admin_supervisor,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = NULL
+	},
+	{
+		.name = CFG_PORT,
+		.vector = 0,
+		.integer = CFG_PORT_DEFAULT,
+		.string = "",
+		.type = cfg2_var_type_string,
+		.permissionRead = cfg2_admin_supervisor,
+		.permissionWrite = cfg2_admin_supervisor,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = cnetwork_callback_setServerPort
+	},
+	{
+		.name = NULL,
+		.vector = 0,
+		.integer = 0,
+		.string = NULL,
+		.type = 0,
+		.permissionRead = 0,
+		.permissionWrite = 0,
+		.permissionDelete = 0,
+		.permissionCallback = 0,
+		.callback = NULL
+	}
 };
 
 static int l_main_checkQuit(lua_State *luaState) {
-	lua_pushinteger(luaState, g_cfg.quit);
+	lua_pushinteger(luaState, g_cfg2.quit);
 	return 1;
 }
 
@@ -65,11 +107,11 @@ static int l_main_housekeeping(lua_State *luaState) {
 	// This must come first to allow network disconnect.
     if (SDL_PollEvent(&event)) {
         if (event.type == SDL_QUIT) {
-            g_cfg.quit = true;
+            g_cfg2.quit = true;
 		}
     }
 
-	error = cfg_runTerminalCommand();
+	error = terminal_runTerminalCommand();
 	if (error) {
 		goto cleanup_l;
 	}
@@ -93,7 +135,7 @@ static int l_main_housekeeping(lua_State *luaState) {
 	error = ERR_OK;
 	cleanup_l:
 	if (error) {
-		g_cfg.quit = true;
+		g_cfg2.quit = true;
 	}
 	
 	return 0;
@@ -145,7 +187,7 @@ static void windowQuit(void) {
 	SDL_Quit();
 }
 
-static int main_init(const int argc, char *argv[]) {
+static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	int error;
 	
 	string_t tempString;
@@ -156,9 +198,11 @@ static int main_init(const int argc, char *argv[]) {
 		goto cleanup_l;
 	}
 	
-	info("Initializing server vars", "");
+	info("Initializing client vars", "");
 	
-	error = cfg_initVars(initialConfigVars);
+	cfg2_init(luaState);
+	
+	error = cfg2_createVariables(g_clientVarInit);
 	if (error) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
 		error = ERR_GENERIC;
@@ -170,15 +214,27 @@ static int main_init(const int argc, char *argv[]) {
 		goto cleanup_l;
 	}
 
+	error = cfg2_createVariables(g_commonVarInit);
+	if (error == ERR_GENERIC) {
+		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	else if (error == ERR_OUTOFMEMORY) {
+		log_critical_error(__func__, "Out of memory.");
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	
 	if (file_exists(AUTOEXEC)) {
 		log_info(__func__, "Found \""AUTOEXEC"\"");
-		cfg_execFile(AUTOEXEC, 0);
+		cfg2_execFile(AUTOEXEC, 0);
 	}
 
 	if (argc > 1) {
 		for (int i = 1; i < argc; i++) {
 			string_copy_c(&tempString, argv[i]);
-			error = cfg_execString(&tempString, "Console", 0);
+			error = cfg2_execString(&tempString, "Console", 0);
 			if (error == ERR_OUTOFMEMORY) {
 				critical_error("Out of memory", "");
 				goto cleanup_l;
@@ -199,7 +255,7 @@ static int main_init(const int argc, char *argv[]) {
 		goto cleanup_l;
 	}
 	
-	if (!strcmp(g_workspace, "")) {
+	if ((g_workspace == NULL) || !strcmp(g_workspace, "")) {
 		log_critical_error(__func__, "\"workspace\" has not been set.");
 		error = ERR_GENERIC;
 		goto cleanup_l;
@@ -222,11 +278,11 @@ static int main_init(const int argc, char *argv[]) {
 		goto cleanup_l;
 	}
 	
-	error = cfg_initConsole();
+	error = terminal_initConsole();
 	if (error) {
 		goto cleanup_l;
 	}
-	error = cfg_terminalInit();
+	error = terminal_terminalInit();
 	if (error) {
 		critical_error("Could not initialize the terminal", "");
 		error = ERR_CRITICAL;
@@ -243,7 +299,7 @@ static int main_init(const int argc, char *argv[]) {
 
 void main_quit(void) {
 
-	cfg_quitConsole();
+	terminal_quitConsole();
 
 	cnetwork_quit();
 	
@@ -254,7 +310,7 @@ void main_quit(void) {
 	
 	windowQuit();
 	
-	cfg_free();
+	cfg2_free();
 }
 
 int main (int argc, char *argv[]) {
@@ -263,7 +319,7 @@ int main (int argc, char *argv[]) {
 	lua_State *Lua;
 	const char *luaFileName = "cmain.lua";
 	string_t luaFilePath;
-	cfg_var_t *v_luaMain;
+	cfg2_var_t *v_luaMain;
 	
 	info("Starting engine-1 v0.0 (Client)", "");
 	
@@ -273,37 +329,37 @@ int main (int argc, char *argv[]) {
 		goto cleanup_l;
 	}
 	
-	error = main_init(argc, argv);
+	error = main_init(argc, argv, Lua);
 	if (error) {
 		critical_error("main_init returned %i", error);
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 	
-	v_luaMain = cfg_findVar("lua_main");
+	v_luaMain = cfg2_findVar(CFG_LUA_MAIN);
 	if (v_luaMain == NULL) {
-		log_critical_error(__func__, "\"lua_main\" does not exist.");
+		log_critical_error(__func__, "\""CFG_LUA_MAIN"\" does not exist.");
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
-	if (!strcmp(v_luaMain->string.value, "")) {
-		log_critical_error(__func__, "\"lua_main\" has not been set.");
+	if (!strcmp(v_luaMain->string, "")) {
+		log_critical_error(__func__, "\""CFG_LUA_MAIN"\" has not been set.");
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 
 	/* @TODO: Do proper file path sanitization. */
 	string_copy_c(&luaFilePath, g_workspace);
-	file_concatenatePath(&luaFilePath, &v_luaMain->string);
+	file_concatenatePath(&luaFilePath, string_const(v_luaMain->string));
 	file_concatenatePath(&luaFilePath, string_const(luaFileName));
 	
-	if (g_cfg.quit) {
+	if (g_cfg2.quit) {
 		error = ERR_OK;
 		goto cleanup_l;
 	}
 	
 	/* Before we begin, lock the restricted variables. */
-	g_cfg.lock = true;
+	g_cfg2.adminLevel = cfg2_admin_game;
 	
 	log_info(__func__, "Executing \"%s\"", luaFilePath.value);
 	error = lua_sandbox_init(&Lua, luaCFunctions, luaFilePath.value);

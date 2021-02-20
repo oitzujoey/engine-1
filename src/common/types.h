@@ -2,6 +2,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <stdbool.h>
+#include <time.h>
 #include <SDL2/SDL.h>
 #include <lua.h>
 
@@ -92,5 +94,66 @@ typedef struct {
 typedef struct {
     string_t material_name;
 } mtl_t;
+
+
+
+/* cfg2.h */
+/* ====== */
+
+typedef enum cfg2_var_type_s {
+	// none is usually used for commands.
+	cfg2_var_type_none,
+	cfg2_var_type_vector,
+	cfg2_var_type_integer,
+	cfg2_var_type_string
+} cfg2_var_type_t;
+
+/*
+game is what the gamecode has access to.
+administrator is what the console has access to.
+An administrator can request to be elevated to supervisor. This will allow modification of engine-breaking variables.
+*/
+typedef enum {
+	cfg2_admin_game,
+	cfg2_admin_administrator,
+	cfg2_admin_supervisor
+} cfg2_admin_t;
+
+typedef struct cfg2_var_s {
+	char *name;
+	vec_t vector;           // vec_t (float)
+	int integer;            // int
+	char *string;           // string
+	// char *command;          // Command sent to variable
+	cfg2_var_type_t type;   // Type of variable: none, vect, int, string
+	cfg2_admin_t permissionRead;        // Permission level required to read
+	cfg2_admin_t permissionWrite;       // Permission level required to write
+	cfg2_admin_t permissionDelete;      // Permission level required to delete
+	cfg2_admin_t permissionCallback;    // Permission level required to read and write callback.
+	unsigned int frequency; // Frequency that the variable is used by the console. Higher values mean it is used more.
+	int (*callback)(struct cfg2_var_s *var, const char *command, lua_State *luaState);   // The callback.
+} cfg2_var_t;
+
+typedef struct {
+	bool quit;
+	cfg2_admin_t adminLevel;
+	cfg2_var_t *vars;
+	unsigned int vars_length;
+	lua_State *luaState;
+} cfg2_t;
+
+typedef struct {
+	char *name;
+	vec_t vector;
+	int integer;
+	char *string;
+	cfg2_var_type_t type;
+	cfg2_admin_t permissionRead;
+	cfg2_admin_t permissionWrite;
+	cfg2_admin_t permissionDelete;
+	cfg2_admin_t permissionCallback;
+	int (*callback)(cfg2_var_t *var, const char *command, lua_State *luaState);
+} cfg2_var_init_t;
+
 
 #endif

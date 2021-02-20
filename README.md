@@ -86,7 +86,7 @@ Models are standard 3D models. They contain vertices and other information requi
 
 | Function | Description |
 |-|-|
-| `int modelIndex, int error = l_loadOoliteModel(string filePath)` | Loads an Oolite model of the most recent format and returns its index in the model list. |
+| int modelIndex, int error = l_loadOoliteModel(string filePath) | Loads an Oolite model of the most recent format and returns its index in the model list. |
 
 ### Entities
 
@@ -119,9 +119,9 @@ Note that position and orientation are cumulative. This allows multiple models t
 
 | Function | Description |
 |-|-|
-| `int entityIndex, int error = l_createEntity(int entityType)` | Create an entity of type "entityType". Returns the index in the entity list.|
-| `int error = l_entity_linkChild(int parentEntity, int childObject)` | Binds a child object to an entity if it has the appropriate type. |
-| `l_entity_setPosition(int entityIndex, {x, y, z} position)` | Sets the position of the given entity. |
-| `l_entity_setOrientation(int entityIndex, {w, x, y, z} orientation)` | Sets the orientation of the given entity. |
+| int entityIndex, int error = l_createEntity(int entityType) | Create an entity of type "entityType". Returns the index in the entity list.|
+| int error = l_entity_linkChild(int parentEntity, int childObject) | Binds a child object to an entity if it has the appropriate type. |
+| l_entity_setPosition(int entityIndex, {x, y, z} position) | Sets the position of the given entity. |
+| l_entity_setOrientation(int entityIndex, {w, x, y, z} orientation) | Sets the orientation of the given entity. |
 
 [^1]: Jesus is also coming soon. Expect the time frame to be about the same.

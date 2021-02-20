@@ -2,9 +2,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <time.h>
-#include <lua.h>
 #include "types.h"
+#include "insane.h"
 
 #define ERR_OK          0
 #define ERR_GENERIC     1
@@ -44,7 +43,30 @@
 
 #define ENGINE_MAN_NAME "Scott"
 
+// Macros have completion support. Strings don't.
+#define CFG_LUA_MAIN            "lua_main"
+#define CFG_LUA_MAIN_DEFAULT            ""
+#define CFG_WORKSPACE           "workspace"
+#define CFG_WORKSPACE_DEFAULT           ""
+#define CFG_PORT                "net_port"
+#define CFG_PORT_DEFAULT                8099
+#define CFG_IP_ADDRESS          "net_address"
+#define CFG_CONNECTION_TIMEOUT  "net_timeout"
+#define CFG_CONNECTION_TIMEOUT_DEFAULT  10000   // Milliseconds
+#define CFG_MAX_CLIENTS         "max_clients"
+#define CFG_MAX_CLIENTS_DEFAULT         MAX_CLIENTS
+#define CFG_MAX_RECURSION       "max_recursion_depth"
+#define CFG_MAX_RECURSION_DEFAULT       10
+#define CFG_RUN_QUIET           "quiet"
+#define CFG_RUN_QUIET_DEFAULT           0
+#define CFG_HISTORY_LENGTH      "command_history_length"
+#define CFG_HISTORY_LENGTH_DEFAULT      10
+#define CFG_OPENGL_LOG_FILE     "opengl_log_file"
+#define CFG_OPENGL_LOG_FILE_DEFAULT     "opengl.log"
+
 extern int error;
+
+extern const cfg2_var_init_t g_commonVarInit[];
 
 int common_getTimeNs(long *ns);
 

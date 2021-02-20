@@ -422,3 +422,6 @@ Expected leaks:
 
 Remember this:
     git status | grep modified: | sed 's/\tmodified:   //'
+
+Command completion isn't working perfectly.
+Need to fix recursion depth.

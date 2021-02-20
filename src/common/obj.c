@@ -8,7 +8,7 @@
 #include <math.h>
 #include "log.h"
 #include "vfs.h"
-#include "cfg.h"
+#include "cfg2.h"
 #include "common.h"
 #include "file.h"
 #include "insane.h"

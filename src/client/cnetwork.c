@@ -203,20 +203,23 @@ cnetwork_clientState_t g_clientState;
 
 /* Config variable handles */
 
-int cnetwork_handle_setIpAddress(cfg_var_t *var) {
+int cnetwork_callback_setIpAddress(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 
-	g_clientState.serverAddressString = var->string.value;
-	error = enet_address_set_host(&g_clientState.serverAddress, var->string.value);
+	g_clientState.serverAddressString = var->string;
+	error = enet_address_set_host(&g_clientState.serverAddress, var->string);
 	if (error < 0) {
-		error("Could not set IP address to host \"%s\". Resetting to \"localhost\".", var->string.value);
-		error = string_copy_c(&var->string, "localhost");
-		if (error) {
+		error("Could not set IP address to host \"%s\". Resetting to \"localhost\".", var->string);
+		
+		var->string = realloc(var->string, (strlen("localhost") + 1) * sizeof(char));
+		if (var->string == NULL) {
 			critical_error("Out of memory.", "");
-			error = ERR_CRITICAL;
+			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}
-		error = enet_address_set_host(&g_clientState.serverAddress, var->string.value);
+		strcpy(var->string, "localhost");
+		
+		error = enet_address_set_host(&g_clientState.serverAddress, var->string);
 		if (error) {
 			critical_error("Could not set IP address to host \"localhost\".", "");
 			error = ERR_CRITICAL;
@@ -231,7 +234,7 @@ int cnetwork_handle_setIpAddress(cfg_var_t *var) {
 	return error;
 }
 
-int cnetwork_handle_setServerPort(cfg_var_t *var) {
+int cnetwork_callback_setServerPort(cfg2_var_t *var, const char *command, lua_State *luaState) {
 
 	// Shouldn't have to check type because it will always be hard coded when this function is run.
 	if (var->integer < 1024) {
@@ -249,7 +252,7 @@ static void cnetwork_connectionReset(void) {
 	enet_peer_reset(serverPeer);
 	g_clientState.connected = false;
 	g_clientState.connectionState = cnetwork_connectionState_disconnected;
-	g_cfg.quit = true;
+	g_cfg2.quit = true;
 	info("Connection reset", "");
 }
 
@@ -491,7 +494,7 @@ static int cnetwork_receive(ENetEvent event) {
 static void cnetwork_disconnect(ENetEvent event) {
 	g_clientState.connected = false;
 	g_clientState.connectionState = cnetwork_connectionState_disconnected;
-	g_cfg.quit = true;
+	g_cfg2.quit = true;
 	info("Client disconnected.", "");
 }
 
@@ -536,7 +539,7 @@ int cnetwork_runEvents(void) {
 	// 	goto cleanup_l;
 	// }
 	
-	if (g_cfg.quit) {
+	if (g_cfg2.quit) {
 		cnetwork_requestDisconnect();
 		error = enet_host_service(clientHost, &event, g_connectionTimeout);
 		// Disconnected successfully.

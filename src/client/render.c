@@ -52,8 +52,8 @@ void render_logProgramInfo(GLuint programIndex) {
 	warning("Log for shader %i:\n%s", programIndex, programLog);
 }
 
-int render_handle_updateLogFileName(cfg_var_t *var) {
-	g_openglLogFileName = var->string.value;
+int render_callback_updateLogFileName(cfg2_var_t *var) {
+	g_openglLogFileName = var->string;
 	return ERR_OK;
 }
 

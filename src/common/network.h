@@ -6,7 +6,7 @@
 // #include <SDL2/SDL.h>
 // #include <SDL2/SDL_net.h>
 #include <enet/enet.h>
-#include "cfg.h"
+#include "cfg2.h"
 
 #define ENET_CHANNELS       2
 #define ENET_CHANNEL0       0
@@ -28,7 +28,7 @@ extern int g_connectionTimeout;
 
 int network_ipv4ToString(char **string, uint32_t ipAddress);
 
-int network_handle_connectionTimeout(cfg_var_t *var);
+int network_callback_connectionTimeout(cfg2_var_t *var, const char *command, lua_State *luaState);
 
 uint32_t network_generateChecksum(uint8_t *data, size_t length);
 

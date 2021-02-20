@@ -4,7 +4,7 @@
 
 #include <lua.h>
 #include "str.h"
-#include "cfg.h"
+#include "cfg2.h"
 
 // typedef struct {
 
@@ -27,7 +27,7 @@ typedef struct {
 extern vfs_t g_vfs;
 extern char *g_workspace;
 
-int vfs_handle_setWorkspace(cfg_var_t *var);
+int vfs_callback_setWorkspace(cfg2_var_t *var, const char *command, lua_State *luaState);
 
 int vfs_getFileText(vfs_t *vfs, string_t *fileText, const string_t *workspace_path);
 int l_vfs_getFileText(lua_State *luaState);

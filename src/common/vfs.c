@@ -6,13 +6,13 @@
 #include "common.h"
 #include "file.h"
 #include "log.h"
-#include "cfg.h"
+#include "cfg2.h"
 
 vfs_t g_vfs;
 char *g_workspace;
 
-int vfs_handle_setWorkspace(cfg_var_t *var) {
-	g_workspace = var->string.value;
+int vfs_callback_setWorkspace(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	g_workspace = var->string;
 	return ERR_OK;
 }
 

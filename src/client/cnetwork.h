@@ -29,9 +29,8 @@ typedef struct cnetwork_clientState_s {
 } cnetwork_clientState_t;
 
 /* Config events */
-int cnetwork_handle_setIpAddress(cfg_var_t *var);
-int cnetwork_handle_setServerPort(cfg_var_t *var);
-int cnetwork_handle_setClientPort(cfg_var_t *var);
+int cnetwork_callback_setIpAddress(cfg2_var_t *var, const char *command, lua_State *luaState);
+int cnetwork_callback_setServerPort(cfg2_var_t *var, const char *command, lua_State *luaState);
 
 /* Network functions */
 int cnetwork_runEvents(void);

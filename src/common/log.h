@@ -2,6 +2,7 @@
 #ifndef LOG_H
 #define LOG_H
 
+#include "types.h"
 #include "common.h"
 
 void log_info(const char *function, const char *fmt, ...);
