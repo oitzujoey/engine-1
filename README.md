@@ -2,10 +2,11 @@
 
 Honestly, I have no idea what this is going to be yet.
 Here is what I do know:
-    Written in C
-    Cross-platform (Linux + Windows 10) (Currently only runs on Linux)
-    Client-server
-    Moddable through Lua
+
+* Written in C
+* Cross-platform (Linux + Windows 10) (Currently only runs on Linux)
+* Client-server
+* Moddable through Lua
 
 ## Installation
 
