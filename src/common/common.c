@@ -310,7 +310,7 @@ int common_getTimeNs(long *ns) {
 	return error;
 }
 
-int l_puts(lua_State *Lua) {
+int l_common_puts(lua_State *Lua) {
     printf(COLOR_CYAN"Lua {"COLOR_NORMAL"%s"COLOR_CYAN"}"COLOR_NORMAL"\n", lua_tostring(Lua, 1));
     return 0;
 }

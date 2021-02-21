@@ -17,6 +17,7 @@
 #include "../common/obj.h"
 #include "../common/vfs.h"
 #include "../common/terminal.h"
+#include "../common/lua_common.h"
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
@@ -24,11 +25,9 @@ const int SCREEN_HEIGHT = 1080;
 extern SDL_Window *g_window;
 // extern SDL_Surface *g_screenSurface;
 
-luaCFunc_t luaCFunctions[] = {
-	{.func = l_log_info,            .name = "l_log_info"},
+luaCFunc_t luaClientFunctions[] = {
 	{.func = render,                .name = "render"},
 	{.func = getInput,              .name = "getInput"},
-	{.func = l_obj_loadOoliteDAT,   .name = "l_loadOoliteModel"},
 	// {.func = l_cnetwork_receive,    .name = "l_snetwork_receive"},
 	{.func = NULL,                  .name = NULL}
 };
@@ -365,12 +364,15 @@ int main (int argc, char *argv[]) {
 	// Start Lua.
 	
 	log_info(__func__, "Executing \"%s\"", luaFilePath.value);
-	error = lua_sandbox_init(&Lua, luaCFunctions, luaFilePath.value);
+	error = lua_sandbox_init(&Lua, luaFilePath.value);
 	if (error) {
 		error("Could not start Lua client.", "");
 		error = ERR_CRITICAL;
 		goto luaCleanup_l;
 	}
+	
+	lua_sandbox_addFunctions(&Lua, luaCommonFunctions);
+	lua_sandbox_addFunctions(&Lua, luaClientFunctions);
 	
     // Run startup.
     

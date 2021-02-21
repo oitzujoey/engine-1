@@ -7,7 +7,7 @@ This script will draw the HUD, create and set 3D reference entities, and perform
 --]]
 
 function startup()
-	l_log_info("main", "Lua start");
+	info("main", "Lua start");
 	
 	-- Entity types
 	type_none = 0
@@ -23,12 +23,12 @@ function startup()
 	HullTexture = "oolite_cobra3_diffuse.png"
 	GunTexture = "oolite_cobra3_subents.png"
 	
-	l_log_info("main", "Loading models")
+	info("main", "Loading models")
 	
 	cobra3ModelName = "oolite_cobra3.dat"
-	cobra3Model, error = l_loadOoliteModel(modelPath .. cobra3ModelName)
+	cobra3Model, error = loadOoliteModel(modelPath .. cobra3ModelName)
 	if cobra3Model ~= -1 then
-		l_log_info("main", "Loaded " .. cobra3ModelName)
+		info("main", "Loaded " .. cobra3ModelName)
 		-- cobra3Entity, error = l_createEntity(type_model)
 		-- error = l_entity_linkChild(worldEntity, cobra3Entity)
 		-- error = l_entity_linkChild(cobra3Entity, cobra3Model)
@@ -40,7 +40,7 @@ function startup()
 		-- l_renderEntity(worldEntity, 0.0, 0.0, 1.0, 1.0)
 	end
 	
-	l_log_info("main", "Starting game")
+	info("main", "Starting game")
 end
 
 function main()
@@ -66,5 +66,5 @@ function main()
 end
 
 function shutdown()
-	l_log_info("main", "Lua end")
+	info("main", "Lua end")
 end

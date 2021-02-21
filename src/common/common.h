@@ -75,7 +75,7 @@ extern const cfg2_var_init_t g_commonVarInit[];
 
 int common_getTimeNs(long *ns);
 
-int l_puts(lua_State*);
+int l_common_puts(lua_State*);
 
 int MSB(int n);
 

@@ -5,6 +5,8 @@
 #include "common.h"
 #include "log.h"
 #include "file.h"
+#include "vfs.h"
+#include "str.h"
 
 const char *luaError[] = {
     "LUA_OK",
@@ -27,6 +29,80 @@ static uint32_t lua_luaTimeout(uint32_t interval, void *param) {
     return 0;
 }
 
+
+
+static int l_lua_sandbox_include(lua_State *luaState) {
+    int error = ERR_CRITICAL;
+	
+	int argc = lua_gettop(luaState);
+	if (argc != 1) {
+		error("Requires 1 argument.", "");
+		lua_error(luaState);
+	}
+	
+	if (!lua_isstring(luaState, 1)) {
+		error("Argument is not a string.", "");
+		lua_error(luaState);
+	}
+	
+	const char *filepath = lua_tostring(luaState, 1);
+	
+	// if (!vfs_isInWorkspace(filepath)) {
+	// 	error("File \"%s\" is not in workspace.", filepath);
+	// 	lua_error(luaState);
+	// }
+	
+	cfg2_var_t *lua_main_v = cfg2_findVar(CFG_LUA_MAIN);
+	if (lua_main_v == NULL) {
+		log_critical_error(__func__, "\""CFG_LUA_MAIN"\" does not exist.");
+		lua_error(luaState);
+	}
+	if (!strcmp(lua_main_v->string, "")) {
+		log_critical_error(__func__, "\""CFG_LUA_MAIN"\" has not been set.");
+		lua_error(luaState);
+	}
+
+	/* @TODO: Do proper file path sanitization. */
+	string_t luaFilePath;
+	string_init(&luaFilePath);
+	string_copy_c(&luaFilePath, g_workspace);
+	file_concatenatePath(&luaFilePath, string_const(lua_main_v->string));
+	file_concatenatePath(&luaFilePath, string_const(filepath));
+	
+    if (!file_exists(luaFilePath.value)) {
+        error("File \"%s\" does not exist", luaFilePath.value);
+	    string_free(&luaFilePath);
+		lua_error(luaState);
+    }
+    
+    error = luaL_loadfile(luaState, luaFilePath.value);
+	string_free(&luaFilePath);
+    if (error) {
+        error("Could not load lua file %s due to error %s", luaFilePath.value, luaError[error]);
+    }
+    
+	// Do an initial run of the chunk.
+	
+    luaTimeout_t luaTimeout = {
+        .functionName = luaFilePath.value,
+        .luaState = luaState
+    };
+    
+    SDL_TimerID timerId = SDL_AddTimer(100, lua_luaTimeout, &luaTimeout);
+	
+	error = lua_pcall(luaState, 0, 0, 0);
+    if (error) {
+        error("Initial run of Lua exited with error %s", luaError[error]);
+		lua_error(luaState);
+    }
+    
+    SDL_RemoveTimer(timerId);
+    
+	return 0;
+}
+
+
+
 int lua_runFunction(lua_State *luaState, const char *functionName, uint32_t timeout) {
     int error = ERR_CRITICAL;
     
@@ -43,6 +119,7 @@ int lua_runFunction(lua_State *luaState, const char *functionName, uint32_t time
         goto cleanup_l;
     }
 	error = lua_pcall(luaState, 0, 0, 0);
+	// lua_call(luaState, 0, 0);
 	SDL_RemoveTimer(timerId);
     if (error) {
         log_error(__func__, "Lua function \"%s\" exited with error %s", luaTimeout.functionName, luaError[error]);
@@ -56,10 +133,19 @@ int lua_runFunction(lua_State *luaState, const char *functionName, uint32_t time
 	return error;
 }
 
-int lua_sandbox_init(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename) {
+void lua_sandbox_addFunctions(lua_State **Lua, luaCFunc_t *cfuncs) {
+
+    int i;
+    
+    for (i = 0; cfuncs[i].name != NULL; i++) {
+        lua_pushcfunction(*Lua, cfuncs[i].func);
+        lua_setglobal(*Lua, cfuncs[i].name);
+    }
+}
+
+int lua_sandbox_init(lua_State **Lua, const char *filename) {
     
     int error = 0;
-    int i;
     
     *Lua = luaL_newstate();
     /* Only include this if you are insane. */
@@ -75,10 +161,8 @@ int lua_sandbox_init(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename) 
 
     lua_pushnil(*Lua);
     
-    for (i = 0; cfuncs[i].name != NULL; i++) {
-        lua_pushcfunction(*Lua, cfuncs[i].func);
-        lua_setglobal(*Lua, cfuncs[i].name);
-    }
+    lua_pushcfunction(*Lua, l_lua_sandbox_include);
+    lua_setglobal(*Lua, "include");
     
     if (!file_exists(filename)) {
         log_error(__func__, "File \"%s\" does not exist", filename, luaError[error]);

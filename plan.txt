@@ -344,6 +344,10 @@ Allow multiple viewports using what are essentially copies of the world entity. 
 
 There will be one Lua script that is called once every game cycle. Startup can be detected by checking to see if a variable is undeclared. The startup script can then set that variable to prevent rerunning the function.
 
+Why I need a VFS:
+    File path sanitization
+    File archive management
+
 
 
 Graphics stuff I dream of adding:

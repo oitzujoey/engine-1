@@ -1,10 +1,10 @@
 
 -- `include` is the engine's version of `require`.
--- include "extra.lua"
+include "extra.lua"
 
 function startup()
 	
-	l_log_info("main", "Server started")
+	info("main", "Server started")
 	-- box = l_loadObj("resources/microcode-v1.1.2.obj")
 	-- box = l_loadObj("resources/untitled.obj")
 	-- l_puts(box)
@@ -24,14 +24,14 @@ function startup()
 	HullTexture = "oolite_cobra3_diffuse.png"
 	GunTexture = "oolite_cobra3_subents.png"
 	
-	l_log_info("main", "Loading world tree")
+	info("main", "Loading world tree")
 	
-	cobra3Model, error = l_loadOoliteModel(modelPath .. "oolite_cobra3.dat")
+	cobra3Model, error = loadOoliteModel(modelPath .. "oolite_cobra3.dat")
 	if cobra3Model ~= -1 then
-		cobra3Entity, error = l_createEntity(type_model)
-		error = l_entity_linkChild(worldEntity, cobra3Entity)
-		error = l_entity_linkChild(cobra3Entity, cobra3Model)
-		l_entity_setPosition(cobra3Entity, {x=0, y=0, z=50})
+		cobra3Entity, error = createEntity(type_model)
+		error = entity_linkChild(worldEntity, cobra3Entity)
+		error = entity_linkChild(cobra3Entity, cobra3Model)
+		entity_setPosition(cobra3Entity, {x=0, y=0, z=50})
 		-- l_entity_setOrientation(cobra3Entity, {w=1, x=0, y=0, z=0})
 		
 		-- l_snetwork_sendEntityTree()
@@ -54,9 +54,9 @@ function startup()
 	worldRotation = {w=0.99985, x=0.005, y=0.01, z=-0.005}
 	worldOrientation = {w=1.0, x=0.0, y=0.0, z=0.0}
 	
-	-- extra()
+	extra()
 	
-	l_log_info("main", "Starting game")
+	info("main", "Starting game")
 end
 
 function main()
@@ -66,9 +66,9 @@ function main()
 	-- orientation, error = l_quatNormalize(orientation)
 	-- -- l_log_info("main", orientation.w .. " " .. orientation.x .. " " .. orientation.y .. " " .. orientation.z)
 	-- l_entity_setOrientation(cobra3Entity, orientation)
-	worldOrientation, error = l_hamiltonProduct(worldOrientation, worldRotation)
-	worldOrientation, error = l_quatNormalize(worldOrientation)
-	l_entity_setOrientation(worldEntity, worldOrientation)
+	worldOrientation, error = hamiltonProduct(worldOrientation, worldRotation)
+	worldOrientation, error = quatNormalize(worldOrientation)
+	entity_setOrientation(worldEntity, worldOrientation)
 	
 	-- This runs once per loop. It does tasks such as read from the terminal and send and receive packets.
 	-- l_main_housekeeping()
@@ -76,5 +76,5 @@ function main()
 end
 
 function shutdown()
-	l_log_info("main", "Server quit");
+	info("main", "Server quit");
 end
