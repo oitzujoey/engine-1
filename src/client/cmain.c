@@ -18,9 +18,6 @@
 #include "../common/vfs.h"
 #include "../common/terminal.h"
 
-static int l_main_checkQuit(lua_State *luaState);
-static int l_main_housekeeping(lua_State *luaState);
-
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
 
@@ -31,10 +28,7 @@ luaCFunc_t luaCFunctions[] = {
 	{.func = l_log_info,            .name = "l_log_info"},
 	{.func = render,                .name = "render"},
 	{.func = getInput,              .name = "getInput"},
-	{.func = l_main_housekeeping,   .name = "l_main_housekeeping"},
-	{.func = l_main_checkQuit,      .name = "l_checkQuit"},
 	{.func = l_obj_loadOoliteDAT,   .name = "l_loadOoliteModel"},
-	{.func = l_main_housekeeping,   .name = "l_main_housekeeping"},
 	// {.func = l_cnetwork_receive,    .name = "l_snetwork_receive"},
 	{.func = NULL,                  .name = NULL}
 };
@@ -106,12 +100,7 @@ const cfg2_var_init_t g_clientVarInit[] = {
 	}
 };
 
-static int l_main_checkQuit(lua_State *luaState) {
-	lua_pushinteger(luaState, g_cfg2.quit);
-	return 1;
-}
-
-static int l_main_housekeeping(lua_State *luaState) {
+static void main_housekeeping(void) {
 	int error = ERR_CRITICAL;
 	
 	SDL_Event event;
@@ -149,8 +138,6 @@ static int l_main_housekeeping(lua_State *luaState) {
 	if (error) {
 		g_cfg2.quit = true;
 	}
-	
-	return 0;
 }
 
 int windowInit(void) {
@@ -375,17 +362,83 @@ int main (int argc, char *argv[]) {
 	/* Before we begin, lock the restricted variables. */
 	g_cfg2.adminLevel = cfg2_admin_game;
 	
+	// Start Lua.
+	
 	log_info(__func__, "Executing \"%s\"", luaFilePath.value);
 	error = lua_sandbox_init(&Lua, luaCFunctions, luaFilePath.value);
-	lua_sandbox_quit(&Lua);
-
 	if (error) {
-		log_critical_error(__func__, "Could not start Lua server");
+		log_critical_error(__func__, "Could not start Lua client");
 		error = ERR_CRITICAL;
-		goto cleanup_l;
+		goto luaCleanup_l;
 	}
 	
+	// Do an initial run of the chunk.
+	
+	error = lua_pcall(Lua, 0, 0, 0);
+    if (error) {
+        log_error(__func__, "Lua exited with error %s", luaError[error]);
+        error = ERR_CRITICAL;
+        goto luaCleanup_l;
+    }
+    
+    // Run startup.
+    
+	error = lua_getglobal(Lua, "startup");
+    if (error != 6) {
+        error("Lua file does not contain \"startup\" function.", "");
+        error = ERR_CRITICAL;
+        goto luaCleanup_l;
+    }
+	error = lua_pcall(Lua, 0, 0, 0);
+    if (error) {
+        log_error(__func__, "Lua function \"startup\" exited with error %s", luaError[error]);
+        error = ERR_CRITICAL;
+        goto luaCleanup_l;
+    }
+	
+	// Run the main game.
+	
+	while (!g_cfg2.quit && !error) {
+	
+		// Set timeout
+	
+		error = lua_getglobal(Lua, "main");
+	    if (error != 6) {
+	        error("Lua file does not contain \"main\" function.", "");
+	        error = ERR_CRITICAL;
+	        goto luaCleanup_l;
+	    }
+        error = lua_pcall(Lua, 0, 0, 0);
+        main_housekeeping();
+	}
+    if (error) {
+        log_error(__func__, "Lua function \"main\" exited with error %s", luaError[error]);
+        error = ERR_CRITICAL;
+        goto cleanup_l;
+    }
+	
+	// Run shutdown.
+	
+	error = lua_getglobal(Lua, "shutdown");
+    if (error != 6) {
+        error("Lua file does not contain \"shutdown\" function.", "");
+        error = ERR_CRITICAL;
+        goto luaCleanup_l;
+    }
+	error = lua_pcall(Lua, 0, 0, 0);
+    if (error) {
+        log_error(__func__, "Lua function \"shutdown\" exited with error %s", luaError[error]);
+        error = ERR_CRITICAL;
+        goto luaCleanup_l;
+    }
+	
+	// Cleanup.
+	
 	error = 0;
+	luaCleanup_l:
+	
+	lua_sandbox_quit(&Lua);
+	
 	cleanup_l:
 
 	main_quit();

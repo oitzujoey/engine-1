@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
+#include <lua.h>
 #include "../common/common.h"
 #include "../common/lua_sandbox.h"
 #include "../common/obj.h"
@@ -19,7 +20,6 @@
 #include "../common/vector.h"
 #include "../common/terminal.h"
 
-static int l_main_housekeeping(lua_State *luaState);
 int l_main_checkQuit(lua_State *luaState);
 
 luaCFunc_t luaCFunctions[] = {
@@ -36,26 +36,10 @@ luaCFunc_t luaCFunctions[] = {
 	{.func = l_entity_linkChild,        .name = "l_entity_linkChild"        },
 	{.func = l_entity_setPosition,      .name = "l_entity_setPosition"      },
 	{.func = l_entity_setOrientation,   .name = "l_entity_setOrientation"   },
-	{.func = l_main_housekeeping,       .name = "l_main_housekeeping"       },
-	{.func = l_main_checkQuit,          .name = "l_checkQuit"               },
 	{.func = l_hamiltonProduct,         .name = "l_hamiltonProduct"         },
 	{.func = l_quatNormalize,           .name = "l_quatNormalize"           },
 	{.func = NULL,                      .name = NULL                        }
 };
-
-// const cfg_var_init_t initialConfigVars[] = {
-// 	{.name = "server",                  .vector = 0,    .integer = 0,                               .string = NULL, .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
-// 	{.name = "lua_main",                .vector = 0,    .integer = 0,                               .string = "",   .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = "workspace",               .vector = 0,    .integer = 0,                               .string = "",   .type = string,     .handle = vfs_handle_setWorkspace,                  .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = CFG_PORT,                  .vector = 0,    .integer = CFG_PORT_DEFAULT,                .string = "",   .type = integer,    .handle = snetwork_handle_setServerPort,            .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = CFG_CONNECTION_TIMEOUT,    .vector = 0,    .integer = CFG_CONNECTION_TIMEOUT_DEFAULT,  .string = "",   .type = integer,    .handle = network_handle_connectionTimeout,         .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = CFG_MAX_CLIENTS,           .vector = 0,    .integer = CFG_MAX_CLIENTS_DEFAULT,         .string = "",   .type = integer,    .handle = snetwork_handle_maxClients,               .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = CFG_MAX_RECURSION,         .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,       .string = "",   .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = CFG_RUN_QUIET,             .vector = 0,    .integer = 0,                               .string = "",   .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = CFG_HISTORY_LENGTH,        .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,      .string = "",   .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = "enet_message",            .vector = 0,    .integer = 0,                               .string = "",   .type = string,     .handle = snetwork_handle_enetMessage,              .permissions = CFG_VAR_FLAG_WRITE},
-// 	{.name = NULL,                      .vector = 0,    .integer = 0,                               .string = NULL, .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
-// };
 
 const cfg2_var_init_t g_serverVarInit[] = {
 	// Commands
@@ -110,12 +94,7 @@ const cfg2_var_init_t g_serverVarInit[] = {
 	}
 };
 
-int l_main_checkQuit(lua_State *luaState) {
-	lua_pushinteger(luaState, g_cfg2.quit);
-	return 1;
-}
-
-static int l_main_housekeeping(lua_State *luaState) {
+static void main_housekeeping(void) {
 	int error = ERR_CRITICAL;
 	
 	// char sendString[100];
@@ -150,8 +129,6 @@ static int l_main_housekeeping(lua_State *luaState) {
 	}
 	
 	SDL_Delay(8);
-	
-	return 0;
 }
 
 static int main_init(int argc, char *argv[], lua_State *luaState) {
@@ -325,16 +302,83 @@ int main(int argc, char *argv[]) {
 	/* Before we begin, lock the restricted variables. */
 	g_cfg2.adminLevel = cfg2_admin_game;
 	
+	// Start Lua.
+	
 	log_info(__func__, "Executing \"%s\"", luaFilePath.value);
 	error = lua_sandbox_init(&Lua, luaCFunctions, luaFilePath.value);
-	lua_sandbox_quit(&Lua);
 	if (error) {
 		log_critical_error(__func__, "Could not start Lua server");
 		error = ERR_CRITICAL;
-		goto cleanup_l;
+		goto luaCleanup_l;
 	}
 	
+	// Do an initial run of the chunk.
+	
+	error = lua_pcall(Lua, 0, 0, 0);
+    if (error) {
+        log_error(__func__, "Lua exited with error %s", luaError[error]);
+        error = ERR_CRITICAL;
+        goto luaCleanup_l;
+    }
+    
+    // Run startup.
+    
+	error = lua_getglobal(Lua, "startup");
+    if (error != 6) {
+        error("Lua file does not contain \"startup\" function.", "");
+        error = ERR_CRITICAL;
+        goto luaCleanup_l;
+    }
+	error = lua_pcall(Lua, 0, 0, 0);
+    if (error) {
+        log_error(__func__, "Lua function \"startup\" exited with error %s", luaError[error]);
+        error = ERR_CRITICAL;
+        goto luaCleanup_l;
+    }
+	
+	// Run the main game.
+	
+	while (!g_cfg2.quit && !error) {
+	
+		// Set timeout
+	
+		error = lua_getglobal(Lua, "main");
+	    if (error != 6) {
+	        error("Lua file does not contain \"main\" function.", "");
+	        error = ERR_CRITICAL;
+	        goto luaCleanup_l;
+	    }
+        error = lua_pcall(Lua, 0, 0, 0);
+        main_housekeeping();
+	}
+    if (error) {
+        log_error(__func__, "Lua function \"main\" exited with error %s", luaError[error]);
+        error = ERR_CRITICAL;
+        goto cleanup_l;
+    }
+	
+	// Run shutdown.
+	
+	error = lua_getglobal(Lua, "shutdown");
+    if (error != 6) {
+        error("Lua file does not contain \"shutdown\" function.", "");
+        error = ERR_CRITICAL;
+        goto luaCleanup_l;
+    }
+	error = lua_pcall(Lua, 0, 0, 0);
+    if (error) {
+        log_error(__func__, "Lua function \"shutdown\" exited with error %s", luaError[error]);
+        error = ERR_CRITICAL;
+        goto luaCleanup_l;
+    }
+	
+	// Cleanup.
+	
 	error = ERR_OK;
+	luaCleanup_l:
+	
+	lua_sandbox_quit(&Lua);
+	
 	cleanup_l:
 	
 	main_quit();
@@ -346,6 +390,8 @@ int main(int argc, char *argv[]) {
 	
 	string_free(&luaFilePath);
 	string_free(&tempString);
+	
+	// Exit.
 	
 	// I'm leaving this because it works and it's cool.
 	info("Server quit (%s)", (char*[4]){"OK", "Error", "Critical error", "Out of memory"}[error]);

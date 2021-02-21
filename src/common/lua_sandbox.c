@@ -55,11 +55,6 @@ int lua_sandbox_init(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename) 
         return ERR_GENERIC;
     }
     
-    error = lua_pcall(*Lua, 0, 0, 0);
-    if (error) {
-        log_error(__func__, "Lua script %s exited with error %s", filename, luaError[error]);
-        return ERR_GENERIC;
-    }
     return ERR_OK;
 }
 
