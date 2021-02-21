@@ -28,7 +28,7 @@ extern int g_connectionTimeout;
 
 int network_ipv4ToString(char **string, uint32_t ipAddress);
 
-int network_callback_connectionTimeout(cfg2_var_t *var, const char *command, lua_State *luaState);
+int network_callback_connectionTimeout(cfg2_var_t *var, const char *command);
 
 uint32_t network_generateChecksum(uint8_t *data, size_t length);
 

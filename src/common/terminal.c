@@ -24,7 +24,7 @@ void terminal_logCommandFrequency(const string_t *line);
 /* Terminal callbacks */
 /* ================== */
 
-int terminal_callback_updateCommandHistoryLength(cfg2_var_t *var, const char *command, lua_State *luaState) {
+int terminal_callback_updateCommandHistoryLength(cfg2_var_t *var, const char *command) {
 	int error = ERR_CRITICAL;
 	
 	static int lastLength = CFG_HISTORY_LENGTH_DEFAULT;
@@ -145,13 +145,13 @@ static int terminal_fragmentCompletion(string_t *fragment, bool *badComplete, in
 	int error = ERR_CRITICAL;
 
 	const int maxPotentials = 10;
-	int variablePotentials[maxPotentials];
+	int variablePotentials[g_cfg2.vars_length];
 	int variablePotentialsCount = 0;
 	int tabIndex = 0;
 	
 	// Find matching completions.
 	
-	for (int i = 0; (i < g_cfg2.vars_length) && (variablePotentialsCount < maxPotentials); i++) {
+	for (int i = 0; i < g_cfg2.vars_length; i++) {
 		if (!strncmp(fragment->value, g_cfg2.vars[i].name, fragment->length)) {
 			variablePotentials[variablePotentialsCount] = i;
 			variablePotentialsCount++;
@@ -459,7 +459,8 @@ int terminal_runTerminalCommand(void) {
 			tempAdminLevel = g_cfg2.adminLevel;
 			// The terminal has its own adminLevel.
 			g_cfg2.adminLevel = adminLevel;
-			error = cfg2_execString(&g_consoleCommand, "console", 0);
+			g_cfg2.recursionDepth = 0;
+			error = cfg2_execString(&g_consoleCommand, "console");
 			// adminLevel may have been modified by a command.
 			adminLevel = g_cfg2.adminLevel;
 			g_cfg2.adminLevel = tempAdminLevel;

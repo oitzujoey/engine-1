@@ -196,13 +196,15 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 
 	if (file_exists(AUTOEXEC)) {
 		log_info(__func__, "Found \""AUTOEXEC"\"");
-		cfg2_execFile(AUTOEXEC, 0);
+		g_cfg2.recursionDepth = 0;
+		cfg2_execFile(AUTOEXEC);
 	}
 
 	if (argc > 1) {
 		for (int i = 1; i < argc; i++) {
 			string_copy_c(&tempString, argv[i]);
-			error = cfg2_execString(&tempString, "Console", 0);
+			g_cfg2.recursionDepth = 0;
+			error = cfg2_execString(&tempString, "Console");
 			if (error == ERR_OUTOFMEMORY) {
 				critical_error("Out of memory", "");
 				goto cleanup_l;

@@ -131,7 +131,7 @@ typedef struct cfg2_var_s {
 	cfg2_admin_t permissionDelete;      // Permission level required to delete
 	cfg2_admin_t permissionCallback;    // Permission level required to read and write callback.
 	unsigned int frequency; // Frequency that the variable is used by the console. Higher values mean it is used more.
-	int (*callback)(struct cfg2_var_s *var, const char *command, lua_State *luaState);   // The callback.
+	int (*callback)(struct cfg2_var_s *var, const char *command);   // The callback.
 } cfg2_var_t;
 
 typedef struct {
@@ -140,6 +140,8 @@ typedef struct {
 	cfg2_var_t *vars;
 	unsigned int vars_length;
 	lua_State *luaState;
+	unsigned int recursionDepth;
+	unsigned int maxRecursion;
 } cfg2_t;
 
 typedef struct {
@@ -152,7 +154,7 @@ typedef struct {
 	cfg2_admin_t permissionWrite;
 	cfg2_admin_t permissionDelete;
 	cfg2_admin_t permissionCallback;
-	int (*callback)(cfg2_var_t *var, const char *command, lua_State *luaState);
+	int (*callback)(cfg2_var_t *var, const char *command);
 } cfg2_var_init_t;
 
 

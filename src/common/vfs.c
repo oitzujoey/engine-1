@@ -11,7 +11,7 @@
 vfs_t g_vfs;
 char *g_workspace;
 
-int vfs_callback_setWorkspace(cfg2_var_t *var, const char *command, lua_State *luaState) {
+int vfs_callback_setWorkspace(cfg2_var_t *var, const char *command) {
 	g_workspace = var->string;
 	return ERR_OK;
 }

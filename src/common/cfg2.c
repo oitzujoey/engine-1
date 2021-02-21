@@ -94,30 +94,10 @@ function callback, int status = cfg2_getCallback(table variable)
 
 cfg2_t g_cfg2;
 
-int cfg2_callback_default(cfg2_var_t *var, const char *command, lua_State *luaState) {
-	int error = ERR_CRITICAL;
-	
-	// // First, let's get rid of var->name in the string.
-	// char *start = strchr(var->command, ' ') + 1;
-	// int offset = start - var->command;
-	// char *arg1, *arg2, *arg3;
-	// cfg2_var_t *var1;
-	
-	// // Delete var->name + ' '.
-	// for (int i = 0; i < strlen(var->command) + 1 - offset; i++) {
-	// 	var->command[i] = var->command[i + offset];
-	// }
-	
-	error = ERR_OK;
-	// cleanup_l:
-	
-	return error;
-}
-
 /* cfg2 commands */
 /* ============= */
 
-int cfg2_callback_set(cfg2_var_t *var, const char *command, lua_State *luaState) {
+int cfg2_callback_set(cfg2_var_t *var, const char *command) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -151,14 +131,14 @@ int cfg2_callback_set(cfg2_var_t *var, const char *command, lua_State *luaState)
 	arg1 = strtok(commandCopy, " ");
 	if (arg1 == NULL) {
 		warning("Bad syntax for command \"%s\". (1)", var->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	arg2 = strtok(NULL, " ");
 	if (arg2 == NULL) {
 		warning("Bad syntax for command \"%s\". (2)", var->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
@@ -170,21 +150,21 @@ int cfg2_callback_set(cfg2_var_t *var, const char *command, lua_State *luaState)
 	var1 = cfg2_findVar(arg1);
 	if (var1 == NULL) {
 		warning("Variable \"%s\" does not exist.", arg1);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	// Check var1 permissions.
 	if (g_cfg2.adminLevel < var1->permissionWrite) {
 		warning("Permissions not high enough to set variable %s.", var1->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	switch (var1->type) {
 	case cfg2_var_type_none:
 		warning("Cannot set variable \"%s\" since it is of type \"none\".", var1->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	case cfg2_var_type_vector:
 #ifdef DOUBLE_VEC
@@ -212,7 +192,7 @@ int cfg2_callback_set(cfg2_var_t *var, const char *command, lua_State *luaState)
 	
 	// Run callback.
 	if (var1->callback != NULL) {
-		error = var1->callback(var1, arg2, luaState);
+		error = var1->callback(var1, arg2);
 		if (error) {
 			goto cleanup_l;
 		}
@@ -226,7 +206,7 @@ int cfg2_callback_set(cfg2_var_t *var, const char *command, lua_State *luaState)
 	return error;
 }
 
-int cfg2_callback_ifdef(cfg2_var_t *var, const char *command, lua_State *luaState) {
+int cfg2_callback_ifdef(cfg2_var_t *var, const char *command) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -250,14 +230,14 @@ int cfg2_callback_ifdef(cfg2_var_t *var, const char *command, lua_State *luaStat
 	arg1 = strtok(commandCopy, " ");
 	if (arg1 == NULL) {
 		warning("Bad syntax for command \"%s\". (1)", var->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	arg2 = strtok(NULL, " ");
 	if (arg2 == NULL) {
 		warning("Bad syntax for command \"%s\". (2)", var->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
@@ -270,7 +250,7 @@ int cfg2_callback_ifdef(cfg2_var_t *var, const char *command, lua_State *luaStat
 		goto cleanup_l;
 	}
 	
-	error = cfg2_execString(string_const(arg2), NULL, 0);
+	error = cfg2_execString(string_const(arg2), NULL);
 	// No variable pointers are safe beyond this point.
 	if (error) {
 		goto cleanup_l;
@@ -284,7 +264,7 @@ int cfg2_callback_ifdef(cfg2_var_t *var, const char *command, lua_State *luaStat
 	return error;
 }
 
-int cfg2_callback_exec(cfg2_var_t *var, const char *command, lua_State *luaState) {
+int cfg2_callback_exec(cfg2_var_t *var, const char *command) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -317,20 +297,21 @@ int cfg2_callback_exec(cfg2_var_t *var, const char *command, lua_State *luaState
 	arg1 = strtok(commandCopy, " ");
 	if (arg1 == NULL) {
 		warning("Bad syntax for command \"%s\". (1)", var->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	arg2 = strtok(NULL, " ");
 	if (arg2 != NULL) {
 		warning("Bad syntax for command \"%s\". (2)", var->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	// Execute file.
 	
-	cfg2_execFile(arg1, 0);
+	g_cfg2.recursionDepth++;
+	cfg2_execFile(arg1);
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -340,7 +321,7 @@ int cfg2_callback_exec(cfg2_var_t *var, const char *command, lua_State *luaState
 	return error;
 }
 
-int cfg2_callback_create(cfg2_var_t *var, const char *command, lua_State *luaState) {
+int cfg2_callback_create(cfg2_var_t *var, const char *command) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -365,21 +346,21 @@ int cfg2_callback_create(cfg2_var_t *var, const char *command, lua_State *luaSta
 	arg1 = strtok(commandCopy, " ");
 	if (arg1 == NULL) {
 		warning("Bad syntax for command \"%s\". (1)", var->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	arg2 = strtok(NULL, " ");
 	if (arg2 == NULL) {
 		warning("Bad syntax for command \"%s\". (2)", var->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	arg3 = strtok(NULL, " ");
 	if (arg3 != NULL) {
 		warning("Bad syntax for command \"%s\". (2)", var->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
@@ -400,14 +381,14 @@ int cfg2_callback_create(cfg2_var_t *var, const char *command, lua_State *luaSta
 	}
 	else {
 		warning("Bad type \"%s\".", arg1);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	var2 = cfg2_findVar(arg2);
 	if (var2 != NULL) {
 		warning("Variable \"%s\" already exists.", arg2);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
@@ -422,7 +403,7 @@ int cfg2_callback_create(cfg2_var_t *var, const char *command, lua_State *luaSta
 	return error;
 }
 
-int cfg2_callback_quit(cfg2_var_t *var, const char *command, lua_State *luaState) {
+int cfg2_callback_quit(cfg2_var_t *var, const char *command) {
 
 	// Prevent execution on creation.
 	static int created = 0;
@@ -436,7 +417,7 @@ int cfg2_callback_quit(cfg2_var_t *var, const char *command, lua_State *luaState
 	return ERR_OK;
 }
 
-int cfg2_callback_vars(cfg2_var_t *var, const char *command, lua_State *luaState) {
+int cfg2_callback_vars(cfg2_var_t *var, const char *command) {
 	int error = ERR_CRITICAL;
 
 	// Prevent execution on creation.
@@ -493,13 +474,13 @@ int cfg2_callback_vars(cfg2_var_t *var, const char *command, lua_State *luaState
 	return error;
 }
 
-int cfg2_callback_copy(cfg2_var_t *var, const char *command, lua_State *luaState) {
+int cfg2_callback_copy(cfg2_var_t *var, const char *command) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
-	static bool created = false;
-	if (!created) {
-		created = true;
+	static int created = 0;
+	if (created < 2) {
+		created++;
 		return ERR_OK;
 	}
 	
@@ -518,21 +499,21 @@ int cfg2_callback_copy(cfg2_var_t *var, const char *command, lua_State *luaState
 	arg1 = strtok(commandCopy, " ");
 	if (arg1 == NULL) {
 		warning("Bad syntax for command \"%s\". (1)", var->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	arg2 = strtok(NULL, " ");
 	if (arg2 == NULL) {
 		warning("Bad syntax for command \"%s\". (2)", var->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	arg3 = strtok(NULL, " ");
 	if (arg3 != NULL) {
 		warning("Bad syntax for command \"%s\". (2)", var->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
@@ -542,26 +523,26 @@ int cfg2_callback_copy(cfg2_var_t *var, const char *command, lua_State *luaState
 	var1 = cfg2_findVar(arg1);
 	if (var1 == NULL) {
 		warning("Variable \"%s\" does not exist.", arg1);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	var2 = cfg2_findVar(arg2);
 	if (var2 == NULL) {
 		warning("Variable \"%s\" does not exist.", arg2);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	if (g_cfg2.adminLevel < var1->permissionWrite) {
 		warning("Insufficient permission to write variable \"%s\".", var1->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	if (g_cfg2.adminLevel < var2->permissionRead) {
 		warning("Insufficient permission to read variable \"%s\".", var2->name);
-		error = ERR_OK;
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
@@ -623,6 +604,7 @@ int cfg2_callback_copy(cfg2_var_t *var, const char *command, lua_State *luaState
 			var1->integer = var2->integer;
 			break;
 		case cfg2_var_type_vector:
+			warning("Rounding \"%s\" to nearest integer before addition.", var2->name);
 			var1->integer = round(var2->vector);
 			break;
 		default:
@@ -665,7 +647,7 @@ int cfg2_callback_copy(cfg2_var_t *var, const char *command, lua_State *luaState
 	return error;
 }
 
-int cfg2_callback_adminLevel(cfg2_var_t *var, const char *command, lua_State *luaState) {
+int cfg2_callback_adminLevel(cfg2_var_t *var, const char *command) {
 	
 	// Prevent execution on creation.
 	static bool created = false;
@@ -679,7 +661,8 @@ int cfg2_callback_adminLevel(cfg2_var_t *var, const char *command, lua_State *lu
 	return ERR_OK;
 }
 
-int cfg2_callback_su(cfg2_var_t *var, const char *command, lua_State *luaState) {
+int cfg2_callback_su(cfg2_var_t *var, const char *command) {
+	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
 	static bool created = false;
@@ -690,6 +673,7 @@ int cfg2_callback_su(cfg2_var_t *var, const char *command, lua_State *luaState) 
 	
 	if (g_cfg2.adminLevel < cfg2_admin_administrator) {
 		warning("Cannot elevate privileges from game.", "");
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
@@ -715,19 +699,393 @@ int cfg2_callback_su(cfg2_var_t *var, const char *command, lua_State *luaState) 
 	
 	printf(COLOR_CYAN"You are a level %i admin."COLOR_NORMAL"\n", g_cfg2.adminLevel);
 	
+	error = ERR_OK;
 	cleanup_l:
 	
-	return ERR_OK;
+	return error;
+}
+
+int cfg2_callback_add(cfg2_var_t *var, const char *command) {
+	int error = ERR_CRITICAL;
+	
+	// Prevent execution on creation.
+	static int created = 0;
+	if (created < 2) {
+		created++;
+		return ERR_OK;
+	}
+	
+	char *arg1 = NULL, *arg2 = NULL, *arg3 = NULL;
+	cfg2_var_t *var1 = NULL, *var2 = NULL;
+	
+	char *commandCopy = malloc((strlen(command) + 1) * sizeof(char));
+	if (commandCopy == NULL) {
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	strcpy(commandCopy, command);
+	
+	// Now execute the command.
+	arg1 = strtok(commandCopy, " ");
+	if (arg1 == NULL) {
+		warning("Bad syntax for command \"%s\". (1)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	arg2 = strtok(NULL, " ");
+	if (arg2 == NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	arg3 = strtok(NULL, " ");
+	if (arg3 != NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	// I'm doing this wrong. D: I need to write a proper string library.
+	// arg3 = arg2 + strlen(arg2) + 1 + (command - commandCopy);
+	
+	var1 = cfg2_findVar(arg1);
+	if (var1 == NULL) {
+		warning("Variable \"%s\" does not exist.", arg1);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	var2 = cfg2_findVar(arg2);
+	if (var2 == NULL) {
+		warning("Variable \"%s\" does not exist.", arg2);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	if (g_cfg2.adminLevel < var1->permissionWrite) {
+		warning("Insufficient permission to write variable \"%s\".", var1->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	if (g_cfg2.adminLevel < var2->permissionRead) {
+		warning("Insufficient permission to read variable \"%s\".", var2->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	switch (var1->type) {
+	case cfg2_var_type_none:
+		error("Cannot add variable \"%s\" since is of type \"none\".", var1->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	case cfg2_var_type_string:
+		error("Cannot add variable \"%s\" since is of type \"string\".", var1->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	case cfg2_var_type_integer:
+		switch(var2->type) {
+		case cfg2_var_type_none:
+			error("Cannot add variable \"%s\" since is of type \"none\".", var2->name);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		case cfg2_var_type_string:
+			error("Cannot add variable \"%s\" since is of type \"string\".", var2->name);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		case cfg2_var_type_integer:
+			var1->integer += var2->integer;
+			break;
+		case cfg2_var_type_vector:
+			warning("Rounding \"%s\" to nearest integer before addition.", var2->name);
+			var1->integer += round(var2->vector);
+			break;
+		default:
+			log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", var1->type, var1->name);
+			error = ERR_CRITICAL;
+			goto cleanup_l;
+		}
+		break;
+	case cfg2_var_type_vector:
+		switch(var2->type) {
+		case cfg2_var_type_none:
+			error("Cannot add variable \"%s\" since is of type \"none\".", var2->name);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+			break;
+		case cfg2_var_type_string:
+			error("Cannot add variable \"%s\" since is of type \"string\".", var2->name);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+			break;
+		case cfg2_var_type_integer:
+			var1->vector += var2->integer;
+			break;
+		case cfg2_var_type_vector:
+			var1->vector += var2->vector;
+			break;
+		default:
+			log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", var1->type, var1->name);
+			error = ERR_CRITICAL;
+			goto cleanup_l;
+		}
+		break;
+	default:
+		log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", var1->type, var1->name);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	free(commandCopy);
+	
+	return error;
+}
+
+int cfg2_callback_sub(cfg2_var_t *var, const char *command) {
+	int error = ERR_CRITICAL;
+	
+	// Prevent execution on creation.
+	static int created = 0;
+	if (created < 2) {
+		created++;
+		return ERR_OK;
+	}
+	
+	char *arg1 = NULL, *arg2 = NULL, *arg3 = NULL;
+	cfg2_var_t *var1 = NULL, *var2 = NULL;
+	
+	char *commandCopy = malloc((strlen(command) + 1) * sizeof(char));
+	if (commandCopy == NULL) {
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	strcpy(commandCopy, command);
+	
+	// Now execute the command.
+	arg1 = strtok(commandCopy, " ");
+	if (arg1 == NULL) {
+		warning("Bad syntax for command \"%s\". (1)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	arg2 = strtok(NULL, " ");
+	if (arg2 == NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	arg3 = strtok(NULL, " ");
+	if (arg3 != NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	// I'm doing this wrong. D: I need to write a proper string library.
+	// arg3 = arg2 + strlen(arg2) + 1 + (command - commandCopy);
+	
+	var1 = cfg2_findVar(arg1);
+	if (var1 == NULL) {
+		warning("Variable \"%s\" does not exist.", arg1);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	var2 = cfg2_findVar(arg2);
+	if (var2 == NULL) {
+		warning("Variable \"%s\" does not exist.", arg2);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	if (g_cfg2.adminLevel < var1->permissionWrite) {
+		warning("Insufficient permission to write variable \"%s\".", var1->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	if (g_cfg2.adminLevel < var2->permissionRead) {
+		warning("Insufficient permission to read variable \"%s\".", var2->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	switch (var1->type) {
+	case cfg2_var_type_none:
+		error("Cannot subtract variable \"%s\" since is of type \"none\".", var1->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	case cfg2_var_type_string:
+		error("Cannot subtract variable \"%s\" since is of type \"string\".", var1->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	case cfg2_var_type_integer:
+		switch(var2->type) {
+		case cfg2_var_type_none:
+			error("Cannot subtract variable \"%s\" since is of type \"none\".", var2->name);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		case cfg2_var_type_string:
+			error("Cannot subtract variable \"%s\" since is of type \"string\".", var2->name);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		case cfg2_var_type_integer:
+			var1->integer -= var2->integer;
+			break;
+		case cfg2_var_type_vector:
+			warning("Rounding \"%s\" to nearest integer before addition.", var2->name);
+			var1->integer -= round(var2->vector);
+			break;
+		default:
+			log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", var1->type, var1->name);
+			error = ERR_CRITICAL;
+			goto cleanup_l;
+		}
+		break;
+	case cfg2_var_type_vector:
+		switch(var2->type) {
+		case cfg2_var_type_none:
+			error("Cannot subtract variable \"%s\" since is of type \"none\".", var2->name);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+			break;
+		case cfg2_var_type_string:
+			error("Cannot subtract variable \"%s\" since is of type \"string\".", var2->name);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+			break;
+		case cfg2_var_type_integer:
+			var1->vector -= var2->integer;
+			break;
+		case cfg2_var_type_vector:
+			var1->vector -= var2->vector;
+			break;
+		default:
+			log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", var1->type, var1->name);
+			error = ERR_CRITICAL;
+			goto cleanup_l;
+		}
+		break;
+	default:
+		log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", var1->type, var1->name);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	free(commandCopy);
+	
+	return error;
+}
+
+int cfg2_callback_if(cfg2_var_t *var, const char *command) {
+	int error = ERR_CRITICAL;
+	
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+	
+	char *arg1 = NULL, *arg2 = NULL;
+	cfg2_var_t *var1 = NULL;
+	
+	char *commandCopy = malloc((strlen(command) + 1) * sizeof(char));
+	if (commandCopy == NULL) {
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	strcpy(commandCopy, command);
+	
+	// Now execute the command.
+	arg1 = strtok(commandCopy, " ");
+	if (arg1 == NULL) {
+		warning("Bad syntax for command \"%s\". (1)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	arg2 = strtok(NULL, " ");
+	if (arg2 == NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	// I'm doing this wrong. D: I need to write a proper string library.
+	arg2 = arg1 + strlen(arg1) + 1 + (command - commandCopy);
+	
+	var1 = cfg2_findVar(arg1);
+	if (var1 == NULL) {
+		warning("Variable \"%s\" does not exist.", arg1);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	switch (var1->type) {
+	case cfg2_var_type_none:
+		error = ERR_OK;
+		goto cleanup_l;
+	case cfg2_var_type_vector:
+		if (var1->vector == 0.0) {
+			error = ERR_OK;
+			goto cleanup_l;
+		}
+		break;
+	case cfg2_var_type_integer:
+		if (var1->integer == 0) {
+			error = ERR_OK;
+			goto cleanup_l;
+		}
+		break;
+	case cfg2_var_type_string:
+		if (!strcmp(var1->string, "")) {
+			error = ERR_OK;
+			goto cleanup_l;
+		}
+		break;
+	default:
+		critical_error("Can't happen. Type is %i", var1->type);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	error = cfg2_execString(string_const(arg2), NULL);
+	// No variable pointers are safe beyond this point.
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	free(commandCopy);
+	
+	return error;
 }
 
 /* cfg2 variable callbacks */
 /* ======================= */
 
-int cfg2_callback_maxRecursion(cfg2_var_t *var, const char *command, lua_State *luaState) {
+int cfg2_callback_maxRecursion(cfg2_var_t *var, const char *command) {
+	
 	if (var->integer <= 0) {
 		var->integer = 1;
 		error("%s is negative or zero. Setting to %i", var->name, var->integer);
 	}
+	
+	g_cfg2.maxRecursion = var->integer;
+	
 	return ERR_OK;
 }
 
@@ -847,7 +1205,7 @@ cfg2_var_t *cfg2_findVar(const char *name) {
 	return NULL;
 }
 
-int cfg2_setVariable(cfg2_var_t *var, const char *value, lua_State *luaState) {
+int cfg2_setVariable(cfg2_var_t *var, const char *value, const char *tag) {
 	int error = ERR_CRITICAL;
 	
 	if (strcmp(value, "") || ((var->type == cfg2_var_type_none) && (var->callback != NULL))) {
@@ -889,7 +1247,7 @@ int cfg2_setVariable(cfg2_var_t *var, const char *value, lua_State *luaState) {
 		
 		// Run callback.
 		if (var->callback != NULL) {
-			error = var->callback(var, value, luaState);
+			error = var->callback(var, value);
 			if (error) {
 				goto cleanup_l;
 			}
@@ -903,7 +1261,7 @@ int cfg2_setVariable(cfg2_var_t *var, const char *value, lua_State *luaState) {
 			goto cleanup_l;
 		}
 		
-		cfg2_printVar(var, NULL);
+		cfg2_printVar(var, tag);
 	}
 	
 	error = ERR_OK;
@@ -939,7 +1297,7 @@ void cfg2_getInt(char *value, cfg2_var_t *var) {
 	value = var->string;
 }
 
-void cfg2_setCallback(cfg2_var_t *var, int (*callback)(cfg2_var_t *var, const char *command, lua_State *luaState)) {
+void cfg2_setCallback(cfg2_var_t *var, int (*callback)(cfg2_var_t *var, const char *command)) {
 
 	var->callback = NULL;
 	
@@ -951,7 +1309,7 @@ void cfg2_setCallback(cfg2_var_t *var, int (*callback)(cfg2_var_t *var, const ch
 	var->callback = callback;
 }
 
-void cfg2_getCallback(int (*callback)(cfg2_var_t *var, const char *command, lua_State *luaState), cfg2_var_t *var) {
+void cfg2_getCallback(int (*callback)(cfg2_var_t *var, const char *command), cfg2_var_t *var) {
 
 	if (g_cfg2.adminLevel < var->permissionCallback) {
 		warning("Permissions not high enough to read callback for variable %s.", var->name);
@@ -967,6 +1325,8 @@ void cfg2_init(lua_State *luaState) {
 	g_cfg2.vars = NULL;
 	g_cfg2.vars_length = 0;
 	g_cfg2.luaState = luaState;
+	g_cfg2.maxRecursion = 0;
+	g_cfg2.recursionDepth = 0;
 }
 
 /* cfg2_createVariables
@@ -1026,7 +1386,7 @@ int cfg2_createVariables(const cfg2_var_init_t *varInit) {
 		
 		// Run callback.
 		if (g_cfg2.vars[i + g_cfg2.vars_length].callback != NULL) {
-			g_cfg2.vars[i + g_cfg2.vars_length].callback(&g_cfg2.vars[i + g_cfg2.vars_length], "", NULL);
+			g_cfg2.vars[i + g_cfg2.vars_length].callback(&g_cfg2.vars[i + g_cfg2.vars_length], "");
 		}
 	}
 	
@@ -1050,7 +1410,7 @@ void cfg2_free(void) {
 	g_cfg2.vars_length = 0;
 }
 
-int cfg2_execString(const string_t *line, const char *tag, const int recursionDepth) {
+int cfg2_execString(const string_t *line, const char *tag) {
 	int error = ERR_CRITICAL;
 	
 	cfg2_var_t *var;
@@ -1070,6 +1430,12 @@ int cfg2_execString(const string_t *line, const char *tag, const int recursionDe
 		goto cleanup_l;
 	}
 	
+	if (g_cfg2.recursionDepth >= g_cfg2.maxRecursion) {
+		error("Reached limit of %i recursions.", g_cfg2.recursionDepth);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
 	index = string_index_of(line, 0, ' ');
 	string_substring(&varName, line, 0, index - 0);
 	if (index >= 0) {
@@ -1081,16 +1447,15 @@ int cfg2_execString(const string_t *line, const char *tag, const int recursionDe
 	
 	var = cfg2_findVar(varName.value);
 	if (var == NULL) {
-		warning("Variable \"%s\" does not exist.", varName);
-		error = ERR_OK;
+		error("Variable \"%s\" does not exist.", varName);
+		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
-	error = cfg2_setVariable(var, value.value, g_cfg2.luaState);
+	error = cfg2_setVariable(var, value.value, tag);
 	if (error) {
 		goto cleanup_l;
 	}
-	
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -1102,7 +1467,7 @@ int cfg2_execString(const string_t *line, const char *tag, const int recursionDe
 	return error;
 }
 
-int cfg2_execFile(const char *filepath, const int recursionDepth) {
+int cfg2_execFile(const char *filepath) {
 	
 	FILE *file;
 	string_t line;
@@ -1158,14 +1523,9 @@ int cfg2_execFile(const char *filepath, const int recursionDepth) {
 			continue;
 		}
 		
-		error = cfg2_execString(&line, (quiet & 2) ? "" : filepath, recursionDepth);
+		error = cfg2_execString(&line, (quiet & 2) ? "" : filepath);
 		if (error) {
-			if (recursionDepth == 0) {
-				log_error(__func__, "Error on line %i", linenumber);
-			}
-			else {
-				error("Error on line %i, recursion level %i", linenumber, recursionDepth);
-			}
+			error("Error on line %i, recursion level %i", linenumber, g_cfg2.recursionDepth);
 			break;
 		}
 	}
