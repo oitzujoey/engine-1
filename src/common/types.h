@@ -158,4 +158,17 @@ typedef struct {
 } cfg2_var_init_t;
 
 
+/* lua.h */
+/* ===== */
+
+typedef struct {
+    lua_CFunction func;
+    char *name;
+} luaCFunc_t;
+
+typedef struct {
+	lua_State *luaState;
+	const char *functionName;
+} luaTimeout_t;
+
 #endif

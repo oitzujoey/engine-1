@@ -65,6 +65,10 @@
 #define CFG_OPENGL_LOG_FILE     "opengl_log_file"
 #define CFG_OPENGL_LOG_FILE_DEFAULT     "opengl.log"
 
+#define MAIN_LUA_STARTUP_TIMEOUT    10000
+#define MAIN_LUA_MAIN_TIMEOUT       100
+#define MAIN_LUA_SHUTDOWN_TIMEOUT   1000
+
 extern int error;
 
 extern const cfg2_var_init_t g_commonVarInit[];

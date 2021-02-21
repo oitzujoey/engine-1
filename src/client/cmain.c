@@ -148,7 +148,7 @@ int windowInit(void) {
 	g_window = NULL;
 	// g_screenSurface = NULL;
 
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0) {
 		fprintf(stderr, "Error: SDL could not initialize | SDL_Error %s\n", SDL_GetError());
 		error = ERR_GENERIC;
 		goto cleanup_l;
@@ -383,51 +383,31 @@ int main (int argc, char *argv[]) {
     
     // Run startup.
     
-	error = lua_getglobal(Lua, "startup");
-    if (error != 6) {
-        error("Lua file does not contain \"startup\" function.", "");
-        error = ERR_CRITICAL;
-        goto luaCleanup_l;
-    }
-	error = lua_pcall(Lua, 0, 0, 0);
+	error = lua_runFunction(Lua, "startup", MAIN_LUA_STARTUP_TIMEOUT);
     if (error) {
-        log_error(__func__, "Lua function \"startup\" exited with error %s", luaError[error]);
         error = ERR_CRITICAL;
         goto luaCleanup_l;
     }
 	
 	// Run the main game.
 	
-	while (!g_cfg2.quit && !error) {
+	while (!g_cfg2.quit) {
 	
 		// Set timeout
 	
-		error = lua_getglobal(Lua, "main");
-	    if (error != 6) {
-	        error("Lua file does not contain \"main\" function.", "");
-	        error = ERR_CRITICAL;
-	        goto luaCleanup_l;
-	    }
-        error = lua_pcall(Lua, 0, 0, 0);
+		error = lua_runFunction(Lua, "main", MAIN_LUA_MAIN_TIMEOUT);
+		if (error) {
+			error = ERR_CRITICAL;
+			goto cleanup_l;
+		}
+		
         main_housekeeping();
 	}
-    if (error) {
-        log_error(__func__, "Lua function \"main\" exited with error %s", luaError[error]);
-        error = ERR_CRITICAL;
-        goto cleanup_l;
-    }
 	
 	// Run shutdown.
 	
-	error = lua_getglobal(Lua, "shutdown");
-    if (error != 6) {
-        error("Lua file does not contain \"shutdown\" function.", "");
-        error = ERR_CRITICAL;
-        goto luaCleanup_l;
-    }
-	error = lua_pcall(Lua, 0, 0, 0);
+	error = lua_runFunction(Lua, "shutdown", MAIN_LUA_SHUTDOWN_TIMEOUT);
     if (error) {
-        log_error(__func__, "Lua function \"shutdown\" exited with error %s", luaError[error]);
         error = ERR_CRITICAL;
         goto luaCleanup_l;
     }

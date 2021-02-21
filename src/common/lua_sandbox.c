@@ -20,6 +20,42 @@ static const luaL_Reg luaLibs[] = {
     {NULL, NULL}
 };
 
+static uint32_t lua_luaTimeout(uint32_t interval, void *param) {
+    luaTimeout_t *luaTimeout = param;
+    error("Lua function \"%s\" timed out.", luaTimeout->functionName);
+    lua_error(luaTimeout->luaState);
+    return 0;
+}
+
+int lua_runFunction(lua_State *luaState, const char *functionName, uint32_t timeout) {
+    int error = ERR_CRITICAL;
+    
+    luaTimeout_t luaTimeout = {
+        .functionName = functionName,
+        .luaState = luaState
+    };
+    SDL_TimerID timerId = SDL_AddTimer(timeout, lua_luaTimeout, &luaTimeout);
+	
+	error = lua_getglobal(luaState, luaTimeout.functionName);
+    if (error != 6) {
+        error("Lua file does not contain \"%s\" function.", luaTimeout.functionName);
+        error = ERR_CRITICAL;
+        goto cleanup_l;
+    }
+	error = lua_pcall(luaState, 0, 0, 0);
+	SDL_RemoveTimer(timerId);
+    if (error) {
+        log_error(__func__, "Lua function \"%s\" exited with error %s", luaTimeout.functionName, luaError[error]);
+        error = ERR_CRITICAL;
+        goto cleanup_l;
+    }
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
+}
+
 int lua_sandbox_init(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename) {
     
     int error = 0;
