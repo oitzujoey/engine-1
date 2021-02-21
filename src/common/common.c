@@ -204,6 +204,34 @@ const cfg2_var_init_t g_commonVarInit[] = {
 		.callback = cfg2_callback_if
 	},
 	// Variables
+#ifdef LINUX
+	{
+		.name = "linux",
+		.vector = 0,
+		.integer = 0,
+		.string = "",
+		.type = cfg2_var_type_none,
+		.permissionRead = cfg2_admin_supervisor,
+		.permissionWrite = cfg2_admin_supervisor,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = NULL
+	},
+#endif
+#ifdef WINDOWS
+	{
+		.name = "windows",
+		.vector = 0,
+		.integer = 0,
+		.string = "",
+		.type = cfg2_var_type_none,
+		.permissionRead = cfg2_admin_supervisor,
+		.permissionWrite = cfg2_admin_supervisor,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = NULL
+	},
+#endif
 	{
 		.name = CFG_LUA_MAIN,
 		.vector = 0,
