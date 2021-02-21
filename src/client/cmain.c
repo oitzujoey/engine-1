@@ -367,20 +367,11 @@ int main (int argc, char *argv[]) {
 	log_info(__func__, "Executing \"%s\"", luaFilePath.value);
 	error = lua_sandbox_init(&Lua, luaCFunctions, luaFilePath.value);
 	if (error) {
-		log_critical_error(__func__, "Could not start Lua client");
+		error("Could not start Lua client.", "");
 		error = ERR_CRITICAL;
 		goto luaCleanup_l;
 	}
 	
-	// Do an initial run of the chunk.
-	
-	error = lua_pcall(Lua, 0, 0, 0);
-    if (error) {
-        log_error(__func__, "Lua exited with error %s", luaError[error]);
-        error = ERR_CRITICAL;
-        goto luaCleanup_l;
-    }
-    
     // Run startup.
     
 	error = lua_runFunction(Lua, "startup", MAIN_LUA_STARTUP_TIMEOUT);

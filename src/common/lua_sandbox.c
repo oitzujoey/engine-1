@@ -91,6 +91,24 @@ int lua_sandbox_init(lua_State **Lua, luaCFunc_t *cfuncs, const char *filename) 
         return ERR_GENERIC;
     }
     
+	// Do an initial run of the chunk.
+	
+    luaTimeout_t luaTimeout = {
+        .functionName = filename,
+        .luaState = *Lua
+    };
+    
+    SDL_TimerID timerId = SDL_AddTimer(100, lua_luaTimeout, &luaTimeout);
+	
+	error = lua_pcall(*Lua, 0, 0, 0);
+    if (error) {
+        log_error(__func__, "Initial run of Lua exited with error %s", luaError[error]);
+        error = ERR_CRITICAL;
+        return ERR_GENERIC;
+    }
+    
+    SDL_RemoveTimer(timerId);
+    
     return ERR_OK;
 }
 
