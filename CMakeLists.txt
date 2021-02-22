@@ -25,5 +25,5 @@ target_compile_options(cengine-1 PRIVATE -DCLIENT)
 
 add_subdirectory(src)
 
-target_link_libraries(sengine-1 SDL2 lua m enet)
-target_link_libraries(cengine-1 SDL2 lua m enet GL GLEW)
+target_link_libraries(sengine-1 SDL2 lua m enet physfs)
+target_link_libraries(cengine-1 SDL2 lua m enet physfs GL GLEW)

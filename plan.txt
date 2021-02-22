@@ -347,6 +347,65 @@ There will be one Lua script that is called once every game cycle. Startup can b
 Why I need a VFS:
     File path sanitization
     File archive management
+Why I should make my own:
+    Smaller
+    Does exactly what I want
+    One less dependency
+Why I should use someone else's:
+    Less development time
+    Supports more formats
+    Does nearly exactly what I want
+
+/
+    home/user/.engine-1 (workspace)
+        <game-created files>
+    usr/local/
+        bin/
+            engine-1 (bash)
+            engine-1_server (bash)
+        games/engine-1/
+            autoexec.cfg
+                ```
+                workspace ~/.engine-1
+                load
+                lua lua/
+                ifdef server exec config/server.cfg
+                ifdef client exec config/client.cfg
+                ```
+            config/
+                client.cfg
+                server.cfg
+            cengine-1.x86_64
+            sengine-1.x86_64
+            base/ (game files)
+                lua/
+                    cmain.lua
+                    smain.lua
+                    extra.lua
+                models/
+                autoexec.cfg
+
+The workspace is the place where the game can read and write.
+A mod is a directory with resources. If the engine finds Lua files that conflict, it will attempt to resolve the conflicts. If it fails, it will print an error declaring the mods incompatible and exit. If the engine finds config files that conflict, it will concatenate them together. All other files will be replaced by newer versions.
+PhysFS cannot do this. The proposed workaround is to either deal with that fact, or read the sensitive files into memory before other mods are loaded. The latter should work.
+Every time a mod is loaded:
+    Config files are concatenated.
+    Lua files are stored in memory. Right before game start, each {c,s}main.lua file is run to determine if any files are unmodified or unused. Duplicates of unmodified files are discarded. Each time a file is `include`ed it is marked as used. Unused files are then discarded. The remaining duplicate files are diffed and merged. If there is an original and a derivative, then the derivative replaces the original. If there are two derivatives, then a three way merge will be done to the the result. If there are more than three files, the three way merge will be done recursively. The original file will remain the original for the merge. The resulting file will become one of the derivative files. The other derivative file in the merge will be one of the other derivatives to merge.
+`exec` and friends will check if *.cfg is stored in memory before checking on the file system.
+
+1.  Set workspace.
+2.  Load original mod (original game).
+    1.  Store "*.cfg" and "*.lua" in memory and mark as originals.
+3.  Load additional mods.
+    1.  Store "*.cfg" and "*.lua" in memory and mark as duplicates.
+4.  Concatenate "*.cfg"s.
+    1. Execute "autoexec.cfg"
+5.  Execute "*.lua"s and discard "*.lua"s that never get called. Reset luaState.
+6.  Merge "*.lua"s.
+    1.  Perform three way merge.
+    2.  Repeat (1) until all files have been merged with the original.
+7.  Load "*.lua" into luaState.
+8.  Game start.
 
 
 
@@ -428,3 +487,6 @@ Expected leaks:
 
 Remember this:
     git status | grep modified: | sed 's/\tmodified:   //'
+
+Disallow bytecode.
+Sanitize file paths.

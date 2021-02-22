@@ -1,6 +1,6 @@
 
 -- `include` is the engine's version of `require`.
-include "extra.lua"
+include "../extra.lua"
 
 function startup()
 	
