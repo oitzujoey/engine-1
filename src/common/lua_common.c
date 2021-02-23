@@ -14,7 +14,7 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_log_warning,             .name = "warning"},
 	{.func = l_log_error,               .name = "error"},
 	{.func = l_log_critical_error,      .name = "critical_error"},
-	{.func = l_vfs_getFileText,         .name = "vfs_getFileText"},
+	// {.func = l_vfs_getFileText,         .name = "vfs_getFileText"},
 	{.func = l_obj_loadOoliteDAT,       .name = "loadOoliteModel"},
 	{.func = l_common_toString,         .name = "toString"},
 	{.func = l_entity_createEntity,     .name = "createEntity"},

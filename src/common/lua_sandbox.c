@@ -6,7 +6,8 @@
 #include "log.h"
 #include "file.h"
 #include "vfs.h"
-#include "str.h"
+#include "cfg2.h"
+#include "str2.h"
 
 const char *luaError[] = {
     "LUA_OK",
@@ -63,28 +64,27 @@ static int l_lua_sandbox_include(lua_State *luaState) {
 	}
 
 	/* @TODO: Do proper file path sanitization. */
-	string_t luaFilePath;
-	string_init(&luaFilePath);
-	string_copy_c(&luaFilePath, g_workspace);
-	file_concatenatePath(&luaFilePath, string_const(lua_main_v->string));
-	file_concatenatePath(&luaFilePath, string_const(filepath));
-	
-    if (!file_exists(luaFilePath.value)) {
-        error("File \"%s\" does not exist", luaFilePath.value);
-	    string_free(&luaFilePath);
-		lua_error(luaState);
-    }
+	char *luaFilePath = NULL;
+	str2_copyMalloc(luaFilePath, g_workspace);
+	file_concatenatePath(luaFilePath, lua_main_v->string);
+	file_concatenatePath(luaFilePath, filepath);
+	#error Fix me!
+    // if (!file_exists(luaFilePath)) {
+    //     error("File \"%s\" does not exist", luaFilePath.value);
+	//     string_free(&luaFilePath);
+	// 	lua_error(luaState);
+    // }
     
-    error = luaL_loadfile(luaState, luaFilePath.value);
-	string_free(&luaFilePath);
-    if (error) {
-        error("Could not load lua file %s due to error %s", luaFilePath.value, luaError[error]);
-    }
+    // error = luaL_loadfile(luaState, luaFilePath.value);
+	// string_free(&luaFilePath);
+    // if (error) {
+    //     error("Could not load lua file %s due to error %s", luaFilePath.value, luaError[error]);
+    // }
     
 	// Do an initial run of the chunk.
 	
     luaTimeout_t luaTimeout = {
-        .functionName = luaFilePath.value,
+        .functionName = luaFilePath,
         .luaState = luaState
     };
     
@@ -200,9 +200,9 @@ void lua_sandbox_quit(lua_State **Lua) {
     lua_close(*Lua);
 }
 
-int lua_sandbox_sanitizeFilepath(string_t *filepath) {
+// int lua_sandbox_sanitizeFilepath(char *filepath) {
     
     
     
-    return 0;
-}
+//     return 0;
+// }

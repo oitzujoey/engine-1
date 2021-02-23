@@ -2,8 +2,9 @@
 #include "cfg2.h"
 #include "common.h"
 #include "log.h"
-#include "str.h"
+#include "str2.h"
 #include "file.h"
+#include "physfs.h"
 
 /*
 It might be better to use Lua for all my configuration.
@@ -250,7 +251,7 @@ int cfg2_callback_ifdef(cfg2_var_t *var, const char *command) {
 		goto cleanup_l;
 	}
 	
-	error = cfg2_execString(string_const(arg2), NULL);
+	error = cfg2_execString(arg2, NULL);
 	// No variable pointers are safe beyond this point.
 	if (error) {
 		goto cleanup_l;
@@ -1060,7 +1061,7 @@ int cfg2_callback_if(cfg2_var_t *var, const char *command) {
 		goto cleanup_l;
 	}
 	
-	error = cfg2_execString(string_const(arg2), NULL);
+	error = cfg2_execString(arg2, NULL);
 	// No variable pointers are safe beyond this point.
 	if (error) {
 		goto cleanup_l;
@@ -1386,7 +1387,10 @@ int cfg2_createVariables(const cfg2_var_init_t *varInit) {
 		
 		// Run callback.
 		if (g_cfg2.vars[i + g_cfg2.vars_length].callback != NULL) {
-			g_cfg2.vars[i + g_cfg2.vars_length].callback(&g_cfg2.vars[i + g_cfg2.vars_length], "");
+			error = g_cfg2.vars[i + g_cfg2.vars_length].callback(&g_cfg2.vars[i + g_cfg2.vars_length], "");
+			if (error >= ERR_CRITICAL) {
+				goto cleanup_l;
+			}
 		}
 	}
 	
@@ -1410,25 +1414,14 @@ void cfg2_free(void) {
 	g_cfg2.vars_length = 0;
 }
 
-int cfg2_execString(const string_t *line, const char *tag) {
+int cfg2_execString(const char *line, const char *tag) {
 	int error = ERR_CRITICAL;
 	
 	cfg2_var_t *var;
-	int index;
 	
-	string_t lineCopy, varName, value;
-	error = string_init(&lineCopy);
-	if (error) {
-		goto cleanup_l;
-	}
-	error = string_init(&varName);
-	if (error) {
-		goto cleanup_l;
-	}
-	error = string_init(&value);
-	if (error) {
-		goto cleanup_l;
-	}
+	char *lineCopy = NULL;
+	char *varName = NULL;
+	char *value = NULL;
 	
 	if (g_cfg2.recursionDepth >= g_cfg2.maxRecursion) {
 		error("Reached limit of %i recursions.", g_cfg2.recursionDepth);
@@ -1436,23 +1429,39 @@ int cfg2_execString(const string_t *line, const char *tag) {
 		goto cleanup_l;
 	}
 	
-	index = string_index_of(line, 0, ' ');
-	string_substring(&varName, line, 0, index - 0);
-	if (index >= 0) {
-		string_substring(&value, line, index + 1, -1);
-	}
-	else {
-		string_copy_c(&value, "");
+	str2_copy(lineCopy, line);
+	varName = strtok(lineCopy, " ");
+	if (varName == NULL) {
+		error("Bad syntax.", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
 	}
 	
-	var = cfg2_findVar(varName.value);
+	value = varName + strlen(varName) + 1;
+	if (value == NULL) {
+		str2_copyMalloc(value, "");
+	}
+	// else {
+		// value.length = strlen(value.value);
+	// }
+	
+	// index = string_index_of(line, 0, ' ');
+	// string_substring(&varName, line, 0, index - 0);
+	// if (index >= 0) {
+	// 	string_substring(&value, line, index + 1, -1);
+	// }
+	// else {
+	// 	str2_copy_c(&value, "");
+	// }
+	
+	var = cfg2_findVar(varName);
 	if (var == NULL) {
 		error("Variable \"%s\" does not exist.", varName);
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
-	error = cfg2_setVariable(var, value.value, tag);
+	error = cfg2_setVariable(var, value, tag);
 	if (error) {
 		goto cleanup_l;
 	}
@@ -1460,28 +1469,38 @@ int cfg2_execString(const string_t *line, const char *tag) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	string_free(&lineCopy);
-	string_free(&varName);
-	string_free(&value);
+	insane_free(lineCopy);
+	insane_free(varName);
+	insane_free(value);
 	
 	return error;
 }
 
 int cfg2_execFile(const char *filepath) {
+	int error = ERR_CRITICAL;
 	
-	FILE *file;
-	string_t line;
-	int error = 0;
+	PHYSFS_File *vfsFile;
+	char *line = NULL;
+	char *fileText = NULL;
+	size_t fileText_length;
 	cfg2_var_t *v_quiet;
 	int quiet = 0;
 	
-	file = fopen(filepath, "r");
-	if (file == NULL) {
-		log_error(__func__, "Could not open file %s", filepath);
-		return 1;
+	vfsFile = PHYSFS_openRead(filepath);
+	if (vfsFile == NULL) {
+		error("Could not open file %s", filepath);
+		error = ERR_GENERIC;
+		goto cleanup_l;
 	}
 	
-	string_init(&line);
+	fileText_length = PHYSFS_fileLength(vfsFile);
+	fileText = calloc(fileText_length + 1, sizeof(char));
+	if (fileText == NULL) {
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	
+	PHYSFS_readBytes(vfsFile, fileText, fileText_length);
 	
 	v_quiet = cfg2_findVar(CFG_RUN_QUIET);
 	if (v_quiet == NULL) {
@@ -1500,38 +1519,40 @@ int cfg2_execFile(const char *filepath) {
 	
 	for (int linenumber = 1;; linenumber++) {
 		
-		error = file_getLine(&line, '\n', file);
-		if (error) {
-			if (error < 0) {
-				error = ERR_OK;
-			}
+		line = strtok(fileText, "\n");
+		if (line == NULL) {
 			break;
 		}
 		
 		/* Remove comments and unnecessary whitespace. */
-		string_removeLineComments(&line, "#");
-		string_removeWhitespace(&line, "melt");
+		str2_removeLineComments(line, "#");
+		str2_removeWhitespace(line, "melt");
 		/* Convert remaining whitespace to spaces */
-		for (int i = 0; i < line.length; i++) {
-			if (isspace(line.value[i])) {
-				line.value[i] = ' ';
+		for (int i = 0; i < strlen(line); i++) {
+			if (isspace(line[i])) {
+				line[i] = ' ';
 			}
 		}
 		
 		/* Discard empty lines. */
-		if (line.length == 0) {
+		if (strlen(line) == 0) {
 			continue;
 		}
 		
-		error = cfg2_execString(&line, (quiet & 2) ? "" : filepath);
+		error = cfg2_execString(line, (quiet & 2) ? "" : filepath);
 		if (error) {
 			error("Error on line %i, recursion level %i", linenumber, g_cfg2.recursionDepth);
 			break;
 		}
 	}
 	
-	string_free(&line);
-	fclose(file);
+	error = ERR_OK;
+	cleanup_l:
+	
+	insane_free(fileText);
+	insane_free(line);
+	
+	PHYSFS_close(vfsFile);
 	
 	return error;
 }

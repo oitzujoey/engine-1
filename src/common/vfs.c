@@ -3,106 +3,182 @@
 #include <string.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <physfs.h>
 #include "common.h"
 #include "file.h"
 #include "log.h"
 #include "cfg2.h"
+#include "str2.h"
 
 vfs_t g_vfs;
-char *g_workspace;
+char *g_workspace = NULL;
+vfs_mods_t g_mods = {
+	.mods = NULL,
+	.mods_length = 0
+};
+
+
+/* Config commands */
+/* =============== */
+
+// Helper command for vfs_callback_loadMod.
+static int vfs_PHYSFS_saveScriptFilesEnumerator(void *data, const char *origdir, const char *fname) {
+	int error = PHYSFS_ENUM_ERROR;
+	
+	size_t file_length = 0;
+	
+	// origdir + / + fname + \0
+	char *filepath = malloc((strlen(origdir) + strlen(fname) + 2) * sizeof(char));
+	if (filepath == NULL) {
+		critical_error("Out of memory.", "");
+		error = PHYSFS_ENUM_ERROR;
+		goto cleanup_l;
+	}
+	
+	sprintf(filepath, "%s/%s", origdir, fname);
+	
+	PHYSFS_Stat stat;
+	error = PHYSFS_stat(filepath, &stat);
+	if (!error) {
+		error("Could not get stats of file \"%s\": %s", filepath, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error = PHYSFS_ENUM_ERROR;
+		goto cleanup_l;
+	}
+	
+	if (stat.filetype == PHYSFS_FILETYPE_DIRECTORY) {
+		error = PHYSFS_enumerate(filepath, vfs_PHYSFS_saveScriptFilesEnumerator, NULL);
+		if (!error) {
+			error("Could not enumerate files in directory \"%s\": %s", filepath, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+			error = PHYSFS_ENUM_ERROR;
+			goto cleanup_l;
+		}
+	}
+	
+	// Ignore files that aren't executable.
+	const char *ext = file_getExtension(fname);
+	if ((ext == NULL) || (strcmp(ext, "cfg") && strcmp(ext, "lua"))) {
+		error = PHYSFS_ENUM_OK;
+		goto cleanup_l;
+	}
+	
+	// Stick the file in the mod structure.
+	
+	info("Found %s", filepath);
+	
+	g_mods.mods[g_mods.mods_length - 1].files_length++;
+	int files_length = g_mods.mods[g_mods.mods_length - 1].files_length;
+	char ***filenames = &g_mods.mods[g_mods.mods_length - 1].filenames;
+	char ***files = &g_mods.mods[g_mods.mods_length - 1].files;
+	
+	*filenames = realloc(*filenames, files_length * sizeof(char *));
+	*files = realloc(*files, files_length * sizeof(char *));
+	if ((*filenames == NULL) || (*files == NULL)) {
+		critical_error("Out of memory.", "");
+		error = PHYSFS_ENUM_ERROR;
+		goto cleanup_l;
+	}
+	
+	error = str2_copyMalloc((*filenames)[files_length - 1], filepath);
+	if (error) {
+		critical_error("Out of memory.", "");
+		error = PHYSFS_ENUM_ERROR;
+		goto cleanup_l;
+	}
+
+	PHYSFS_File *file = PHYSFS_openRead(filepath);
+	
+	(*files)[files_length - 1] = calloc((PHYSFS_fileLength(file) + 1), sizeof(char));
+	file_length = PHYSFS_fileLength(file);
+	if ((*files)[files_length - 1] == NULL) {
+		critical_error("Out of memory.", "");
+		error = PHYSFS_ENUM_ERROR;
+		goto cleanupPhys_l;
+	}
+	
+	error = PHYSFS_readBytes(file, (*files)[files_length - 1], file_length);
+	if (error < 0) {
+		error("Could not read from file \"%s\": %s", filepath, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error = PHYSFS_ENUM_ERROR;
+		goto cleanupPhys_l;
+	}
+	
+	error = PHYSFS_ENUM_OK;
+	cleanupPhys_l:
+	
+	PHYSFS_close(file);
+	
+	cleanup_l:
+	
+	insane_free(filepath);
+	
+    return error;
+}
+
+int vfs_callback_loadMod(cfg2_var_t *var, const char *command) {
+	int error = ERR_CRITICAL;
+	
+	if (!strcmp(command, "")) {
+		return ERR_OK;
+	}
+	
+	// Add directory to search path.
+	
+	error = PHYSFS_mount(command, command, true);
+	if (!error) {
+		error("Could not add directory \"%s\" to the search path: %s", command, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+	}
+	
+	// Make space for the next mod.
+	
+	g_mods.mods_length++;
+	g_mods.mods = realloc(g_mods.mods, g_mods.mods_length * sizeof(vfs_mod_t));
+	if (g_mods.mods == NULL) {
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	g_mods.mods[g_mods.mods_length - 1].files = NULL;
+	g_mods.mods[g_mods.mods_length - 1].filenames = NULL;
+	g_mods.mods[g_mods.mods_length - 1].files_length = 0;
+	
+	// Load files from mod directory.
+	
+	info("Searching for scripts in mod \"%s\"", command);
+	
+	error = PHYSFS_enumerate(command, vfs_PHYSFS_saveScriptFilesEnumerator, NULL);
+	if (!error) {
+		error("Could not enumerate files in directory \"%s\": %s", command, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
+}
+
+
+/* Config callbacks */
+/* ================ */
 
 int vfs_callback_setWorkspace(cfg2_var_t *var, const char *command) {
 	g_workspace = var->string;
-	return ERR_OK;
-}
-
-int vfs_getFileText(vfs_t *vfs, string_t *fileText, const string_t * const workspace_path) {
-	
-	int localError = ERR_OK;
-	
-	if (vfs->workspace_type == vfs_type_directory) {
-		string_t path;
-		string_init(&path);
-		string_copy(&path, &vfs->path);
-		file_concatenatePath(&path, workspace_path);
-
-		if (file_pathIsInDirectory(&path, &vfs->path)) {
-			free(fileText->value);
-			fileText->value = file_getText(path.value);
-			if (fileText->value == NULL) {
-				log_warning(__func__, "Could not open file \"%s\"", path.value);
-				localError = ERR_GENERIC;
-				goto dirCleanup_l;
-			}
-			string_normalize(fileText);
-		}
-		else {
-			log_error(__func__, "Path \"%s\" leads outside of workspace.", workspace_path->value);
-		}
-
-		dirCleanup_l:
-
-		string_free(&path);
-		
-		return localError;
-	}
-	return ERR_GENERIC;
-}
-
-int l_vfs_getFileText(lua_State *luaState) {
-	
-	string_t fileText;
-	int localError = 0;
-	
-	string_init(&fileText);
-	
-	localError = vfs_getFileText(&g_vfs, &fileText, string_const(lua_tostring(luaState, 1)));
-	if (!localError) {
-		lua_pushstring(luaState, fileText.value);
-	}
-	
-	string_free(&fileText);
-	
-	if (localError) {
-		return 0;
-	}
-	return 1;
-}
-
-int vfs_init(vfs_t *vfs, const string_t *path) {
-
-	const char *extension;
-
-	string_copy(&vfs->path, path);
-	
-	extension = file_getExtension(path->value);
-	
-	if (file_isDirectory(path->value)) {
-		vfs->workspace_type = vfs_type_directory;
-	}
-	else if (file_isRegularFile(path->value)) {
-		if (strcmp(extension, "zip")) {
-			vfs->workspace_type = vfs_type_zip;
-
-			log_error(__func__, "Zip is not implemented. Get out there and fix it.");
-			return ERR_GENERIC;
-		}
-		else {
-			log_error(__func__, "Unsupported file type");
-			return ERR_GENERIC;
-		}
-	}
-	else {
-		log_error(__func__, "Unsupported file type");
-		return ERR_GENERIC;
-	}
-	
-	if (error) {
+	if (strcmp(g_workspace, "") && !PHYSFS_setWriteDir(g_workspace)) {
+		error("Could not set workspace to \"%s\": %s", g_workspace, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		return ERR_GENERIC;
 	}
 	return ERR_OK;
 }
 
-void vfs_free(vfs_t *vfs) {
-	string_free(&vfs->path);
-}
+/* VFS helper functions */
+/* ==================== */
+
+// int vfs_execAutoexec() {
+	
+// 	/*  Here, we cheat.
+// 		Instead of doing a fancy merge, we just run one autoexec file after
+// 		the other and hope for the best.
+// 	*/
+	
+	
+// }

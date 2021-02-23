@@ -3,7 +3,6 @@
 #define CFG_H
 
 #include <stdbool.h>
-#include "str.h"
 #include "common.h"
 
 typedef enum cfg_var_type_e {

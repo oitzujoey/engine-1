@@ -5,7 +5,6 @@
 #include "../common/log.h"
 #include "../common/insane.h"
 #include "../common/network.h"
-#include "../common/str.h"
 #include "../common/entity.h"
 #include "../common/vector.h"
 
@@ -459,7 +458,7 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 static int cnetwork_receive(ENetEvent event) {
 	int error = ERR_CRITICAL;
 	
-	string_t string;
+	// char *string = NULL;
 	
 	if (g_clientState.connectionState != cnetwork_connectionState_connected) {
 		error = ERR_OK;
@@ -474,10 +473,9 @@ static int cnetwork_receive(ENetEvent event) {
 		}
 		break;
 	case ENET_CHANNEL1:
-		string.value = (char *) event.packet->data;
-		string.length = event.packet->dataLength;
-		string.memsize = 0;
-		string_print(&string);
+		// string = (char *) event.packet->data;
+		#error Fix this function!
+		// string_print(&string);
 		break;
 	default:
 		error("Bad ENet channel %i.", event.channelID);

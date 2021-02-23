@@ -28,7 +28,7 @@ int cfg2_setVariable(cfg2_var_t *var, const char *value, const char *tag);
 void cfg2_init(lua_State *luaState);
 int cfg2_createVariables(const cfg2_var_init_t *varInit);
 void cfg2_free(void);
-int cfg2_execString(const string_t *line, const char *tag);
+int cfg2_execString(const char *line, const char *tag);
 int cfg2_execFile(const char *filepath);
 
 #endif

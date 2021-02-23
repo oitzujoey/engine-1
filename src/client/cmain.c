@@ -18,6 +18,7 @@
 #include "../common/vfs.h"
 #include "../common/terminal.h"
 #include "../common/lua_common.h"
+#include "../common/str2.h"
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
@@ -188,13 +189,7 @@ static void windowQuit(void) {
 static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	int error;
 	
-	string_t tempString;
-	
-	error = string_init(&tempString);
-	if (error) {
-		critical_error("Out of memory", "");
-		goto cleanup_l;
-	}
+	char *tempString = NULL;
 	
 	info("Initializing client vars", "");
 	
@@ -232,9 +227,9 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 
 	if (argc > 1) {
 		for (int i = 1; i < argc; i++) {
-			string_copy_c(&tempString, argv[i]);
+			str2_copyMalloc(tempString, argv[i]);
 			g_cfg2.recursionDepth = 0;
-			error = cfg2_execString(&tempString, "Console");
+			error = cfg2_execString(tempString, "Console");
 			if (error == ERR_OUTOFMEMORY) {
 				critical_error("Out of memory", "");
 				goto cleanup_l;
@@ -261,12 +256,12 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	
-	string_copy_c(&tempString, g_workspace);
-	error = vfs_init(&g_vfs, &tempString);
-	if (error) {
-		log_critical_error(__func__, "Could not start VFS");
-		goto cleanup_l;
-	}
+	// string_copy_c(&tempString, g_workspace);
+	// error = vfs_init(&g_vfs, &tempString);
+	// if (error) {
+	// 	log_critical_error(__func__, "Could not start VFS");
+	// 	goto cleanup_l;
+	// }
 	
 	entity_initEntityList();
 	modelList_init();
@@ -292,7 +287,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	error = 0;
 	cleanup_l:
 	
-	string_free(&tempString);
+	insane_free(tempString);
 	
 	return error;
 }
@@ -318,16 +313,10 @@ int main (int argc, char *argv[]) {
 	int error = 0;
 	lua_State *Lua;
 	const char *luaFileName = "cmain.lua";
-	string_t luaFilePath;
+	char *luaFilePath = NULL;
 	cfg2_var_t *v_luaMain;
 	
 	info("Starting engine-1 v0.0 (Client)", "");
-	
-	error = string_init(&luaFilePath);
-	if (error) {
-		error = ERR_OUTOFMEMORY;
-		goto cleanup_l;
-	}
 	
 	error = main_init(argc, argv, Lua);
 	if (error) {
@@ -349,9 +338,9 @@ int main (int argc, char *argv[]) {
 	}
 
 	/* @TODO: Do proper file path sanitization. */
-	string_copy_c(&luaFilePath, g_workspace);
-	file_concatenatePath(&luaFilePath, string_const(v_luaMain->string));
-	file_concatenatePath(&luaFilePath, string_const(luaFileName));
+	str2_copyMalloc(luaFilePath, g_workspace);
+	file_concatenatePath(luaFilePath, v_luaMain->string);
+	file_concatenatePath(luaFilePath, luaFileName);
 	
 	if (g_cfg2.quit) {
 		error = ERR_OK;
@@ -363,8 +352,8 @@ int main (int argc, char *argv[]) {
 	
 	// Start Lua.
 	
-	log_info(__func__, "Executing \"%s\"", luaFilePath.value);
-	error = lua_sandbox_init(&Lua, luaFilePath.value);
+	log_info(__func__, "Executing \"%s\"", luaFilePath);
+	error = lua_sandbox_init(&Lua, luaFilePath);
 	if (error) {
 		error("Could not start Lua client.", "");
 		error = ERR_CRITICAL;
@@ -416,7 +405,7 @@ int main (int argc, char *argv[]) {
 
 	main_quit();
 	
-	string_free(&luaFilePath);
+	insane_free(luaFilePath);
 	
 	info("Client quit (%i)", error);
 	

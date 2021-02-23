@@ -20,6 +20,7 @@
 #include "../common/network.h"
 #include "../common/vector.h"
 #include "../common/terminal.h"
+#include "../common/str2.h"
 
 int l_main_checkQuit(lua_State *luaState);
 
@@ -120,9 +121,18 @@ static void main_housekeeping(void) {
 static int main_init(int argc, char *argv[], lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
-	string_t tempString;
+	char *tempString = NULL;
 	
-	string_init(&tempString);
+	// Start the VFS.
+	
+	error = PHYSFS_init(argv[0]);
+	if (!error) {
+		critical_error("Could not start PhysFS: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	// Start config system.
 	
 	log_info(__func__, "Initializing server vars");
 	
@@ -157,6 +167,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 
+	// Execute main autoexec.
 	if (file_exists(AUTOEXEC)) {
 		log_info(__func__, "Found \""AUTOEXEC"\"");
 		g_cfg2.recursionDepth = 0;
@@ -165,9 +176,9 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 
 	if (argc > 1) {
 		for (int i = 1; i < argc; i++) {
-			string_copy_c(&tempString, argv[i]);
+			str2_copyMalloc(tempString, argv[i]);
 			g_cfg2.recursionDepth = 0;
-			error = cfg2_execString(&tempString, "Console");
+			error = cfg2_execString(tempString, "Console");
 			if (error == ERR_OUTOFMEMORY) {
 				critical_error("Out of memory", "");
 				goto cleanup_l;
@@ -187,13 +198,8 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	
-	string_copy_c(&tempString, g_workspace);
-	error = vfs_init(&g_vfs, &tempString);
-	if (error) {
-		log_critical_error(__func__, "Could not start VFS");
-		goto cleanup_l;
-	}
-	
+	// Execute mod specific autoexec.
+	// vfs_execAutoexec();
 
 
 
@@ -225,7 +231,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	string_free(&tempString);
+	insane_free(tempString);
 
 	return error;
 }
@@ -248,14 +254,11 @@ int main(int argc, char *argv[]) {
 	int error = 0;
 	lua_State *Lua;
 	const char *luaFileName = "smain.lua";
-	string_t luaFilePath;
+	char *luaFilePath = NULL;
 	cfg2_var_t *lua_main_v;
-	string_t tempString;
+	char *tempString = NULL;
 	
 	log_info(__func__, "Starting engine-1 v0.0 (Server)");
-	
-	string_init(&tempString);
-	string_init(&luaFilePath);
 	
 	error = main_init(argc, argv, Lua);
 	if (error) {
@@ -276,9 +279,9 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* @TODO: Do proper file path sanitization. */
-	string_copy_c(&luaFilePath, g_workspace);
-	file_concatenatePath(&luaFilePath, string_const(lua_main_v->string));
-	file_concatenatePath(&luaFilePath, string_const(luaFileName));
+	// string_copy_c(&luaFilePath, g_workspace);
+	str2_copyMalloc(luaFilePath, lua_main_v->string);
+	file_concatenatePath(luaFilePath, luaFileName);
 	
 	if (g_cfg2.quit) {
 		error = ERR_OK;
@@ -290,8 +293,8 @@ int main(int argc, char *argv[]) {
 	
 	// Start Lua.
 	
-	log_info(__func__, "Executing \"%s\"", luaFilePath.value);
-	error = lua_sandbox_init(&Lua, luaFilePath.value);
+	log_info(__func__, "Executing \"%s\"", luaFilePath);
+	error = lua_sandbox_init(&Lua, luaFilePath);
 	if (error) {
 		error("Could not initialize Lua server.", "");
 		error = ERR_CRITICAL;
@@ -348,8 +351,8 @@ int main(int argc, char *argv[]) {
 	terminal_quitConsole();
 	cfg2_free();
 	
-	string_free(&luaFilePath);
-	string_free(&tempString);
+	insane_free(luaFilePath);
+	insane_free(tempString);
 	
 	// Exit.
 	

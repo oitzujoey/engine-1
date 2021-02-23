@@ -6,6 +6,7 @@
 #include <time.h>
 #include <SDL2/SDL.h>
 #include <lua.h>
+#include <enet/enet.h>
 
 /* Vector math structures */
 /* ====================== */
@@ -24,14 +25,6 @@ typedef struct {
 	vec3_t v;
 } quat_t;
 
-/* String structure */
-/* ================ */
-
-typedef struct {
-    char *value;
-    unsigned int length;
-    unsigned int memsize;
-} string_t;
 
 /* Internal model structure */
 /* ======================== */
@@ -72,15 +65,15 @@ typedef struct {
 } faceset_t;
 
 typedef struct {
-    string_t object_name;
-    string_t material_library;
+    char *object_name;
+    char *material_library;
     vec4_t *geometric_vertices;
     int geometric_vertices_length;
     vec3_t *texture_vertices;
     int texture_vertices_length;
     vec3_t *vertex_normals;
     int vertex_normals_length;
-    string_t material_name;
+    char *material_name;
     int smoothing_group;
     /* Note: Width will come before length. */
     faceset_t *facesets;
@@ -92,7 +85,7 @@ typedef struct {
 /* ======================= */
 
 typedef struct {
-    string_t material_name;
+    char *material_name;
 } mtl_t;
 
 
@@ -170,5 +163,30 @@ typedef struct {
 	lua_State *luaState;
 	const char *functionName;
 } luaTimeout_t;
+
+
+/* vfs.h */
+/* ===== */
+
+typedef struct {
+	char **filenames;
+	char **files;
+	unsigned int files_length;
+} vfs_mod_t;
+
+typedef struct {
+	vfs_mod_t *mods;
+	unsigned int mods_length;
+} vfs_mods_t;
+
+typedef enum vfs_type_e {
+	vfs_type_directory,
+	vfs_type_zip
+} vfs_type_t;
+
+typedef struct {
+	char *path;
+	vfs_type_t workspace_type;
+} vfs_t;
 
 #endif

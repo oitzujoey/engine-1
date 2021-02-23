@@ -203,6 +203,18 @@ const cfg2_var_init_t g_commonVarInit[] = {
 		.permissionCallback = cfg2_admin_supervisor,
 		.callback = cfg2_callback_if
 	},
+	{
+		.name = "load_mod",
+		.vector = 0,
+		.integer = 0,
+		.string = "",
+		.type = cfg2_var_type_none,
+		.permissionRead = cfg2_admin_supervisor,
+		.permissionWrite = cfg2_admin_game,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = vfs_callback_loadMod
+	},
 	// Variables
 #ifdef LINUX
 	{

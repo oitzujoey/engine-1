@@ -2,11 +2,7 @@
 #ifndef CNETWORK_H
 #define CNETWORK_H
 
-#include <stdbool.h>
-// #include <SDL2/SDL.h>
-// #include <SDL2/SDL_net.h>
-#include <enet/enet.h>
-#include "../common/cfg.h"
+#include "../common/types.h"
 
 // extern UDPsocket g_clientSocket;
 

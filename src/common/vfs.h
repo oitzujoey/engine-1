@@ -2,36 +2,18 @@
 #ifndef VFS_H
 #define VFS_H
 
-#include <lua.h>
-#include "str.h"
-#include "cfg2.h"
-
-// typedef struct {
-
-// } vfs_file_t;
-
-typedef enum vfs_type_e {
-	vfs_type_directory,
-	vfs_type_zip
-} vfs_type_t;
-
-// typedef struct {
-	
-// } vfs_file_t;
-
-typedef struct {
-	string_t path;
-	vfs_type_t workspace_type;
-} vfs_t;
+#include "types.h"
 
 extern vfs_t g_vfs;
 extern char *g_workspace;
 
+int vfs_callback_loadMod(cfg2_var_t *var, const char *command);
+
 int vfs_callback_setWorkspace(cfg2_var_t *var, const char *command);
 
-int vfs_getFileText(vfs_t *vfs, string_t *fileText, const string_t *workspace_path);
-int l_vfs_getFileText(lua_State *luaState);
-int vfs_init(vfs_t *vfs, const string_t *path);
+// int vfs_getFileText(vfs_t *vfs, string_t *fileText, const string_t *workspace_path);
+// int l_vfs_getFileText(lua_State *luaState);
+int vfs_init(vfs_t *vfs, const char *path);
 void vfs_free(vfs_t *vfs);
 
 #endif
