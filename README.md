@@ -19,6 +19,7 @@ Make sure you have these dependencies. GL and GLEW are required for the client o
     SDL2
     Lua
     ENet
+    PhysicsFS
     GL
     GLEW
 
