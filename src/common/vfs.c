@@ -123,7 +123,8 @@ int vfs_callback_loadMod(cfg2_var_t *var, const char *command) {
 	
 	// Add directory to search path.
 	
-	error = PHYSFS_mount(command, command, true);
+	// All mods will be mounted to the root directory.
+	error = PHYSFS_mount(command, "", true);
 	if (!error) {
 		error("Could not add directory \"%s\" to the search path: %s", command, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 	}

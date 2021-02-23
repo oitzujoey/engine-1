@@ -393,19 +393,24 @@ Every time a mod is loaded:
     Lua files are stored in memory. Right before game start, each {c,s}main.lua file is run to determine if any files are unmodified or unused. Duplicates of unmodified files are discarded. Each time a file is `include`ed it is marked as used. Unused files are then discarded. The remaining duplicate files are diffed and merged. If there is an original and a derivative, then the derivative replaces the original. If there are two derivatives, then a three way merge will be done to the the result. If there are more than three files, the three way merge will be done recursively. The original file will remain the original for the merge. The resulting file will become one of the derivative files. The other derivative file in the merge will be one of the other derivatives to merge.
 `exec` and friends will check if *.cfg is stored in memory before checking on the file system.
 
-1.  Set workspace.
-2.  Load original mod (original game).
+1.  Mount engine directory.
+2.  Execute autoexec.cfg
+    1.  Set workspace.
+3.  Unmount engine directory.
+5.  Load original mod (original game).
     1.  Store "*.cfg" and "*.lua" in memory and mark as originals.
-3.  Load additional mods.
+6.  Load additional mods.
     1.  Store "*.cfg" and "*.lua" in memory and mark as duplicates.
-4.  Concatenate "*.cfg"s.
+7.  Concatenate "*.cfg"s.
     1. Execute "autoexec.cfg"
-5.  Execute "*.lua"s and discard "*.lua"s that never get called. Reset luaState.
-6.  Merge "*.lua"s.
+8.  Execute "*.lua"s and discard "*.lua"s that never get called. Reset luaState.
+9.  Merge "*.lua"s.
     1.  Perform three way merge.
     2.  Repeat (1) until all files have been merged with the original.
-7.  Load "*.lua" into luaState.
-8.  Game start.
+10. Load "*.lua" into luaState.
+11. Game start.
+
+ALL file I/O will go through PhysFS. The original autoexec in the engine directory will be run by temporarally mounting the engine directory. After the autoexec is run, the directory is then unmounted.
 
 
 
