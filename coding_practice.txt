@@ -102,3 +102,9 @@ int main(void) {
 	*/
 	return error;
 }
+
+/*
+When using callbacks, make sure every callback has some form of logging. That
+way, when Valgrind gives you "Jump to the invalid address stated on the next
+line", you should have no trouble finding the offending function.
+*/

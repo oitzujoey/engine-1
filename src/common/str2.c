@@ -28,12 +28,13 @@
 // 	return error;
 // }
 
-int str2_realloc(char *string, size_t length) {
+// Note to future self: If you are going to realloc a function argument, make sure you have its address.
+int str2_realloc(char **string, size_t length) {
 	
-	string = realloc(string, (length + 1) * sizeof(char));
-	if (string == NULL) {
+	*string = realloc(*string, (length + 1) * sizeof(char));
+	if (*string == NULL) {
 		critical_error("Out of memory.", "");
-		return ERR_CRITICAL;
+		return ERR_OUTOFMEMORY;
 	}
 	return ERR_OK;
 }
@@ -53,17 +54,14 @@ int str2_concatenate(char *destination, const char *source) {
 	return ERR_OK;
 }
 
-int str2_copyMalloc(char *destination, const char *source) {
+int str2_copyMalloc(char **destination, const char *source) {
 	int error = ERR_CRITICAL;
 
-	destination = malloc((strlen(source) + 1) * sizeof(char));
-	// destination->length = source->length;
-	if (destination == NULL) {
-		critical_error("Out of memory.", "");
-		error = ERR_CRITICAL;
+	error = str2_realloc(destination, strlen(source));
+	if (error) {
 		goto cleanup_l;
 	}
-	str2_copy(destination, source);
+	str2_copy(*destination, source);
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -71,7 +69,7 @@ int str2_copyMalloc(char *destination, const char *source) {
 	return error;
 }
 
-int str2_copyLengthMalloc(char *destination, const char *source, size_t length) {
+int str2_copyLengthMalloc(char **destination, const char *source, size_t length) {
 	int error = ERR_CRITICAL;
 	
 	size_t destination_length = strlen(source);
@@ -79,14 +77,11 @@ int str2_copyLengthMalloc(char *destination, const char *source, size_t length) 
 		destination_length = length;
 	}
 	
-	destination = malloc((destination_length + 1) * sizeof(char));
-	// destination->length = source->length;
-	if (destination == NULL) {
-		critical_error("Out of memory.", "");
-		error = ERR_CRITICAL;
+	error = str2_realloc(destination, destination_length);
+	if (error) {
 		goto cleanup_l;
 	}
-	str2_copyLength(destination, source, destination_length);
+	str2_copyLength(*destination, source, destination_length);
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -94,15 +89,15 @@ int str2_copyLengthMalloc(char *destination, const char *source, size_t length) 
 	return error;
 }
 
-int str2_concatenateMalloc(char *destination, const char *source) {
+int str2_concatenateMalloc(char **destination, const char *source) {
 	int error = ERR_CRITICAL;
 	
-	error = str2_realloc(destination, strlen(destination) + strlen(source));
+	error = str2_realloc(destination, strlen(*destination) + strlen(source));
 	if (error) {
 		goto cleanup_l;
 	}
 	
-	str2_concatenate(destination, source);
+	str2_concatenate(*destination, source);
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -110,14 +105,57 @@ int str2_concatenateMalloc(char *destination, const char *source) {
 	return error;
 }
 
-void str2_tokenize(char **tokens, int *length, char *string) {
+int str2_tokenizeMalloc(char ***tokens, size_t *length, const char *string, const char *delimiters) {
+	int error = ERR_CRITICAL;
+
+	size_t tokens_length = 1;
+	char *destination = NULL;
+	bool isToken = true;
 	
-	// length = 1;
-	// tokens[0] = string;
+	// Make a copy of the original string.
+	error = str2_copyMalloc(&destination, string);
+	if (error) {
+		goto cleanup_l;
+	}
 	
-	// for (int i = 1;; i++) {
-	// 	strto
-	// }
+	// Tokenize the string.
+	for (int i = 0; destination[i] != '\0'; i++) {
+		for (int j = 0; delimiters[j] != '\0'; j++) {
+			if (destination[i] == delimiters[j]) {
+				destination[i] = '\0';
+				tokens_length++;
+				break;
+			}
+		}
+	}
+	
+	// Create the array of tokens. +1 for NULL.
+	*tokens = malloc((tokens_length + 1) * sizeof(char *));
+	if (*tokens == NULL) {
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	
+	// Copy the pointer to each token into the array.
+	for (int i = 0, tokenIndex = 0; tokenIndex < tokens_length; i++) {
+		if (isToken) {
+			isToken = false;
+			(*tokens)[tokenIndex++] = &destination[i];
+		}
+		if (destination[i] == '\0') {
+			isToken = true;
+		}
+	}
+	
+	// Set length.
+	(*tokens)[tokens_length] = NULL;
+	if (length != NULL) {
+		*length = tokens_length;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	return error;
 }
 
 // void str2_free(str2_t * string) {
@@ -137,7 +175,7 @@ int str2_removeLineComments(char *line, const char *linecomment) {
 	/* Remove comments. */
 	// Don't require a free.
 	line[commentStart - line] = '\0';
-	// error = string_substring(line, line, 0, commentStart - line->value);
+	// error = str2_substring(line, line, 0, commentStart - line);
 	// if (error > 2) {
 	// 	return error;
 	// }
@@ -233,3 +271,10 @@ int str2_removeWhitespace(char *line, const char *config) {
 // 	};
 // 	return &strings[i++];
 // }
+
+int str2_print(const char *s) {
+	return printf(COLOR_CYAN"char *: "
+	              COLOR_BLUE"[length] "COLOR_CYAN"%zu"COLOR_NORMAL" ; "
+	              COLOR_BLUE"[value] "COLOR_CYAN"\"%s\""COLOR_NORMAL"\n",
+	              strlen(s), s);
+}

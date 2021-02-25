@@ -9,7 +9,7 @@
 
 luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_puts,             .name = "puts"},
-	{.func = l_loadObj,                 .name = "loadObj"},
+	// {.func = l_loadObj,                 .name = "loadObj"},
 	{.func = l_log_info,                .name = "info"},
 	{.func = l_log_warning,             .name = "warning"},
 	{.func = l_log_error,               .name = "error"},

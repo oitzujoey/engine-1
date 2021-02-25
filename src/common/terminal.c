@@ -18,7 +18,7 @@ char **g_commandHistory;
 size_t g_commandHistoryLength = 0;
 char *g_commandComplete;
 
-int terminal_getHistoryLine(char *line, int *index);
+int terminal_getHistoryLine(char **line, int *index);
 int terminal_addLineToHistory(const char *line);
 void terminal_logCommandFrequency(const char *line);
 
@@ -138,7 +138,7 @@ fragment:       The partial command that is to be completed.
 badComplete:    True if there are multiple completions.
 tabs:           The number of times the user has pressed <tab> so far.
 */
-static int terminal_fragmentCompletion(char *fragment, bool *badComplete, int *tabs) {
+static int terminal_fragmentCompletion(char **fragment, bool *badComplete, int *tabs) {
 	int error = ERR_CRITICAL;
 
 	const int maxPotentials = 10;
@@ -149,7 +149,7 @@ static int terminal_fragmentCompletion(char *fragment, bool *badComplete, int *t
 	// Find matching completions.
 	
 	for (int i = 0; i < g_cfg2.vars_length; i++) {
-		if (!strncmp(fragment, g_cfg2.vars[i].name, strlen(fragment))) {
+		if (!strncmp(*fragment, g_cfg2.vars[i].name, strlen(*fragment))) {
 			variablePotentials[variablePotentialsCount] = i;
 			variablePotentialsCount++;
 		}
@@ -189,7 +189,7 @@ static int terminal_fragmentCompletion(char *fragment, bool *badComplete, int *t
 		// Multiple corrections
 		else {
 			if (tabIndex == *tabs) {
-				str2_copyMalloc(g_commandComplete, g_cfg2.vars[variablePotentials[i]].name);
+				str2_copyMalloc(&g_commandComplete, g_cfg2.vars[variablePotentials[i]].name);
 				printf(COLOR_BLACK B_COLOR_WHITE"%s"COLOR_NORMAL"\n", g_cfg2.vars[variablePotentials[i]].name);
 			}
 			else {
@@ -206,7 +206,7 @@ static int terminal_fragmentCompletion(char *fragment, bool *badComplete, int *t
 		fflush(stdout);
 	}
 	else {
-		str2_copyMalloc(g_commandComplete, "");
+		str2_copyMalloc(&g_commandComplete, "");
 	}
 	
 	error = ERR_OK;
@@ -221,13 +221,13 @@ line:           The line with an incomplete variable.
 badComplete:    True if there are multiple completions.
 tabs:           The number of times the user has pressed <tab> so far.
 */
-static int terminal_codeCompletion(char *line, bool *badComplete, int *tabs) {
+static int terminal_codeCompletion(char **line, bool *badComplete, int *tabs) {
 	int error = ERR_CRITICAL;
 	char *start, *space;
 	int length;
 	char *fragment = NULL;
 	
-	start = line;
+	start = *line;
 	space = NULL;
 	
 	// Find the last variable on the line. The variable is probably incomplete.
@@ -239,11 +239,11 @@ static int terminal_codeCompletion(char *line, bool *badComplete, int *tabs) {
 		start = space + 1;
 	}
 	
-	length = line + strlen(line) - start;
+	length = *line + strlen(*line) - start;
 	
 	// Copy the last variable into "fragment".
 	// string_copy_length_c(&fragment, start, length);
-	error = str2_copyLengthMalloc(fragment, start, length);
+	error = str2_copyLengthMalloc(&fragment, start, length);
 	if (error) {
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
@@ -251,7 +251,7 @@ static int terminal_codeCompletion(char *line, bool *badComplete, int *tabs) {
 	
 	// Do command complete on the fragment.
 	if (space == NULL) {
-		error = terminal_fragmentCompletion(fragment, badComplete, tabs);
+		error = terminal_fragmentCompletion(&fragment, badComplete, tabs);
 		if (error) {
 			goto cleanup_l;
 		}
@@ -280,11 +280,11 @@ static int terminal_codeCompletion(char *line, bool *badComplete, int *tabs) {
 /* terminal_enterCompletion
 Complete the fragment and replace it with the user-selected variable.
 */
-static int terminal_enterCompletion(char *line) {
+static int terminal_enterCompletion(char **line) {
 	int error = ERR_CRITICAL;
 	char *start, *space;
 	
-	start = line;
+	start = *line;
 	space = NULL;
 	
 	while (1) {
@@ -340,7 +340,7 @@ int terminal_runTerminalCommand(void) {
 			// Cursor up (Up arrow) → Up in history
 			case 'A':
 				historyIndex++;
-				terminal_getHistoryLine(g_consoleCommand, &historyIndex);
+				terminal_getHistoryLine(&g_consoleCommand, &historyIndex);
 				
 				while (cursor < g_consoleCommand_length) {
 					putc('#', stdout);
@@ -361,7 +361,7 @@ int terminal_runTerminalCommand(void) {
 			// Cursor down (Down arrow) → Down in history
 			case 'B':
 				--historyIndex;
-				terminal_getHistoryLine(g_consoleCommand, &historyIndex);
+				terminal_getHistoryLine(&g_consoleCommand, &historyIndex);
 				
 				while (cursor < g_consoleCommand_length) {
 					putc('#', stdout);
@@ -423,7 +423,7 @@ int terminal_runTerminalCommand(void) {
 			// Do final tab completion.
 			if ((tabs > 0) && (strlen(g_commandComplete) != 0)) {
 				tabs = 0;
-				error = terminal_enterCompletion(g_consoleCommand);
+				error = terminal_enterCompletion(&g_consoleCommand);
 				if (error) {
 					goto cleanup_l;
 				}
@@ -530,7 +530,7 @@ int terminal_runTerminalCommand(void) {
 			break;
 		// \t → Code completion
 		case '\t':
-			error = terminal_codeCompletion(g_consoleCommand, &badComplete, &tabs);
+			error = terminal_codeCompletion(&g_consoleCommand, &badComplete, &tabs);
 			if (error) {
 				goto cleanup_l;
 			}
@@ -566,7 +566,7 @@ int terminal_runTerminalCommand(void) {
 				// Increase string size.
 				if ((cursor + 1 >= g_consoleCommand_length) || insert) {
 					g_consoleCommand_length++;
-					error = str2_realloc(g_consoleCommand, g_consoleCommand_length);
+					error = str2_realloc(&g_consoleCommand, g_consoleCommand_length);
 					if (error) {
 						critical_error("Out of memory", "");
 						error = ERR_OUTOFMEMORY;
@@ -619,7 +619,7 @@ int terminal_runTerminalCommand(void) {
 	return error;
 }
 
-int terminal_getHistoryLine(char *line, int *index) {
+int terminal_getHistoryLine(char **line, int *index) {
 	int error = ERR_CRITICAL;
 	
 	cfg2_var_t *v_historyLength = cfg2_findVar(CFG_HISTORY_LENGTH);

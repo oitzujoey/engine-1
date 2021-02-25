@@ -2,7 +2,6 @@
 #include "vfs.h"
 #include <string.h>
 #include <stdlib.h>
-#include <dirent.h>
 #include <physfs.h>
 #include "common.h"
 #include "file.h"
@@ -10,7 +9,6 @@
 #include "cfg2.h"
 #include "str2.h"
 
-vfs_t g_vfs;
 char *g_workspace = NULL;
 vfs_mods_t g_mods = {
 	.mods = NULL,
@@ -78,7 +76,9 @@ static int vfs_PHYSFS_saveScriptFilesEnumerator(void *data, const char *origdir,
 		goto cleanup_l;
 	}
 	
-	error = str2_copyMalloc((*filenames)[files_length - 1], filepath);
+	// Initialize pointer to zero so that malloc doesn't choke. (Actually, it's Valgrind, but still technically correct.)
+	(*filenames)[files_length - 1] = NULL;
+	error = str2_copyMalloc(&(*filenames)[files_length - 1], filepath);
 	if (error) {
 		critical_error("Out of memory.", "");
 		error = PHYSFS_ENUM_ERROR;
@@ -86,6 +86,11 @@ static int vfs_PHYSFS_saveScriptFilesEnumerator(void *data, const char *origdir,
 	}
 
 	PHYSFS_File *file = PHYSFS_openRead(filepath);
+	if (file == NULL) {
+		error("Could not open file \"%s\": %s", filepath, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error = PHYSFS_ENUM_ERROR;
+		goto cleanupPhys_l;
+	}
 	
 	(*files)[files_length - 1] = calloc((PHYSFS_fileLength(file) + 1), sizeof(char));
 	file_length = PHYSFS_fileLength(file);
@@ -114,6 +119,9 @@ static int vfs_PHYSFS_saveScriptFilesEnumerator(void *data, const char *origdir,
     return error;
 }
 
+/* vfs_callback_loadMod
+Loads a mod. *.cfg and *.lua are read into memory.
+*/
 int vfs_callback_loadMod(cfg2_var_t *var, const char *command) {
 	int error = ERR_CRITICAL;
 	
@@ -173,6 +181,36 @@ int vfs_callback_setWorkspace(cfg2_var_t *var, const char *command) {
 
 /* VFS helper functions */
 /* ==================== */
+
+int vfs_getFileText(char **fileText, const char *path) {
+	int error = ERR_CRITICAL;
+	
+	PHYSFS_File *file = PHYSFS_openRead(path);
+	if (file == NULL) {
+		error("Could not open file \"%s\": %s", path, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	int fileText_length = PHYSFS_fileLength(file);
+	
+	error = str2_realloc(fileText, fileText_length);
+	if (error) {
+		goto cleanupPhysfs_l;
+	}
+	memset(*fileText, 0, (fileText_length + 1) * sizeof(char));
+	
+	PHYSFS_sint64 realLength = PHYSFS_readBytes(file, *fileText, fileText_length);
+	(*fileText)[realLength] = '\0';
+	
+	error = ERR_OK;
+	cleanupPhysfs_l:
+	
+	PHYSFS_close(file);
+	
+	cleanup_l:
+	return error;
+}
 
 // int vfs_execAutoexec() {
 	

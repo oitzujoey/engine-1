@@ -86,3 +86,16 @@ Tools:
 A limited set of configurable tools allows many more weapon types than Q3A, but also keeps the player's set of choices low. It is expected that the players will keep several different configurations handy to easily swap tools out. A default set of tool configs will be supplied with the game.
 
 Modes will be provided that allow or disallow client scripting.
+
+
+Player visibility:
+	Option 1: Could I render the scene, including all players, then rerender the players and check if any pixel is visible to the current player? This check would be done from the perspective of each player. The problem with this is it requires the server to render the scene to check visibility. A way to reduce the server load is to only render fragments that contain players, sort of like a bit blit. This also requires the resolution to be comparable to the client's resolution. This is the brute force approach.
+		1.  Turn on depth test.
+		2.  Render scene using default fragment shader.
+		3.  Turn off depth test.
+		4.  Render scene using player visiblity fragment shader.
+			1.  If the player's fragment depth is less than gl_FragDepth, then return the current pixel, otherwise, return the current pixel and set the visibility uniform to true.
+		5.  If the visibility uniform is true, send that player's coordinates to the player viewing the scene, otherwise, don't send the coordinates.
+	Option 2: Trace an infinite ray from the camera to each non-player vertex in the scene. If the ray is stopped by a player and not a wall or map boundary, then send the coordinate to the client.
+		Amendment 1: If the player's hitbox is visible, send the player's coordinates. Still requires determining if the player is visible.
+		

@@ -7,6 +7,7 @@
 #include "../common/network.h"
 #include "../common/entity.h"
 #include "../common/vector.h"
+#include "../common/str2.h"
 
 // UDPsocket g_serverSocket;
 // UDPsocket g_clientSocket;
@@ -458,7 +459,7 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 static int cnetwork_receive(ENetEvent event) {
 	int error = ERR_CRITICAL;
 	
-	// char *string = NULL;
+	char *string = NULL;
 	
 	if (g_clientState.connectionState != cnetwork_connectionState_connected) {
 		error = ERR_OK;
@@ -473,9 +474,8 @@ static int cnetwork_receive(ENetEvent event) {
 		}
 		break;
 	case ENET_CHANNEL1:
-		// string = (char *) event.packet->data;
-		#error Fix this function!
-		// string_print(&string);
+		string = (char *) event.packet->data;
+		str2_print(string);
 		break;
 	default:
 		error("Bad ENet channel %i.", event.channelID);

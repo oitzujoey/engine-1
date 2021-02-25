@@ -168,15 +168,48 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	}
 
 	// Execute main autoexec.
-	if (file_exists(AUTOEXEC)) {
-		log_info(__func__, "Found \""AUTOEXEC"\"");
+	
+	/*
+	I thought of a potential problem, and you may have as well. What happens if
+	I load the autoexec and execute it, but the mods it loads doesn't have an
+	autoexec? This would mean that the autoexec is saved in memory, even after
+	the directory has been unmounted. The final merged mod would have the system
+	autoexec.
+	This should not be a problem since the autoexec is somewhat public anyway,
+	and what makes the initial autoexec special is not the content but the
+	permissions it has. So for now, I will remain content with the fact that
+	this file may exist in the game directory. Just try not to execute it as
+	supervisor.
+	*/
+	
+	// Mount engine directory.
+	error = PHYSFS_mount("./", "", true);
+	if (!error) {
+		error("Could not add directory \"%s\" to the search path: %s", "./", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	// Execute autoexec.
+	if (PHYSFS_exists(AUTOEXEC)) {
+		info("Found \""AUTOEXEC"\"", "");
 		g_cfg2.recursionDepth = 0;
 		cfg2_execFile(AUTOEXEC);
 	}
+	
+	// Unmount engine directory.
+	error = PHYSFS_unmount("./");
+	if (!error) {
+		error("Could not remove directory \"%s\" from the search path: %s", "./", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+
+	// Run command line arguments.
 
 	if (argc > 1) {
 		for (int i = 1; i < argc; i++) {
-			str2_copyMalloc(tempString, argv[i]);
+			str2_copyMalloc(&tempString, argv[i]);
 			g_cfg2.recursionDepth = 0;
 			error = cfg2_execString(tempString, "Console");
 			if (error == ERR_OUTOFMEMORY) {
@@ -191,6 +224,8 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 			}
 		}
 	}
+	
+	// Check for the workspace.
 	
 	if ((g_workspace == NULL) || !strcmp(g_workspace, "")) {
 		log_critical_error(__func__, "\"workspace\" has not been set.");
@@ -258,10 +293,11 @@ int main(int argc, char *argv[]) {
 	cfg2_var_t *lua_main_v;
 	char *tempString = NULL;
 	
-	log_info(__func__, "Starting engine-1 v0.0 (Server)");
+	info("Starting engine-1 v0.0 (Server)", "");
 	
 	error = main_init(argc, argv, Lua);
 	if (error) {
+		critical_error("main_init returned an error.", "");
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
@@ -279,9 +315,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* @TODO: Do proper file path sanitization. */
-	// string_copy_c(&luaFilePath, g_workspace);
-	str2_copyMalloc(luaFilePath, lua_main_v->string);
-	file_concatenatePath(luaFilePath, luaFileName);
+	str2_copyMalloc(&luaFilePath, lua_main_v->string);
+	file_concatenatePath(&luaFilePath, luaFileName);
 	
 	if (g_cfg2.quit) {
 		error = ERR_OK;
@@ -293,7 +328,6 @@ int main(int argc, char *argv[]) {
 	
 	// Start Lua.
 	
-	log_info(__func__, "Executing \"%s\"", luaFilePath);
 	error = lua_sandbox_init(&Lua, luaFilePath);
 	if (error) {
 		error("Could not initialize Lua server.", "");
@@ -346,7 +380,7 @@ int main(int argc, char *argv[]) {
 	
 	main_quit();
 	
-	vfs_free(&g_vfs);
+	// vfs_free(&g_vfs);
 	
 	terminal_quitConsole();
 	cfg2_free();

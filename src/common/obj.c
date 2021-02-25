@@ -113,6 +113,10 @@ void model_init(model_t *model) {
 	model->surface_normals = NULL;
 	model->vertices = NULL;
 	model->vertices_length = 0;
+#ifdef CLIENT
+	model->glVertices = NULL;
+	model->glNormals = NULL;
+#endif
 }
 
 void model_free(model_t *model) {
@@ -151,6 +155,7 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 	int error = ERR_OK;
 
 	char *fileText = NULL;
+	size_t fileText_length;
 	char *line = NULL;
 	size_t line_length = 0;
 	char *tempPointer0 = NULL;
@@ -192,16 +197,17 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 
 	/* Get text from file. */
 
-	#error Fix this function!
-	// error = vfs_getFileText(&g_vfs, &fileText, filePath);
-	// if (error) {
-	// 	error("vfs_getFileText returned ", ERR[error]);
-	// 	error = error;
-	// 	goto cleanup_l;
-	// }
+	error = vfs_getFileText(&fileText, filePath);
+	if (error) {
+		error("vfs_getFileText returned ", ERR[error]);
+		error = error;
+		goto cleanup_l;
+	}
+	
+	fileText_length = strlen(fileText);
 	
 	/* Convert all \r to \n. */
-	for (int i = 0; i < strlen(fileText); i++) {
+	for (int i = 0; i < fileText_length; i++) {
 		if (fileText[i] == '\r') {
 			fileText[i] = '\n';
 		}
@@ -218,14 +224,14 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 		}
 		else {
 			line = newlinePointer + 1;
-			if (line > fileText + strlen(fileText)) {
+			if (line > fileText + fileText_length) {
 				break;
 			}
 		}
 		
 		newlinePointer = strchr(line, '\n');
 		if (newlinePointer == NULL) {
-			newlinePointer = fileText + strlen(fileText);
+			newlinePointer = fileText + fileText_length;
 		}
 		
 		line_length = newlinePointer - line;
@@ -249,8 +255,14 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 		
 		/* Split line into arguments. */
 		
-		#error Fix this function!
-		// argc = string_count_char(&line, ' ') + 1;
+		tempPointer0 = line;
+		argc = 1;
+		while (*tempPointer0 != '\0') {
+			if (*tempPointer0++ == ' ') {
+				argc++;
+			}
+		}
+		
 		if (argc > maxArgs) {
 			error("Line %i of file \"%s\" has too many arguments. %i > maxArgs(%i)", lineNumber, filePath, argc, maxArgs);
 			error = ERR_GENERIC;
@@ -568,6 +580,7 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 	cleanup_l:
 	
 	if (error) {
+		warning("\"%s\" Discarding model due to earlier errors.", filePath);
 		model_free(model);
 		modelList_removeLastModel();
 	}
@@ -592,13 +605,15 @@ int l_obj_loadOoliteDAT(lua_State *luaState) {
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
-	error = str2_copyMalloc(filePath, lua_tostring(luaState, 1));
+	error = str2_copyMalloc(&filePath, lua_tostring(luaState, 1));
 	if (error) {
+		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
 	
 	error = obj_loadOoliteDAT(filePath, &index);
 	if (error) {
+		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
 	
@@ -606,6 +621,15 @@ int l_obj_loadOoliteDAT(lua_State *luaState) {
 	cleanup_l:
 	
 	insane_free(filePath);
+	
+	if (error == ERR_OUTOFMEMORY) {
+		critical_error("Out of memory.", "");
+		lua_error(luaState);
+	}
+	if (error) {
+		critical_error("Uncaught error.", "");
+		lua_error(luaState);
+	}
 	
 	lua_pushinteger(luaState, index);
 	lua_pushinteger(luaState, error);

@@ -1,6 +1,6 @@
 
 -- `include` is the engine's version of `require`.
-include "../extra.lua"
+include "../common/extra.lua"
 
 function startup()
 	
@@ -29,7 +29,9 @@ function startup()
 	cobra3Model, error = loadOoliteModel(modelPath .. "oolite_cobra3.dat")
 	if cobra3Model ~= -1 then
 		cobra3Entity, error = createEntity(type_model)
+		info("main", "Linking entity to world.")
 		error = entity_linkChild(worldEntity, cobra3Entity)
+		info("main", "Linking model to entity.")
 		error = entity_linkChild(cobra3Entity, cobra3Model)
 		entity_setPosition(cobra3Entity, {x=0, y=0, z=50})
 		-- l_entity_setOrientation(cobra3Entity, {w=1, x=0, y=0, z=0})

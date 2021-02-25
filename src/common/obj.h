@@ -17,6 +17,6 @@ void model_free(model_t *model);
 
 int l_obj_loadOoliteDAT(lua_State *luaState);
 
-int l_loadObj(lua_State *Lua);
+// int l_loadObj(lua_State *Lua);
 
 #endif

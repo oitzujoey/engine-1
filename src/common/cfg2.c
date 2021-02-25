@@ -202,7 +202,7 @@ int cfg2_callback_set(cfg2_var_t *var, const char *command) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	free(commandCopy);
+	insane_free(commandCopy);
 	
 	return error;
 }
@@ -1429,7 +1429,7 @@ int cfg2_execString(const char *line, const char *tag) {
 		goto cleanup_l;
 	}
 	
-	str2_copy(lineCopy, line);
+	str2_copyMalloc(&lineCopy, line);
 	varName = strtok(lineCopy, " ");
 	if (varName == NULL) {
 		error("Bad syntax.", "");
@@ -1438,8 +1438,8 @@ int cfg2_execString(const char *line, const char *tag) {
 	}
 	
 	value = varName + strlen(varName) + 1;
-	if (value == NULL) {
-		str2_copyMalloc(value, "");
+	if (value - lineCopy > strlen(line)) {
+		value = NULL;
 	}
 	// else {
 		// value.length = strlen(value.value);
@@ -1461,7 +1461,18 @@ int cfg2_execString(const char *line, const char *tag) {
 		goto cleanup_l;
 	}
 	
-	error = cfg2_setVariable(var, value, tag);
+	// Curse you strtok.
+	if (value == NULL) {
+		error = str2_copyMalloc(&value, "");
+		if (error) {
+			goto cleanup_l;
+		}
+		error = cfg2_setVariable(var, value, tag);
+		insane_free(value);
+	}
+	else {
+		error = cfg2_setVariable(var, value, tag);
+	}
 	if (error) {
 		goto cleanup_l;
 	}
@@ -1470,8 +1481,8 @@ int cfg2_execString(const char *line, const char *tag) {
 	cleanup_l:
 	
 	insane_free(lineCopy);
-	insane_free(varName);
-	insane_free(value);
+	// insane_free(varName);
+	// insane_free(value);
 	
 	return error;
 }
@@ -1481,6 +1492,8 @@ int cfg2_execFile(const char *filepath) {
 	
 	PHYSFS_File *vfsFile;
 	char *line = NULL;
+	char **lines = NULL;
+	size_t lines_length = 0;
 	char *fileText = NULL;
 	size_t fileText_length;
 	cfg2_var_t *v_quiet;
@@ -1514,12 +1527,18 @@ int cfg2_execFile(const char *filepath) {
 	}
 	
 	if (!(quiet & 1)) {
-		log_info(__func__, "Executing \"%s\"", filepath);
+		info("Exec'ing \"%s\"", filepath);
 	}
 	
-	for (int linenumber = 1;; linenumber++) {
+	error = str2_tokenizeMalloc(&lines, &lines_length, fileText, "\n");
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	for (int linenumber = 1; linenumber - 1 < lines_length; linenumber++) {
 		
-		line = strtok(fileText, "\n");
+		line = lines[linenumber - 1];
+		
 		if (line == NULL) {
 			break;
 		}
@@ -1549,10 +1568,13 @@ int cfg2_execFile(const char *filepath) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	insane_free(fileText);
-	insane_free(line);
-	
 	PHYSFS_close(vfsFile);
+	
+	insane_free(fileText);
+	if (lines != NULL) {
+		insane_free(*lines);
+	}
+	insane_free(lines);
 	
 	return error;
 }

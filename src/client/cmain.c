@@ -4,6 +4,7 @@
 #include <lauxlib.h>
 #include <lualib.h>
 #include <SDL2/SDL.h>
+#include <physfs.h>
 #include "render.h"
 #include "input.h"
 #include "../common/common.h"
@@ -191,6 +192,13 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	
 	char *tempString = NULL;
 	
+	error = PHYSFS_init(argv[0]);
+	if (!error) {
+		critical_error("Could not start PhysFS: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
 	info("Initializing client vars", "");
 	
 	cfg2_init(luaState);
@@ -219,15 +227,32 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 
-	if (file_exists(AUTOEXEC)) {
-		log_info(__func__, "Found \""AUTOEXEC"\"");
+	// Mount engine directory.
+	error = PHYSFS_mount("./", "", true);
+	if (!error) {
+		error("Could not add directory \"%s\" to the search path: %s", "./", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	// Execute autoexec.
+	if (PHYSFS_exists(AUTOEXEC)) {
+		info("Found \""AUTOEXEC"\"", "");
 		g_cfg2.recursionDepth = 0;
 		cfg2_execFile(AUTOEXEC);
+	}
+	
+	// Unmount engine directory.
+	error = PHYSFS_unmount("./");
+	if (!error) {
+		error("Could not remove directory \"%s\" from the search path: %s", "./", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error = ERR_GENERIC;
+		goto cleanup_l;
 	}
 
 	if (argc > 1) {
 		for (int i = 1; i < argc; i++) {
-			str2_copyMalloc(tempString, argv[i]);
+			str2_copyMalloc(&tempString, argv[i]);
 			g_cfg2.recursionDepth = 0;
 			error = cfg2_execString(tempString, "Console");
 			if (error == ERR_OUTOFMEMORY) {
@@ -301,7 +326,7 @@ void main_quit(void) {
 	modelList_free();
 	entity_freeEntityList();
 	
-	vfs_free(&g_vfs);
+	// vfs_free(&g_vfs);
 	
 	windowQuit();
 	
@@ -320,7 +345,7 @@ int main (int argc, char *argv[]) {
 	
 	error = main_init(argc, argv, Lua);
 	if (error) {
-		critical_error("main_init returned %i", error);
+		critical_error("main_init returned an error.", "");
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
@@ -338,9 +363,8 @@ int main (int argc, char *argv[]) {
 	}
 
 	/* @TODO: Do proper file path sanitization. */
-	str2_copyMalloc(luaFilePath, g_workspace);
-	file_concatenatePath(luaFilePath, v_luaMain->string);
-	file_concatenatePath(luaFilePath, luaFileName);
+	str2_copyMalloc(&luaFilePath, v_luaMain->string);
+	file_concatenatePath(&luaFilePath, luaFileName);
 	
 	if (g_cfg2.quit) {
 		error = ERR_OK;
@@ -352,10 +376,9 @@ int main (int argc, char *argv[]) {
 	
 	// Start Lua.
 	
-	log_info(__func__, "Executing \"%s\"", luaFilePath);
 	error = lua_sandbox_init(&Lua, luaFilePath);
 	if (error) {
-		error("Could not start Lua client.", "");
+		error("Could not initialize Lua client.", "");
 		error = ERR_CRITICAL;
 		goto luaCleanup_l;
 	}

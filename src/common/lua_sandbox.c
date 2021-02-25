@@ -1,6 +1,7 @@
 
 #include <lualib.h>
 #include <lauxlib.h>
+#include <physfs.h>
 #include "lua_sandbox.h"
 #include "common.h"
 #include "log.h"
@@ -10,30 +11,33 @@
 #include "str2.h"
 
 const char *luaError[] = {
-    "LUA_OK",
-    "LUA_YIELD",
-    "LUA_ERRRUN",
-    "LUA_ERRSYNTAX",
-    "LUA_ERRMEM",
-    "LUA_ERRERR"
+	"LUA_OK",
+	"LUA_YIELD",
+	"LUA_ERRRUN",
+	"LUA_ERRSYNTAX",
+	"LUA_ERRMEM",
+	"LUA_ERRERR",
+	"LUA_ERRFILE"
 };
 
 static const luaL_Reg luaLibs[] = {
-    // {LUA_GNAME, luaopen_base},
-    {NULL, NULL}
+	// {LUA_GNAME, luaopen_base},
+	{NULL, NULL}
 };
 
 static uint32_t lua_luaTimeout(uint32_t interval, void *param) {
-    luaTimeout_t *luaTimeout = param;
-    error("Lua function \"%s\" timed out.", luaTimeout->functionName);
-    lua_error(luaTimeout->luaState);
-    return 0;
+	luaTimeout_t *luaTimeout = param;
+	error("Lua function \"%s\" timed out.", luaTimeout->functionName);
+	lua_error(luaTimeout->luaState);
+	return 0;
 }
 
 
 
 static int l_lua_sandbox_include(lua_State *luaState) {
-    int error = ERR_CRITICAL;
+	int error = ERR_CRITICAL;
+	
+	char *fileText = NULL;
 	
 	int argc = lua_gettop(luaState);
 	if (argc != 1) {
@@ -65,67 +69,83 @@ static int l_lua_sandbox_include(lua_State *luaState) {
 
 	/* @TODO: Do proper file path sanitization. */
 	char *luaFilePath = NULL;
-	str2_copyMalloc(luaFilePath, g_workspace);
-	file_concatenatePath(luaFilePath, lua_main_v->string);
-	file_concatenatePath(luaFilePath, filepath);
-	#error Fix me!
-    // if (!file_exists(luaFilePath)) {
-    //     error("File \"%s\" does not exist", luaFilePath.value);
-	//     string_free(&luaFilePath);
-	// 	lua_error(luaState);
-    // }
-    
-    // error = luaL_loadfile(luaState, luaFilePath.value);
-	// string_free(&luaFilePath);
-    // if (error) {
-    //     error("Could not load lua file %s due to error %s", luaFilePath.value, luaError[error]);
-    // }
-    
+	str2_copyMalloc(&luaFilePath, lua_main_v->string);
+	file_concatenatePath(&luaFilePath, filepath);
+	file_resolveRelativePaths(luaFilePath);
+	
+	if (!PHYSFS_exists(luaFilePath)) {
+	// if (!file_exists(luaFilePath)) {
+		error("File \"%s\" does not exist", luaFilePath);
+		insane_free(luaFilePath);
+		lua_error(luaState);
+	}
+	
+	error = vfs_getFileText(&fileText, luaFilePath);
+	if (error) {
+		error = ERR_GENERIC;
+		insane_free(luaFilePath);
+		lua_error(luaState);
+	}
+	
+	error = luaL_loadstring(luaState, fileText);
+	// error = luaL_loadfile(*Lua, filename);
+	if (error) {
+		error("Could not load lua file %s due to error %s", luaFilePath, luaError[error]);
+		insane_free(fileText);
+		insane_free(luaFilePath);
+		lua_error(luaState);
+	}
+	
 	// Do an initial run of the chunk.
 	
-    luaTimeout_t luaTimeout = {
-        .functionName = luaFilePath,
-        .luaState = luaState
-    };
-    
-    SDL_TimerID timerId = SDL_AddTimer(100, lua_luaTimeout, &luaTimeout);
+	luaTimeout_t luaTimeout = {
+		.functionName = luaFilePath,
+		.luaState = luaState
+	};
+	
+	info("Loading %s", luaFilePath);
+	
+	SDL_TimerID timerId = SDL_AddTimer(100, lua_luaTimeout, &luaTimeout);
 	
 	error = lua_pcall(luaState, 0, 0, 0);
-    if (error) {
-        error("Initial run of Lua exited with error %s", luaError[error]);
+	if (error) {
+		error("Initial run of Lua exited with error %s", luaError[error]);
 		lua_error(luaState);
-    }
-    
-    SDL_RemoveTimer(timerId);
-    
+	}
+	
+	SDL_RemoveTimer(timerId);
+	
+	insane_free(fileText);
+	insane_free(luaFilePath);
+	
 	return 0;
 }
 
 
 
 int lua_runFunction(lua_State *luaState, const char *functionName, uint32_t timeout) {
-    int error = ERR_CRITICAL;
-    
-    luaTimeout_t luaTimeout = {
-        .functionName = functionName,
-        .luaState = luaState
-    };
-    SDL_TimerID timerId = SDL_AddTimer(timeout, lua_luaTimeout, &luaTimeout);
+	int error = ERR_CRITICAL;
+	
+	luaTimeout_t luaTimeout = {
+		.functionName = functionName,
+		.luaState = luaState
+	};
+	SDL_TimerID timerId = SDL_AddTimer(timeout, lua_luaTimeout, &luaTimeout);
 	
 	error = lua_getglobal(luaState, luaTimeout.functionName);
-    if (error != 6) {
-        error("Lua file does not contain \"%s\" function.", luaTimeout.functionName);
-        error = ERR_CRITICAL;
-        goto cleanup_l;
-    }
+	if (error != 6) {
+		error("Lua file does not contain \"%s\" function.", luaTimeout.functionName);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
 	error = lua_pcall(luaState, 0, 0, 0);
 	// lua_call(luaState, 0, 0);
 	SDL_RemoveTimer(timerId);
-    if (error) {
-        log_error(__func__, "Lua function \"%s\" exited with error %s", luaTimeout.functionName, luaError[error]);
-        error = ERR_CRITICAL;
-        goto cleanup_l;
-    }
+	if (error) {
+		error("Lua function \"%s\" exited with error %s", luaTimeout.functionName, luaError[error]);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -135,74 +155,89 @@ int lua_runFunction(lua_State *luaState, const char *functionName, uint32_t time
 
 void lua_sandbox_addFunctions(lua_State **Lua, luaCFunc_t *cfuncs) {
 
-    int i;
-    
-    for (i = 0; cfuncs[i].name != NULL; i++) {
-        lua_pushcfunction(*Lua, cfuncs[i].func);
-        lua_setglobal(*Lua, cfuncs[i].name);
-    }
+	int i;
+	
+	for (i = 0; cfuncs[i].name != NULL; i++) {
+		lua_pushcfunction(*Lua, cfuncs[i].func);
+		lua_setglobal(*Lua, cfuncs[i].name);
+	}
 }
 
 int lua_sandbox_init(lua_State **Lua, const char *filename) {
-    
-    int error = 0;
-    
-    *Lua = luaL_newstate();
-    /* Only include this if you are insane. */
+	int error = 0;
+	
+	char *fileText = NULL;
+	
+	*Lua = luaL_newstate();
+	/* Only include this if you are insane. */
 #ifdef DEBUG
-    luaL_openlibs(*Lua);
+	luaL_openlibs(*Lua);
 #endif
-    
-    const luaL_Reg *lib;
-    for (lib = luaLibs; lib->func; lib++) {
-        luaL_requiref(*Lua, lib->name, lib->func, 1);
-        lua_pop(*Lua, 1);
-    }
+	
+	const luaL_Reg *lib;
+	for (lib = luaLibs; lib->func; lib++) {
+		luaL_requiref(*Lua, lib->name, lib->func, 1);
+		lua_pop(*Lua, 1);
+	}
 
-    lua_pushnil(*Lua);
-    
-    lua_pushcfunction(*Lua, l_lua_sandbox_include);
-    lua_setglobal(*Lua, "include");
-    
-    if (!file_exists(filename)) {
-        log_error(__func__, "File \"%s\" does not exist", filename, luaError[error]);
-        return ERR_GENERIC;
-    }
-    
-    error = luaL_loadfile(*Lua, filename);
-    if (error) {
-        log_error(__func__, "Could not load lua file %s due to error %s", filename, luaError[error]);
-        return ERR_GENERIC;
-    }
-    
+	lua_pushnil(*Lua);
+	
+	lua_pushcfunction(*Lua, l_lua_sandbox_include);
+	lua_setglobal(*Lua, "include");
+	
+	if (!PHYSFS_exists(filename)) {
+		error("File \"%s\" does not exist", filename, luaError[error]);
+		return ERR_GENERIC;
+	}
+	
+	error = vfs_getFileText(&fileText, filename);
+	if (error) {
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	error = luaL_loadstring(*Lua, fileText);
+	// error = luaL_loadfile(*Lua, filename);
+	if (error) {
+		error("Could not load lua file %s due to error %s", filename, luaError[error]);
+		return ERR_GENERIC;
+	}
+	
 	// Do an initial run of the chunk.
 	
-    luaTimeout_t luaTimeout = {
-        .functionName = filename,
-        .luaState = *Lua
-    };
-    
-    SDL_TimerID timerId = SDL_AddTimer(100, lua_luaTimeout, &luaTimeout);
+	luaTimeout_t luaTimeout = {
+		.functionName = filename,
+		.luaState = *Lua
+	};
+	
+	info("Loading %s", filename);
+	
+	SDL_TimerID timerId = SDL_AddTimer(100, lua_luaTimeout, &luaTimeout);
 	
 	error = lua_pcall(*Lua, 0, 0, 0);
-    if (error) {
-        log_error(__func__, "Initial run of Lua exited with error %s", luaError[error]);
-        error = ERR_CRITICAL;
-        return ERR_GENERIC;
-    }
-    
-    SDL_RemoveTimer(timerId);
-    
-    return ERR_OK;
+	if (error) {
+		log_error(__func__, "Initial run of Lua exited with error %s", luaError[error]);
+		error = ERR_CRITICAL;
+		return ERR_GENERIC;
+	}
+	
+	SDL_RemoveTimer(timerId);
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	insane_free(fileText);
+	
+	return error;
 }
 
 void lua_sandbox_quit(lua_State **Lua) {
-    lua_close(*Lua);
+	lua_close(*Lua);
 }
 
 // int lua_sandbox_sanitizeFilepath(char *filepath) {
-    
-    
-    
+	
+	
+	
 //     return 0;
 // }

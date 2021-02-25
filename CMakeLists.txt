@@ -23,6 +23,9 @@ add_executable(cengine-1)
 target_compile_options(sengine-1 PRIVATE -DSERVER)
 target_compile_options(cengine-1 PRIVATE -DCLIENT)
 
+# target_link_options(sengine-1 PRIVATE -fsanitize=address)
+# target_link_options(cengine-1 PRIVATE -fsanitize=address)
+
 add_subdirectory(src)
 
 target_link_libraries(sengine-1 SDL2 lua m enet physfs)

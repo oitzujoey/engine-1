@@ -2,80 +2,87 @@
 #include "file.h"
 #include <string.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <physfs.h>
 #include "common.h"
 #include "insane.h"
 #include "str2.h"
 
-char *file_getText(const char *filename) {
-	
-	FILE *file = fopen(filename, "r");
-	char c;
-	char *str = NULL;
-	
-	if (file == NULL) {
-		return NULL;
-	}
-	
-	while (1) {
-		c = fgetc(file);
-		if (c == EOF)
-			break;
-		#error Fix this function.
-		// string_append_char(&str, c);
-	}
-	
-	fclose(file);
-	
-	return str;
-}
+// char *file_getText(const char *filename) {
+// 	int 
 
-int file_getLine(char *line, const char delimiter, FILE *file) {
-	int error = ERR_CRITICAL;
+// 	#error FIXME!!!
+// 	PHYSFS_File *file = PHYSFS_openRead(filename);
+// 	// FILE *file = fopen(filename, "r");
+// 	char c;
+// 	char *str = NULL;
+	
+// 	if (file == NULL) {
+// 		return NULL;
+// 	}
+	
+// 	PHYSFS_sint64 fileTextLength = PHYSFS_fileLength(file);
+// 	error = str2_realloc(str, fileTextLength);
+// 	if (str == NULL)
+	
+// 	PHYSFS_readBytes(file, str, fileTextLength);
+	
+// 	while (1) {
+// 		c = fgetc(file);
+// 		if (c == EOF)
+// 			break;
+// 		#error Fix this function.
+// 		// string_append_char(&str, c);
+// 	}
+	
+// 	fclose(file);
+	
+// 	return str;
+// }
 
-	char c;
+// int file_getLine(char *line, const char delimiter, FILE *file) {
+// 	int error = ERR_CRITICAL;
+
+// 	char c;
 	
-	line[0] = '\0';
-	error = str2_realloc(line, 0);
-	if (error) {
-		error = ERR_OUTOFMEMORY;
-		goto cleanup_l;
-	}
+// 	line[0] = '\0';
+// 	error = str2_realloc(line, 0);
+// 	if (error) {
+// 		error = ERR_OUTOFMEMORY;
+// 		goto cleanup_l;
+// 	}
 	
-	while (1) {
-		c = fgetc(file);
+// 	while (1) {
+// 		c = fgetc(file);
 		
-		if (c == EOF) {
-			return EOF;
-		}
-		if (c == delimiter) {
-			return 0;
-		}
-		// error = string_append_char(line, c);
-		#error Fix this function.
-		if (error)
-			return error;
-	}
+// 		if (c == EOF) {
+// 			return EOF;
+// 		}
+// 		if (c == delimiter) {
+// 			return 0;
+// 		}
+// 		// error = string_append_char(line, c);
+// 		#error Fix this function.
+// 		if (error)
+// 			return error;
+// 	}
 	
-	error = ERR_OK;
-	cleanup_l:
+// 	error = ERR_OK;
+// 	cleanup_l:
 	
-	return error;
-}
+// 	return error;
+// }
 
-int file_exists(const char *filename) {
+// int file_exists(const char *filename) {
+// 	#error FIXME!!!
+// 	FILE *file = fopen(filename, "r");
 	
-	FILE *file = fopen(filename, "r");
+// 	if (file == NULL) {
+// 		return 0;
+// 	}
 	
-	if (file == NULL) {
-		return 0;
-	}
-	
-	fclose(file);
-	return 1;
-}
+// 	fclose(file);
+// 	return 1;
+// }
 
 const char *file_getExtension(const char *filename) {
 	
@@ -91,36 +98,39 @@ const char *file_getExtension(const char *filename) {
 	return dot+1;
 }
 
-int file_isRegularFile(const char *path) {
-	struct stat path_stat;
-	stat(path, &path_stat);
-	return S_ISREG(path_stat.st_mode);
-}
+// void file_isRegularFile(const char *path) {
+// 	// struct stat path_stat;
+// 	// stat(path, &path_stat);
+// 	// return S_ISREG(path_stat.st_mode);
+// 	#error FIXME!!!
+// }
 
-int file_isDirectory(const char *path) {
-	struct stat path_stat;
-	stat(path, &path_stat);
-	return S_ISDIR(path_stat.st_mode);
-}
+// void file_isDirectory(const char *path) {
+// 	// struct stat path_stat;
+// 	// stat(path, &path_stat);
+// 	// return S_ISDIR(path_stat.st_mode);
+// 	#error FIXME!!!
+// }
 
-int file_concatenatePath(char *destination, const char *source) {
+int file_concatenatePath(char **destination, const char *source) {
 	int error = ERR_OK;
 	
-	size_t destination_length = strlen(destination);
+	size_t destination_length = strlen(*destination);
+	size_t source_length = strlen(source);
 
-	destination[destination_length] = '/';
+	(*destination)[destination_length] = '/';
 	destination_length++;
 
-	error = str2_realloc(destination, destination_length);
+	error = str2_realloc(destination, destination_length + source_length);
 	if (error) {
 		goto cleanup_l;
 	}
 	
-	for (int i = 0; i < strlen(source); i++) {
-		destination[i + destination_length] = source[i];
+	for (int i = 0; i < source_length; i++) {
+		(*destination)[i + destination_length] = source[i];
 	}
-	destination_length += strlen(source);
-	destination[destination_length] = '\0';
+	destination_length += source_length;
+	(*destination)[destination_length] = '\0';
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -130,6 +140,76 @@ int file_concatenatePath(char *destination, const char *source) {
 void file_getWorkingDirectory(char *workingDirectory) {
 	free(workingDirectory);
 	workingDirectory = getcwd(NULL, 0);
+}
+
+void file_resolveRelativePaths(char *path) {
+	// int error = ERR_CRITICAL;
+	
+	size_t numDeletions = 0;
+	size_t path_length = strlen(path);
+	size_t tokens_length = 1;
+	char *token = path;
+	char *copyPointer = path + strlen(path);
+	char *copyTop = NULL;
+	
+	// "Tokenize" string.
+	for (int i = 0; i < path_length; i++) {
+		if (path[i] == '/') {
+			path[i] = '\0';
+			tokens_length++;
+		}
+	}
+	
+	// Go to last token.
+	token = path + path_length - 1;
+	
+	for (int i = tokens_length - 1; i >= 0; --i) {
+		
+		// Go to beginning of token.
+		while ((*token != '\0') && (token > path)) {
+			--token;
+		}
+		if (*token == '\0') {
+			token++;
+		}
+		
+		if (!strcmp(token, "..")) {
+			numDeletions++;
+		}
+		else if (numDeletions > 0) {
+			--numDeletions;
+		}
+		else {
+			// Build file path starting from end of string.
+			for (int j = strlen(token) - 1; j >= 0; --j) {
+				*--copyPointer = token[j];
+			}
+			
+			// Path separator.
+			*--copyPointer = '\0';
+		}
+		
+		// Go back a token.
+		token -= 2;
+	}
+	token = NULL;
+	
+	// Start moving from here.
+	// <= so we get the '\0'.
+	copyPointer++;
+	copyTop = path + path_length;
+	path_length = path + path_length - copyPointer;
+	for (int i = 0; copyPointer <= copyTop; i++) {
+		path[i] = *copyPointer++;
+		if (path[i] == '\0') {
+			path[i] = '/';
+		}
+	}
+	path[path_length] = '\0';
+	
+	// cleanup_l:
+	
+	// return error;
 }
 
 // int file_pathStandardize(char *filePath) {
