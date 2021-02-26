@@ -412,6 +412,8 @@ Every time a mod is loaded:
 
 ALL file I/O will go through PhysFS. The original autoexec in the engine directory will be run by temporarally mounting the engine directory. After the autoexec is run, the directory is then unmounted.
 
+Every game tick, ?main.lua is run. Right before the script is run, SDL events are dealt with. If there is a keyboard, mouse, etc. event, the input table in Lua will be filled with the result of these events.
+
 
 
 Graphics stuff I dream of adding:
@@ -454,19 +456,20 @@ Files to rewrite when it is somewhat working:
 [*] (Client) Receive entity tree from the network
 [*] (All)    Get on those TODOs (ugly ones)
 [*] (Client) Render entity tree in basic 3D using OpenGL
---------------------------------------------------------
+--------------------------------------------------------------
+![ ] (Client) Pass entity tree through VM and back to renderer
+[*] (Server) Send entity tree every second
+[*] (Server) Animate entity tree
+[*] (All)    Get on those TODOs (ugly ones)
+[*] (Client) Render tree every time it is received
+[*] (Client) Optimize rendering
+-------------------------------
 [/] (All) Get modding working.
     [*] (All) Load base game.
     [*] (All) Load multiple mods.
     [ ] (All) Merge source code from multiple mods.
--------------------------------------------------------------
-![ ] (Client) Pass entity tree through VM and back to renderer
-[*] (Server) Send entity tree every second
-[*] (Server) Animate entity tree
-[/] (All)    Get on those TODOs (ugly ones)
-[*] (Client) Render tree every time it is received
-[*] (Client) Optimize rendering
---------------------------------------------------
+    [ ] (All) Execute cached/merged files instead of latest files.
+------------------------------------------------------------------
 [/] (Client) Get keyboard input
 [/] (Client) Get mouse input
 [ ] (Client) Send input
@@ -478,11 +481,11 @@ Files to rewrite when it is somewhat working:
 =================================================
 * * engine-1 is now officially a game engine. ***
 =================================================
-[ ] (Common) Implement proper VFS.
-[ ] (Common) Redo config scripting system.
+[*] (Common) Implement proper VFS.
+[*] (Common) Redo config scripting system.
 [ ] (Client) Load GLSL from files.
 [ ] (Client) Allow GLSL to include GLSL libraries (preprocessor).
-[ ] (Common) Allow Lua to include Lua source code.
+[*] (Common) Allow Lua to include Lua source code.
 ===========================
 * * Start work on game. ***
 ===========================
@@ -499,4 +502,5 @@ Remember this:
     git status | grep modified: | sed 's/\tmodified:   //'
 
 Disallow bytecode.
-Sanitize file paths.
+Allow ^C after the engine has shutdown.
+

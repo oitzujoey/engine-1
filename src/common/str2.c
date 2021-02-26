@@ -82,6 +82,7 @@ int str2_copyLengthMalloc(char **destination, const char *source, size_t length)
 		goto cleanup_l;
 	}
 	str2_copyLength(*destination, source, destination_length);
+	(*destination)[destination_length] = '\0';
 	
 	error = ERR_OK;
 	cleanup_l:

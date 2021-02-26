@@ -24,16 +24,34 @@ Make sure you have these dependencies. GL and GLEW are required for the client o
     GLEW
 
 ```bash
-$ mkdir build && cd build
-$ cmake ..
-$ make
+mkdir build && cd build
+cmake ..
+make
+```
+
+### Configuration
+
+```bash
+cd ../base
+# Clone the Oolite game resources. These are needed for the example.
+git clone https://github.com/OoliteProject/oolite-binary-resources.git
+cd ..
+# Create the writable game directory.
+mkdir workspace
+# Start the server.
+build/sengine-1
+```
+
+From the top directory on a second terminal...
+
+```bash
+# Start the client.
+build/cengine-1
 ```
 
 ## Project status
 
 ### Currently implemented
-
-Turing complete scripting (for configuration)
 
 ### Partially implemented
 
@@ -43,6 +61,8 @@ Model list
 Entity tree  
 Networking  
 Rendering  
+Mod loader
+Scripting (for configuration)
 
 ## Engine documentation
 
@@ -59,7 +79,7 @@ To render a model, it must first be loaded by the engine. This is done manually 
 
 More concisely, with results shown after each step:
 
-0.  Engine creates world entity before game start.  
+0. Engine creates world entity before game start.  
     &nbsp;&nbsp;&nbsp;&nbsp;worldEntity  
 1. Load model.  
     &nbsp;&nbsp;&nbsp;&nbsp;worldEntity  

@@ -58,6 +58,7 @@ int terminal_callback_updateCommandHistoryLength(cfg2_var_t *var, const char *co
 			// Need to allocate.
 			for (int i = lastLength; i < g_commandHistoryLength; i++) {
 				g_commandHistory[i] = NULL;
+				str2_copyMalloc(&g_commandHistory[i], "");
 			}
 		}
 	}
@@ -341,6 +342,7 @@ int terminal_runTerminalCommand(void) {
 			case 'A':
 				historyIndex++;
 				terminal_getHistoryLine(&g_consoleCommand, &historyIndex);
+				g_consoleCommand_length = strlen(g_consoleCommand);
 				
 				while (cursor < g_consoleCommand_length) {
 					putc('#', stdout);
@@ -362,6 +364,7 @@ int terminal_runTerminalCommand(void) {
 			case 'B':
 				--historyIndex;
 				terminal_getHistoryLine(&g_consoleCommand, &historyIndex);
+				g_consoleCommand_length = strlen(g_consoleCommand);
 				
 				while (cursor < g_consoleCommand_length) {
 					putc('#', stdout);
@@ -427,6 +430,7 @@ int terminal_runTerminalCommand(void) {
 				if (error) {
 					goto cleanup_l;
 				}
+				g_consoleCommand_length = strlen(g_consoleCommand);
 				// cursor = 0;
 				while (cursor < g_consoleCommand_length) {
 					// You should never see this.
@@ -467,16 +471,19 @@ int terminal_runTerminalCommand(void) {
 				goto cleanup_l;
 			}
 			
-			error = terminal_addLineToHistory(g_consoleCommand);
-			if (error) {
-				goto cleanup_l;
+			if (strcmp(g_consoleCommand, "")) {
+				error = terminal_addLineToHistory(g_consoleCommand);
+				if (error) {
+					goto cleanup_l;
+				}
+				terminal_logCommandFrequency(g_consoleCommand);
 			}
-			terminal_logCommandFrequency(g_consoleCommand);
 			
 			printedPrompt = false;
 			historyIndex = -1;
 			cursor = 0;
 			g_consoleCommand_length = 0;
+			g_consoleCommand[0] = '\0';
 			break;
 		// Backspace
 		case '\x7F':
@@ -534,6 +541,7 @@ int terminal_runTerminalCommand(void) {
 			if (error) {
 				goto cleanup_l;
 			}
+			g_consoleCommand_length = strlen(g_consoleCommand);
 			
 			if (badComplete) {
 				cursor = 0;
@@ -688,7 +696,7 @@ int terminal_addLineToHistory(const char *line) {
 		}
 	
 		g_commandHistory[0] = NULL;
-		str2_copy(g_commandHistory[0], line);
+		str2_copyMalloc(&g_commandHistory[0], line);
 	}
 	else {
 		tempString = g_commandHistory[duplicate];
@@ -753,6 +761,8 @@ int terminal_initConsole(void) {
 	g_consoleCommand = NULL;
 	g_commandComplete = NULL;
 	
+	str2_copyMalloc(&g_consoleCommand, "");
+	
 	cfg2_var_t *v_historyLength = cfg2_findVar(CFG_HISTORY_LENGTH);
 	if (v_historyLength == NULL) {
 		critical_error(CFG_HISTORY_LENGTH" is not defined", "");
@@ -774,6 +784,7 @@ int terminal_initConsole(void) {
 	
 	for (int i = 0; i < v_historyLength->integer; i++) {
 		g_commandHistory[i] = NULL;
+		str2_copyMalloc(&g_commandHistory[i], "");
 	}
 	
 	error = ERR_OK;
