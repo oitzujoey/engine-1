@@ -4,7 +4,7 @@ Honestly, I have no idea what this is going to be yet.
 Here is what I do know:
 
 * Written in C
-* Cross-platform (Linux + Windows 10) (Currently only runs on Linux)
+* Cross-platform (Linux + Windows 10) (Currently only runs on Linux because of terminal code)
 * Client-server
 * Moddable through Lua
 
@@ -16,12 +16,14 @@ Here is what I do know:
 
 Make sure you have these dependencies. GL and GLEW are required for the client only.
 
+```text
     SDL2
     Lua
     ENet
     PhysicsFS
     GL
     GLEW
+```
 
 ```bash
 mkdir build && cd build
@@ -68,9 +70,11 @@ Scripting (for configuration)
 
 ### Terminology
 
-    model   A standard 3D model. May include other types of models in the future.
-    entity  A node in the entity tree. It stores information used for manipulating models during rendering.
-    object  A general term for a model or an entity.
+```text
+model   A standard 3D model. May include other types of models in the future.
+entity  A node in the entity tree. It stores information used for manipulating models during rendering.
+object  A general term for a model or an entity.
+```
 
 ### 3D graphics model
 
@@ -127,12 +131,14 @@ The structure of entities are very general due to the variety of objects that ca
 
 #### Entity structure
 
-    children        Array of child objects.
-    children_length Length of the "children" array. Can be ignored in Lua.
-    childType       Type of the entity.
-    position        3D position. x is to the right, y is up, and z is into the screen. Default is {0, 0, 0}.
-    orientation     Orientation quaternion. Default is {1, 0, 0, 0}.
-    inUse           Internal variable used to check if an entity is deleted. Can be ignored in Lua.
+```text
+children        Array of child objects.
+children_length Length of the "children" array. Can be ignored in Lua.
+childType       Type of the entity.
+position        3D position. x is to the right, y is up, and z is into the screen. Default is {0, 0, 0}.
+orientation     Orientation quaternion. Default is {1, 0, 0, 0}.
+inUse           Internal variable used to check if an entity is deleted. Can be ignored in Lua.
+```
 
 This structure only exists in the engine, but the engine provides functions to manipulate it.
 Note that position and orientation are cumulative. This allows multiple models to be moved and rotated as one unit. When an entity is moved in space, all its children are moved as well since a child's reference frame is always its parent entity. The same happens when an entity is rotated. The children are rotated around the entity's origin, and the orientation of the children is rotated as well.
@@ -145,5 +151,38 @@ Note that position and orientation are cumulative. This allows multiple models t
 | int error = l_entity_linkChild(int parentEntity, int childObject) | Binds a child object to an entity if it has the appropriate type. |
 | l_entity_setPosition(int entityIndex, {x, y, z} position) | Sets the position of the given entity. |
 | l_entity_setOrientation(int entityIndex, {w, x, y, z} orientation) | Sets the orientation of the given entity. |
+
+### Lua Scripting
+
+Made for Lua 5.4, but other versions may work as well.
+
+Games are written in Lua. Since one of the goals of this engine was to be somewhat secure, the script is sandboxed. Lua libraries cannot be used. Precompiled Lua can be run at the moment, but that will be change when I can be bothered to fix it.
+
+#### Boilerplate
+
+These functions are required to run a game.
+
+```lua
+function startup()
+    -- Code that runs once on startup
+end
+
+function main()
+    -- Main game code
+    -- This function is called once per game tick. Do not put infinite loops in here.
+end
+
+function shutdown()
+    -- Code that runs on exit
+end
+```
+
+These functions do not have to be in `smain.lua` or `cmain.lua`, but if they are not present in those files they must be in an included file. Each one has a timeout, so don't let your code take too long to execute. If the function does time out, the game will be shut down.
+
+#### API
+
+This will take some time to document. Currently the API can be found in smain.c, cmain.c, and lua_common.c. Examples of how to use these functions can be found in the example code.
+
+In the meantime, one important note: Since the standard libraries cannot be loaded, the `require` function cannot be called to include other scripts. In its place is the function `include`, which is called in about the same way.
 
 <b id="f1">[1](#a1)</b> Jesus is also coming soon. Expect the time frame to be about the same.

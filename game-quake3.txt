@@ -98,4 +98,15 @@ Player visibility:
 		5.  If the visibility uniform is true, send that player's coordinates to the player viewing the scene, otherwise, don't send the coordinates.
 	Option 2: Trace an infinite ray from the camera to each non-player vertex in the scene. If the ray is stopped by a player and not a wall or map boundary, then send the coordinate to the client.
 		Amendment 1: If the player's hitbox is visible, send the player's coordinates. Still requires determining if the player is visible.
-		
+		Problem: I don't think this will work.
+	Option 3: Check if triangles overlap player.
+		1.  Project all faces into 2D. Players should now be 2D polygons. A player's hitbox can be substituted for the player to reduce computation time.
+		2.  Clip player polygons along triangle edges not belonging to that player.
+		3.  If a player's model has not been completely occluded, then send updated player coordinates to the camera's client.
+
+Wacky additions:
+	Destructible terrain
+		1.	Make multiple copies of model entities.
+		2.	Create new vertices on explosion edge and clip faces inside explosion radius. Attach concave polygon to clipped model.
+	Cartoon shader - May do this anyway.
+
