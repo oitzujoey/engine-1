@@ -68,6 +68,7 @@ Movement:
 		No air acceleration
 		
 Tools:
+	Suggestion: A goal should be to make it still fun to play even if everyone is using the built-in aimbot.
 	Slots for 4 tools
 	Tools are user configured using tool files.
 	Tools are partially map configured.
@@ -89,6 +90,8 @@ Modes will be provided that allow or disallow client scripting.
 
 
 Player visibility:
+	Invisibility powerup doesn't send player's coordinates to other players. The player is truly invisible.
+	Positional sounds require sending the enemy's coordinates to the client. A way to get around this is to add a random offset to the position the enemy is in for the purpose of sound positioning. This would be done server side. When the player is visible, no random offset is added.
 	Option 1: Could I render the scene, including all players, then rerender the players and check if any pixel is visible to the current player? This check would be done from the perspective of each player. The problem with this is it requires the server to render the scene to check visibility. A way to reduce the server load is to only render fragments that contain players, sort of like a bit blit. This also requires the resolution to be comparable to the client's resolution. This is the brute force approach.
 		1.  Turn on depth test.
 		2.  Render scene using default fragment shader.

@@ -5,6 +5,8 @@
 #include "types.h"
 #include "common.h"
 
+int log_callback_updateLogLevel(cfg2_var_t *var, const char *command);
+
 void log_info(const char *function, const char *fmt, ...);
 void log_warning(const char *function, const char *fmt, ...);
 void log_error(const char *function, const char *fmt, ...);

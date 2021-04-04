@@ -45,7 +45,7 @@ Server will know the whole game state. Client will (ideally) only know what it c
 
 The client will setup the I/O, and then run the game script. The script will periodically call functions that the client provides.
 The server will run the game script. The script will periodically call functions that the server provides.
-The script is somewhat in charge of the framerate. I may or may not change that in the future. We don't want people mining Bitcoin in other people's games.
+!The script is somewhat in charge of the framerate. I may or may not change that in the future. We don't want people mining Bitcoin in other people's games.
 
 I'm thinking of keeping all geometry inside the engine. I don't think the game code needs it, and it would be a hassle to transfer it to Lua. If the game code needs a normal, I'll let it have the normal. It doesn't need any more than that though. All collision detection will be done in the engine itself.
 
@@ -69,11 +69,12 @@ Do *any* config; lock restricted settings; start lua; do limited config
 !    load_map
 !        Load the map into the given entity tree.
 
-Lua may not execute config scripts, however, it may set config variables that it has permissions for.
+!Lua may not execute config scripts, however, it may set config variables that it has permissions for.
 
 Screenshots and videos both save as a dump of the game state. These game states can then be converted to images or videos.
+    It would be really cool to be able to take a screenshot and then render it later using ray tracing.
 
-Console will be fully integrated into the engine. No part of it will be in Lua. Lua can access the variables, but it cannot run commands.
+!Console will be fully integrated into the engine. No part of it will be in Lua. Lua can access the variables, but it cannot run commands.
 
 Client config vars will be initialized to whatever is required, but the server will then send additional vars to create. If a var already exists, it will be overwritten.
 
@@ -84,8 +85,8 @@ All objects are stored in a global array.
 All materials are stored in a global array.
 
 
-No entity truely contains any other entity. It may contain the addresses of several child entities, but the children will always be stored in the entity list.
-Models may be treated as a child entity, but they cannot contain other entities, and they may not be placed in the entity list.
+No entity truly contains any other entity. It may contain the addresses of several child entities, but the children will always be stored in the entity list.
+Models may be treated as a child entity, but they cannot contain other entities and may not be placed in the entity list.
 The entity list exists to keep track of all entities. It should prevent permanently lost entities that are unable to be freed, and it allows the game state to be sent to the client more easily and compactly. Once an entity is created, it will never be destroyed. It may be completely unlinked and placed on the deleted-entity list, but it will not be freed. When a new entity is asked for, the deleted-entity list will be checked first. If an entity is in that list, it will be resurrected and removed from that list. If the deleted-entity list is empty, a new entity will be created using malloc. Only during shutdown will the entities in the entity list be freed.
 Models may be created, but not freed until game shutdown.
 
@@ -389,7 +390,7 @@ The workspace is the place where the game can read and write.
 A mod is a directory with resources. If the engine finds Lua files that conflict, it will attempt to resolve the conflicts. If it fails, it will print an error declaring the mods incompatible and exit. If the engine finds config files that conflict, it will concatenate them together. All other files will be replaced by newer versions.
 PhysFS cannot do this. The proposed workaround is to either deal with that fact, or read the sensitive files into memory before other mods are loaded. The latter should work.
 Every time a mod is loaded:
-    Config files are concatenated.
+    Config files are merged.
     Lua files are stored in memory. Right before game start, each {c,s}main.lua file is run to determine if any files are unmodified or unused. Duplicates of unmodified files are discarded. Each time a file is `include`ed it is marked as used. Unused files are then discarded. The remaining duplicate files are diffed and merged. If there is an original and a derivative, then the derivative replaces the original. If there are two derivatives, then a three way merge will be done to the the result. If there are more than three files, the three way merge will be done recursively. The original file will remain the original for the merge. The resulting file will become one of the derivative files. The other derivative file in the merge will be one of the other derivatives to merge.
 `exec` and friends will check if *.cfg is stored in memory before checking on the file system.
 
@@ -401,7 +402,7 @@ Every time a mod is loaded:
     1.  Store "*.cfg" and "*.lua" in memory and mark as originals.
 6.  Load additional mods.
     1.  Store "*.cfg" and "*.lua" in memory and mark as duplicates.
-7.  Concatenate "*.cfg"s.
+7.  Merge "*.cfg"s.
     1. Execute "autoexec.cfg"
 8.  Execute "*.lua"s and discard "*.lua"s that never get called. Reset luaState.
 9.  Merge "*.lua"s.
@@ -415,6 +416,64 @@ ALL file I/O will go through PhysFS. The original autoexec in the engine directo
 Every game tick, ?main.lua is run. Right before the script is run, SDL events are dealt with. If there is a keyboard, mouse, etc. event, the input table in Lua will be filled with the result of these events.
 
 
+!I'm tempted to send the whole SDL_event structure to Lua.
+^^^ That's not how it works. It's a union.
+
+Lua:
+keys[]
+axes[{
+    value: integer
+    type: ("mouse", "joystick", "controller")
+}]
+
+axes[0] and axes[1] are mouse x and mouse y.
+
+Key binding will be done in the engine using the `bind` command.
+    bind mouse2 moveup
+    bind mouse2 moveup moveup
+    1.  Lua creates a control variable. When the variable is set, Lua will know to do an action.
+    2.  Bind that variable to a key. When that key is pressed, the variable is set. When the key is released, the variable is cleared. If a second variable is given, then only that variable will be cleared.
+    3.  Lua does something with that variable. It is possible that setting the variable runs a Lua function.
+
+`vstr` is going to be a must. A prerequisite for this is putting multiple commands on one line, putting strings and subcommands in quotes, and escaping quotes and linebreaks.
+
+# A primitive rocket jump script.
+rocketJump_d "moveup 1 ; attack 1"
+rocketJump_u "moveup 0 ; attack 0"
+# Since a command is executed, no variable is set or cleared.
+bind mouse3 "vstr rocketJump_d" "vstr rocketJump_u"
+
+# When rail is selected, kill mouse accel for the first shot, but add it afterward for an easy escape.
+bind w "weapon 7 ; sensitivity 1 ; cl_mouseAccel 0 ; bind mouse1 \"attack 1 ; sensitivity 1 ; cl_mouseAccel 0.3\" \"attack 0\""
+
+# This is valid, but `set` may return an error and/or not execute the scripts.
+set "set attack 1" "ifdef server exec extra.cfg"
+
+What I got from this: Binding can be done in the engine, and Lua doesn't necessarily need to know the physical keys. I think I will let Lua peek at them anyway.
+This is getting complicated.
+
+!Commands marked with "`" will be executed before the rest of the command. They can be escaped.
+!set `ifdef server return 2 ; ifdef client return 5`
+
+Joysticks are given a number that corresponds to the order in which they are connected. Is this fine, or do I need to recognize/be told which joystick is in the right hand and which joystick is in the left hand? I could add a Lua function that can move joystick numbers around. Lua would ask the user to push a button on stick 0, stick 1, etc. and then reorder the sticks' numbers to keep the bindings correct.
+
+Question for Josh: Do games normally remember which controller you used with which hand?
+
+I might not add keybinding into the scripting language due to the complicated representation of buttons. I would have to give names to all the buttons. I think I'll try first and see if it works. I'll see if I can do it procedurally.
+
+type
+    k
+    j
+    c
+    m
+device (Joysticks and controllers only)
+    <device number>
+key
+    <key code/key name/button index>
+
+Naming format: <type><device>_<key>
+
+
 
 Graphics stuff I dream of adding:
     Light map?
@@ -425,6 +484,7 @@ Graphics stuff I dream of adding:
     HDR or similar
     Ray tracing or similar
     Parallax mapping
+    Portals
 
 Files to rewrite when it is somewhat working:
     obj
@@ -471,8 +531,14 @@ Files to rewrite when it is somewhat working:
     [ ] (All) Execute cached/merged files instead of latest files.
 ------------------------------------------------------------------
 [/] (Client) Get keyboard input
+    [*] Get keys from SDL2.
+    [/] Implement key binding.
+        [ ] Create `bind` scripting command.
+    [ ] Send keys to Lua.
+        [ ] Allow Lua to manipulate and read scripting variables and callbacks.
 [/] (Client) Get mouse input
 [ ] (Client) Send input
+    [ ] Allow Lua to send arbitrary network messages using unreliable packets.
 ![ ] (All)    Get on those TODOs (ugly ones)
 [ ] (Server) Receive input
 [ ] (Server) Make an entity move based on input
@@ -501,6 +567,7 @@ Expected leaks:
 Remember this:
     git status | grep modified: | sed 's/\tmodified:   //'
 
-Disallow bytecode.
+Disallow Lua bytecode.
 Allow ^C after the engine has shutdown.
-
+Exec files using a path relative to the current file's directory.
+Hotplugging joysticks and controllers gives wrong ID.

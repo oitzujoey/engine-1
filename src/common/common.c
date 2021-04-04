@@ -6,6 +6,7 @@
 #include "terminal.h"
 #include "vfs.h"
 #include "network.h"
+#include "log.h"
 
 int error;
 
@@ -315,6 +316,18 @@ const cfg2_var_init_t g_commonVarInit[] = {
 		.permissionDelete = cfg2_admin_supervisor,
 		.permissionCallback = cfg2_admin_supervisor,
 		.callback = terminal_callback_updateCommandHistoryLength
+	},
+	{
+		.name = CFG_LOG_LEVEL,
+		.vector = 0,
+		.integer = CFG_LOG_LEVEL_DEFAULT,
+		.string = "",
+		.type = cfg2_var_type_integer,
+		.permissionRead = cfg2_admin_game,
+		.permissionWrite = cfg2_admin_game,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = log_callback_updateLogLevel
 	},
 	{
 		.name = NULL,
