@@ -18,11 +18,16 @@ int cfg2_callback_su(cfg2_var_t *var, const char *command);
 int cfg2_callback_add(cfg2_var_t *var, const char *command);
 int cfg2_callback_sub(cfg2_var_t *var, const char *command);
 int cfg2_callback_if(cfg2_var_t *var, const char *command);
+int cfg2_callback_command(cfg2_var_t *var, const char *command);
+int cfg2_callback_delete(cfg2_var_t *var, const char *command);
 
 int cfg2_callback_maxRecursion(cfg2_var_t *var, const char *command);
 
+int cfg2_callback_callbackScript(cfg2_var_t *var, const char *command);
+
 int cfg2_printVar(cfg2_var_t *var, const char *tag);
 int cfg2_createVariable(cfg2_var_t *var, const char *name, cfg2_var_type_t type, cfg2_admin_t adminLevel);
+int cfg2_deleteVariable(cfg2_var_t *var);
 cfg2_var_t *cfg2_findVar(const char *name);
 int cfg2_setVariable(cfg2_var_t *var, const char *value, const char *tag);
 void cfg2_init(lua_State *luaState);

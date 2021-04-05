@@ -465,7 +465,7 @@ int cfg2_callback_vars(cfg2_var_t *var, const char *command) {
 			}
 		}
 		else {
-			warning("Insufficient permission to read variable \"%s\".", g_cfg2.vars[i].name);
+			error("Insufficient permission to read variable \"%s\".", g_cfg2.vars[i].name);
 		}
 	}
 	
@@ -536,13 +536,13 @@ int cfg2_callback_copy(cfg2_var_t *var, const char *command) {
 	}
 	
 	if (g_cfg2.adminLevel < var1->permissionWrite) {
-		warning("Insufficient permission to write variable \"%s\".", var1->name);
+		error("Insufficient permission to write variable \"%s\".", var1->name);
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	if (g_cfg2.adminLevel < var2->permissionRead) {
-		warning("Insufficient permission to read variable \"%s\".", var2->name);
+		error("Insufficient permission to read variable \"%s\".", var2->name);
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
@@ -766,13 +766,13 @@ int cfg2_callback_add(cfg2_var_t *var, const char *command) {
 	}
 	
 	if (g_cfg2.adminLevel < var1->permissionWrite) {
-		warning("Insufficient permission to write variable \"%s\".", var1->name);
+		error("Insufficient permission to write variable \"%s\".", var1->name);
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	if (g_cfg2.adminLevel < var2->permissionRead) {
-		warning("Insufficient permission to read variable \"%s\".", var2->name);
+		error("Insufficient permission to read variable \"%s\".", var2->name);
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
@@ -907,13 +907,13 @@ int cfg2_callback_sub(cfg2_var_t *var, const char *command) {
 	}
 	
 	if (g_cfg2.adminLevel < var1->permissionWrite) {
-		warning("Insufficient permission to write variable \"%s\".", var1->name);
+		error("Insufficient permission to write variable \"%s\".", var1->name);
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	if (g_cfg2.adminLevel < var2->permissionRead) {
-		warning("Insufficient permission to read variable \"%s\".", var2->name);
+		error("Insufficient permission to read variable \"%s\".", var2->name);
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
@@ -1075,6 +1075,135 @@ int cfg2_callback_if(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
+int cfg2_callback_command(cfg2_var_t *var, const char *command) {
+	int error = ERR_CRITICAL;
+	
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+	
+	char *arg1 = NULL, *arg2 = NULL;
+	cfg2_var_t *var1 = NULL;
+	
+	char *commandCopy = malloc((strlen(command) + 1) * sizeof(char));
+	if (commandCopy == NULL) {
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	strcpy(commandCopy, command);
+	
+	// Now execute the command.
+	arg1 = strtok(commandCopy, " ");
+	if (arg1 == NULL) {
+		warning("Bad syntax for command \"%s\". (1)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	arg2 = strtok(NULL, " ");
+	if (arg2 == NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	// I'm doing this wrong. D: I need to write a proper string library.
+	arg2 = arg1 + strlen(arg1) + 1 + (command - commandCopy);
+	
+	// Find var to set.
+	var1 = cfg2_findVar(arg1);
+	if (var1 == NULL) {
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
+	// Set var's script string.
+	error = str2_copyMalloc(&var1->script, arg2);
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	// Set callback.
+	var1->callback = cfg2_callback_callbackScript;
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	free(commandCopy);
+	
+	return error;
+}
+
+int cfg2_callback_delete(cfg2_var_t *var, const char *command) {
+	int error = ERR_CRITICAL;
+	
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+	
+	// At this point, var->command has been set to the command string. Nothing else has been modified.
+	
+	// // First, let's get rid of var->name in the string.
+	// char *start = strchr(var->command, ' ') + 1;
+	// int offset = start - var->command;
+	char *arg1 = NULL, *arg2 = NULL;
+	cfg2_var_t *var1 = NULL;
+	
+	char *commandCopy = malloc((strlen(command) + 1) * sizeof(char));
+	if (commandCopy == NULL) {
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	strcpy(commandCopy, command);
+	
+	// // Delete var->name + ' '.
+	// for (int i = 0; i < strlen(var->command) + 1 - offset; i++) {
+	// 	var->command[i] = var->command[i + offset];
+	// }
+	
+	// Now execute the command.
+	arg1 = strtok(commandCopy, " ");
+	if (arg1 == NULL) {
+		warning("Bad syntax for command \"%s\". (1)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	arg2 = strtok(NULL, " ");
+	if (arg2 != NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	// Find variable.
+	var1 = cfg2_findVar(arg1);
+	if (var1 == NULL) {
+		warning("Variable \"%s\" does not exist.", arg1);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	// Delete variable.
+	error = cfg2_deleteVariable(var1);
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	free(commandCopy);
+	
+	return error;
+}
+
 /* cfg2 variable callbacks */
 /* ======================= */
 
@@ -1090,6 +1219,12 @@ int cfg2_callback_maxRecursion(cfg2_var_t *var, const char *command) {
 	return ERR_OK;
 }
 
+/* cfg2 variable callbacks */
+/* ======================= */
+
+int cfg2_callback_callbackScript(cfg2_var_t *var, const char *command) {
+	return cfg2_execString(var->script, NULL);
+}
 
 /* cfg2 functions */
 /* ============== */
@@ -1361,6 +1496,7 @@ int cfg2_createVariables(const cfg2_var_init_t *varInit) {
 		g_cfg2.vars[i + g_cfg2.vars_length].permissionWrite = varInit[i].permissionWrite;
 		g_cfg2.vars[i + g_cfg2.vars_length].type = varInit[i].type;
 		g_cfg2.vars[i + g_cfg2.vars_length].vector = varInit[i].vector;
+		g_cfg2.vars[i + g_cfg2.vars_length].script = NULL;
 		// Copy the strings, since free won't like them.
 		
 		g_cfg2.vars[i + g_cfg2.vars_length].name = malloc((strlen(varInit[i].name) + 1) * sizeof(char));
@@ -1409,6 +1545,7 @@ void cfg2_free(void) {
 		// insane_free(g_cfg2.vars[i].command);
 		insane_free(g_cfg2.vars[i].string);
 		// string_free(&g_cfg2.vars[i].string);
+		insane_free(g_cfg2.vars[i].script);
 	}
 	insane_free(g_cfg2.vars);
 	g_cfg2.vars_length = 0;

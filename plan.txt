@@ -438,16 +438,16 @@ Key binding will be done in the engine using the `bind` command.
 `vstr` is going to be a must. A prerequisite for this is putting multiple commands on one line, putting strings and subcommands in quotes, and escaping quotes and linebreaks.
 
 # A primitive rocket jump script.
-rocketJump_d "moveup 1 ; attack 1"
-rocketJump_u "moveup 0 ; attack 0"
+command rocketJump_d moveup 1 ; attack 1
+command rocketJump_u moveup 0 ; attack 0
 # Since a command is executed, no variable is set or cleared.
-bind mouse3 "vstr rocketJump_d" "vstr rocketJump_u"
+bind mouse3 rocketJump_d rocketJump_u
 
-# When rail is selected, kill mouse accel for the first shot, but add it afterward for an easy escape.
-bind w "weapon 7 ; sensitivity 1 ; cl_mouseAccel 0 ; bind mouse1 \"attack 1 ; sensitivity 1 ; cl_mouseAccel 0.3\" \"attack 0\""
+!# When rail is selected, kill mouse accel for the first shot, but add it afterward for an easy escape.
+!bind w "weapon 7 ; sensitivity 1 ; cl_mouseAccel 0 ; bind mouse1 \"attack 1 ; sensitivity 1 ; cl_mouseAccel 0.3\" \"attack 0\""
 
-# This is valid, but `set` may return an error and/or not execute the scripts.
-set "set attack 1" "ifdef server exec extra.cfg"
+!# This is valid, but `set` may return an error and/or not execute the scripts.
+!set "set attack 1" "ifdef server exec extra.cfg"
 
 What I got from this: Binding can be done in the engine, and Lua doesn't necessarily need to know the physical keys. I think I will let Lua peek at them anyway.
 This is getting complicated.
@@ -533,6 +533,7 @@ Files to rewrite when it is somewhat working:
 [/] (Client) Get keyboard input
     [*] Get keys from SDL2.
     [/] Implement key binding.
+        [*] Create scripting command that sets callbacks.
         [ ] Create `bind` scripting command.
     [ ] Send keys to Lua.
         [ ] Allow Lua to manipulate and read scripting variables and callbacks.

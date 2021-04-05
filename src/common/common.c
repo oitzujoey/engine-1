@@ -216,6 +216,30 @@ const cfg2_var_init_t g_commonVarInit[] = {
 		.permissionCallback = cfg2_admin_supervisor,
 		.callback = vfs_callback_loadMod
 	},
+	{
+		.name = "command",
+		.vector = 0,
+		.integer = 0,
+		.string = "",
+		.type = cfg2_var_type_none,
+		.permissionRead = cfg2_admin_supervisor,
+		.permissionWrite = cfg2_admin_game,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = cfg2_callback_command
+	},
+	{
+		.name = "delete",
+		.vector = 0,
+		.integer = 0,
+		.string = "",
+		.type = cfg2_var_type_none,
+		.permissionRead = cfg2_admin_supervisor,
+		.permissionWrite = cfg2_admin_game,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = cfg2_callback_delete
+	},
 	// Variables
 #ifdef LINUX
 	{
