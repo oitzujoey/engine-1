@@ -438,8 +438,8 @@ Key binding will be done in the engine using the `bind` command.
 `vstr` is going to be a must. A prerequisite for this is putting multiple commands on one line, putting strings and subcommands in quotes, and escaping quotes and linebreaks.
 
 # A primitive rocket jump script.
-command rocketJump_d moveup 1 ; attack 1
-command rocketJump_u moveup 0 ; attack 0
+command rocketJump_d moveup 1, attack 1
+command rocketJump_u moveup 0, attack 0
 # Since a command is executed, no variable is set or cleared.
 bind mouse3 rocketJump_d rocketJump_u
 
@@ -472,6 +472,8 @@ key
     <key code/key name/button index>
 
 Naming format: <type><device>_<key>
+
+Semicolons separate commands. Commas separate arguments in commands that accept scripts. These commas are then converted to semicolons when the argument is stored or executed. Think of it as lazy escaping, because that's essentially what it is. Quotes are too time consuming at the moment.
 
 
 
@@ -572,3 +574,4 @@ Disallow Lua bytecode.
 Allow ^C after the engine has shutdown.
 Exec files using a path relative to the current file's directory.
 Hotplugging joysticks and controllers gives wrong ID.
+Note: SDL_IsGameController seems to cause lag when run in the main game loop.

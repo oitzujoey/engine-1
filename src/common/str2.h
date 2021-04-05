@@ -15,5 +15,6 @@ int str2_removeWhitespace(char *line, const char *config);
 // const str2_t *str2_const(const char *chars);
 int str2_print(const char *s);
 int str2_tokenizeMalloc(char ***tokens, size_t *length, const char *string, const char *delimiters);
+void str2_replaceChar(char * const s, const char find, const char replace);
 
 #endif

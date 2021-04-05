@@ -218,6 +218,7 @@ int str2_removeWhitespace(char *line, const char *config) {
 	else {
 		startindex = gap;
 	}
+	line[endlength] = '\0';
 	
 	/* Remove end whitespace. */
 	gap = 0;
@@ -244,6 +245,10 @@ int str2_removeWhitespace(char *line, const char *config) {
 				}
 				else {
 					sawspace = true;
+					if (gap) {
+						line[i - gap] = line[i];
+						sawspace = false;
+					}
 				}
 			}
 			else {
@@ -252,6 +257,7 @@ int str2_removeWhitespace(char *line, const char *config) {
 			}
 		}
 	}
+	endlength -= gap;
 	
 	/* Normalize the resulting string since we did a major surgery on it. */
 	line[endlength] = '\0';
@@ -278,4 +284,14 @@ int str2_print(const char *s) {
 	              COLOR_BLUE"[length] "COLOR_CYAN"%zu"COLOR_NORMAL" ; "
 	              COLOR_BLUE"[value] "COLOR_CYAN"\"%s\""COLOR_NORMAL"\n",
 	              strlen(s), s);
+}
+
+void str2_replaceChar(char * const s, const char find, const char replace) {
+	size_t length = strlen(s);
+	
+	for (int i = 0; i < length; i++) {
+		if (s[i] == find) {
+			s[i] = replace;
+		}
+	}
 }

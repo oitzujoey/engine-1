@@ -251,6 +251,9 @@ int cfg2_callback_ifdef(cfg2_var_t *var, const char *command) {
 		goto cleanup_l;
 	}
 	
+	// Convert ',' to ';'.
+	str2_replaceChar(arg2, ',', ';');
+	
 	error = cfg2_execString(arg2, NULL);
 	// No variable pointers are safe beyond this point.
 	if (error) {
@@ -1061,6 +1064,9 @@ int cfg2_callback_if(cfg2_var_t *var, const char *command) {
 		goto cleanup_l;
 	}
 	
+	// Convert ',' to ';'.
+	str2_replaceChar(arg2, ',', ';');
+	
 	error = cfg2_execString(arg2, NULL);
 	// No variable pointers are safe beyond this point.
 	if (error) {
@@ -1125,6 +1131,9 @@ int cfg2_callback_command(cfg2_var_t *var, const char *command) {
 	if (error) {
 		goto cleanup_l;
 	}
+	
+	// Convert ',' to ';'.
+	str2_replaceChar(var1->script, ',', ';');
 	
 	// Set callback.
 	var1->callback = cfg2_callback_callbackScript;
@@ -1557,8 +1566,12 @@ int cfg2_execString(const char *line, const char *tag) {
 	cfg2_var_t *var;
 	
 	char *lineCopy = NULL;
+	char **commands = NULL;
 	char *varName = NULL;
 	char *value = NULL;
+	size_t numCommands = 0;
+	char *strtokPtr = NULL;
+	size_t commandLength;
 	
 	if (g_cfg2.recursionDepth >= g_cfg2.maxRecursion) {
 		error("Reached limit of %i recursions.", g_cfg2.recursionDepth);
@@ -1566,57 +1579,88 @@ int cfg2_execString(const char *line, const char *tag) {
 		goto cleanup_l;
 	}
 	
-	str2_copyMalloc(&lineCopy, line);
-	varName = strtok(lineCopy, " ");
-	if (varName == NULL) {
-		error("Bad syntax.", "");
-		error = ERR_GENERIC;
+	error = str2_copyMalloc(&lineCopy, line);
+	if (error) {
 		goto cleanup_l;
 	}
 	
-	value = varName + strlen(varName) + 1;
-	if (value - lineCopy > strlen(line)) {
-		value = NULL;
-	}
-	// else {
-		// value.length = strlen(value.value);
-	// }
-	
-	// index = string_index_of(line, 0, ' ');
-	// string_substring(&varName, line, 0, index - 0);
-	// if (index >= 0) {
-	// 	string_substring(&value, line, index + 1, -1);
-	// }
-	// else {
-	// 	str2_copy_c(&value, "");
-	// }
-	
-	var = cfg2_findVar(varName);
-	if (var == NULL) {
-		error("Variable \"%s\" does not exist.", varName);
-		error = ERR_GENERIC;
-		goto cleanup_l;
+	while (1) {
+		strtokPtr = strtok(numCommands ? NULL : lineCopy, ";");
+		if (strtokPtr == NULL) {
+			break;
+		}
+		else {
+			numCommands++;
+		}
+		
+		commands = realloc(commands, numCommands * sizeof(char *));
+		if (commands == NULL) {
+			critical_error("Out of memory.", "");
+			error = ERR_OUTOFMEMORY;
+			goto cleanup_l;
+		}
+		
+		commands[numCommands - 1] = strtokPtr;
 	}
 	
-	// Curse you strtok.
-	if (value == NULL) {
-		error = str2_copyMalloc(&value, "");
+	for (int i = 0; i < numCommands; i++) {
+		str2_removeWhitespace(commands[i], "melt");
+		
+		commandLength = strlen(commands[i]);
+		
+		varName = strtok(commands[i], " ");
+		if (varName == NULL) {
+			error("Bad syntax.", "");
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		}
+		
+		value = varName + strlen(varName) + 1;
+		if (value - commands[i] > strlen(line)) {
+			value = NULL;
+		}
+		// else {
+			// value.length = strlen(value.value);
+		// }
+		
+		// index = string_index_of(line, 0, ' ');
+		// string_substring(&varName, line, 0, index - 0);
+		// if (index >= 0) {
+		// 	string_substring(&value, line, index + 1, -1);
+		// }
+		// else {
+		// 	str2_copy_c(&value, "");
+		// }
+		
+		var = cfg2_findVar(varName);
+		if (var == NULL) {
+			error("Variable \"%s\" does not exist.", varName);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		}
+		
+		// Curse you strtok.
+		if ((value == NULL) || (value > commands[i] + commandLength)) {
+			value = NULL;
+			error = str2_copyMalloc(&value, "");
+			if (error) {
+				goto cleanup_l;
+			}
+			error = cfg2_setVariable(var, value, tag);
+			insane_free(value);
+		}
+		else {
+			error = cfg2_setVariable(var, value, tag);
+		}
 		if (error) {
 			goto cleanup_l;
 		}
-		error = cfg2_setVariable(var, value, tag);
-		insane_free(value);
-	}
-	else {
-		error = cfg2_setVariable(var, value, tag);
-	}
-	if (error) {
-		goto cleanup_l;
 	}
 	
 	error = ERR_OK;
 	cleanup_l:
 	
+	insane_free(commands);
 	insane_free(lineCopy);
 	// insane_free(varName);
 	// insane_free(value);
