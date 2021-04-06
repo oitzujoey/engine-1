@@ -534,9 +534,9 @@ Files to rewrite when it is somewhat working:
 ------------------------------------------------------------------
 [/] (Client) Get keyboard input
     [*] Get keys from SDL2.
-    [/] Implement key binding.
+    [*] Implement key binding.
         [*] Create scripting command that sets callbacks.
-        [ ] Create `bind` scripting command.
+        [*] Create `bind` scripting command.
     [ ] Send keys to Lua.
         [ ] Allow Lua to manipulate and read scripting variables and callbacks.
 [/] (Client) Get mouse input

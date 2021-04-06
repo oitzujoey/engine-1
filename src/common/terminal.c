@@ -25,7 +25,7 @@ void terminal_logCommandFrequency(const char *line);
 /* Terminal callbacks */
 /* ================== */
 
-int terminal_callback_updateCommandHistoryLength(cfg2_var_t *var, const char *command) {
+int terminal_callback_updateCommandHistoryLength(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	static int lastLength = CFG_HISTORY_LENGTH_DEFAULT;
@@ -308,7 +308,7 @@ static int terminal_enterCompletion(char **line) {
 	return error;
 }
 
-int terminal_runTerminalCommand(void) {
+int terminal_runTerminalCommand(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 
 	static bool printedPrompt = false;
@@ -458,7 +458,7 @@ int terminal_runTerminalCommand(void) {
 			// The terminal has its own adminLevel.
 			g_cfg2.adminLevel = adminLevel;
 			g_cfg2.recursionDepth = 0;
-			error = cfg2_execString(g_consoleCommand, "console");
+			error = cfg2_execString(g_consoleCommand, luaState, "console");
 			// adminLevel may have been modified by a command.
 			adminLevel = g_cfg2.adminLevel;
 			g_cfg2.adminLevel = tempAdminLevel;

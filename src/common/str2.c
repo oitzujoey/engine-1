@@ -106,6 +106,26 @@ int str2_concatenateMalloc(char **destination, const char *source) {
 	return error;
 }
 
+int str2_concatenateCharMalloc(char **destination, const char source) {
+	int error = ERR_CRITICAL;
+	
+	size_t destination_length = strlen(*destination);
+	
+	error = str2_realloc(destination, strlen(*destination) + 1);
+	if (error) {
+		goto cleanup_l;
+	}
+	destination_length++;
+	
+	(*destination)[destination_length - 1] = source;
+	(*destination)[destination_length] = '\0';
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
+}
+
 int str2_tokenizeMalloc(char ***tokens, size_t *length, const char *string, const char *delimiters) {
 	int error = ERR_CRITICAL;
 

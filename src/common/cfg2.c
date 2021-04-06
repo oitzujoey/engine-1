@@ -6,6 +6,10 @@
 #include "file.h"
 #include "physfs.h"
 
+#ifdef CLIENT
+#include "../client/input.h"
+#endif
+
 /*
 It might be better to use Lua for all my configuration.
 
@@ -98,7 +102,7 @@ cfg2_t g_cfg2;
 /* cfg2 commands */
 /* ============= */
 
-int cfg2_callback_set(cfg2_var_t *var, const char *command) {
+int cfg2_callback_set(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -193,7 +197,7 @@ int cfg2_callback_set(cfg2_var_t *var, const char *command) {
 	
 	// Run callback.
 	if (var1->callback != NULL) {
-		error = var1->callback(var1, arg2);
+		error = var1->callback(var1, arg2, luaState);
 		if (error) {
 			goto cleanup_l;
 		}
@@ -207,7 +211,7 @@ int cfg2_callback_set(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
-int cfg2_callback_ifdef(cfg2_var_t *var, const char *command) {
+int cfg2_callback_ifdef(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -254,7 +258,7 @@ int cfg2_callback_ifdef(cfg2_var_t *var, const char *command) {
 	// Convert ',' to ';'.
 	str2_replaceChar(arg2, ',', ';');
 	
-	error = cfg2_execString(arg2, NULL);
+	error = cfg2_execString(arg2, luaState, NULL);
 	// No variable pointers are safe beyond this point.
 	if (error) {
 		goto cleanup_l;
@@ -268,7 +272,7 @@ int cfg2_callback_ifdef(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
-int cfg2_callback_exec(cfg2_var_t *var, const char *command) {
+int cfg2_callback_exec(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -315,7 +319,7 @@ int cfg2_callback_exec(cfg2_var_t *var, const char *command) {
 	// Execute file.
 	
 	g_cfg2.recursionDepth++;
-	cfg2_execFile(arg1);
+	cfg2_execFile(arg1, luaState);
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -325,7 +329,7 @@ int cfg2_callback_exec(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
-int cfg2_callback_create(cfg2_var_t *var, const char *command) {
+int cfg2_callback_create(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -396,8 +400,8 @@ int cfg2_callback_create(cfg2_var_t *var, const char *command) {
 		goto cleanup_l;
 	}
 	
-	info("Creating %s \"%s\" with permission level %i.", arg1, arg2, g_cfg2.adminLevel);
-	cfg2_createVariable(var2, arg2, type2, g_cfg2.adminLevel);
+	info("Creating %s \"%s\" with permission level %i.", arg1, arg2, g_cfg2.adminLevelDisguise);
+	cfg2_createVariable(var2, arg2, type2, g_cfg2.adminLevelDisguise);
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -407,7 +411,7 @@ int cfg2_callback_create(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
-int cfg2_callback_quit(cfg2_var_t *var, const char *command) {
+int cfg2_callback_quit(cfg2_var_t *var, const char *command, lua_State *luaState) {
 
 	// Prevent execution on creation.
 	static int created = 0;
@@ -421,7 +425,7 @@ int cfg2_callback_quit(cfg2_var_t *var, const char *command) {
 	return ERR_OK;
 }
 
-int cfg2_callback_vars(cfg2_var_t *var, const char *command) {
+int cfg2_callback_vars(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 
 	// Prevent execution on creation.
@@ -478,7 +482,7 @@ int cfg2_callback_vars(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
-int cfg2_callback_copy(cfg2_var_t *var, const char *command) {
+int cfg2_callback_copy(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -651,7 +655,7 @@ int cfg2_callback_copy(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
-int cfg2_callback_adminLevel(cfg2_var_t *var, const char *command) {
+int cfg2_callback_adminLevel(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	
 	// Prevent execution on creation.
 	static bool created = false;
@@ -665,7 +669,7 @@ int cfg2_callback_adminLevel(cfg2_var_t *var, const char *command) {
 	return ERR_OK;
 }
 
-int cfg2_callback_su(cfg2_var_t *var, const char *command) {
+int cfg2_callback_su(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -701,6 +705,8 @@ int cfg2_callback_su(cfg2_var_t *var, const char *command) {
 		warning("You are now in supervisor mode. All variables are unlocked.", "");
 	}
 	
+	g_cfg2.adminLevelDisguise = g_cfg2.adminLevel;
+	
 	printf(COLOR_CYAN"You are a level %i admin."COLOR_NORMAL"\n", g_cfg2.adminLevel);
 	
 	error = ERR_OK;
@@ -709,7 +715,47 @@ int cfg2_callback_su(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
-int cfg2_callback_add(cfg2_var_t *var, const char *command) {
+int cfg2_callback_suDisguise(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+	
+	if (g_cfg2.adminLevel < cfg2_admin_administrator) {
+		warning("Cannot elevate privileges from game.", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	if (strcmp(command, "")) {
+		g_cfg2.adminLevelDisguise = strtol(command, NULL, 10);
+		if (g_cfg2.adminLevelDisguise < cfg2_admin_game) {
+			g_cfg2.adminLevelDisguise = cfg2_admin_game;
+		}
+		if (g_cfg2.adminLevelDisguise > cfg2_admin_supervisor) {
+			g_cfg2.adminLevelDisguise = cfg2_admin_supervisor;
+		}
+	}
+	else if (g_cfg2.adminLevelDisguise == cfg2_admin_administrator) {
+		g_cfg2.adminLevelDisguise = cfg2_admin_supervisor;
+	}
+	else if (g_cfg2.adminLevelDisguise == cfg2_admin_supervisor) {
+		g_cfg2.adminLevelDisguise = cfg2_admin_administrator;
+	}
+	
+	printf(COLOR_CYAN"You are a pretend level %i admin."COLOR_NORMAL"\n", g_cfg2.adminLevelDisguise);
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
+}
+
+int cfg2_callback_add(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -850,7 +896,7 @@ int cfg2_callback_add(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
-int cfg2_callback_sub(cfg2_var_t *var, const char *command) {
+int cfg2_callback_sub(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -991,7 +1037,7 @@ int cfg2_callback_sub(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
-int cfg2_callback_if(cfg2_var_t *var, const char *command) {
+int cfg2_callback_if(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -1067,7 +1113,7 @@ int cfg2_callback_if(cfg2_var_t *var, const char *command) {
 	// Convert ',' to ';'.
 	str2_replaceChar(arg2, ',', ';');
 	
-	error = cfg2_execString(arg2, NULL);
+	error = cfg2_execString(arg2, luaState, NULL);
 	// No variable pointers are safe beyond this point.
 	if (error) {
 		goto cleanup_l;
@@ -1081,7 +1127,97 @@ int cfg2_callback_if(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
-int cfg2_callback_command(cfg2_var_t *var, const char *command) {
+int cfg2_callback_ifn(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+	
+	char *arg1 = NULL, *arg2 = NULL;
+	cfg2_var_t *var1 = NULL;
+	
+	char *commandCopy = malloc((strlen(command) + 1) * sizeof(char));
+	if (commandCopy == NULL) {
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	strcpy(commandCopy, command);
+	
+	// Now execute the command.
+	arg1 = strtok(commandCopy, " ");
+	if (arg1 == NULL) {
+		warning("Bad syntax for command \"%s\". (1)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	arg2 = strtok(NULL, " ");
+	if (arg2 == NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	// I'm doing this wrong. D: I need to write a proper string library.
+	arg2 = arg1 + strlen(arg1) + 1 + (command - commandCopy);
+	
+	var1 = cfg2_findVar(arg1);
+	if (var1 == NULL) {
+		warning("Variable \"%s\" does not exist.", arg1);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	switch (var1->type) {
+	case cfg2_var_type_none:
+		error = ERR_OK;
+		goto cleanup_l;
+	case cfg2_var_type_vector:
+		if (var1->vector != 0.0) {
+			error = ERR_OK;
+			goto cleanup_l;
+		}
+		break;
+	case cfg2_var_type_integer:
+		if (var1->integer != 0) {
+			error = ERR_OK;
+			goto cleanup_l;
+		}
+		break;
+	case cfg2_var_type_string:
+		if (strcmp(var1->string, "")) {
+			error = ERR_OK;
+			goto cleanup_l;
+		}
+		break;
+	default:
+		critical_error("Can't happen. Type is %i", var1->type);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	// Convert ',' to ';'.
+	str2_replaceChar(arg2, ',', ';');
+	
+	error = cfg2_execString(arg2, luaState, NULL);
+	// No variable pointers are safe beyond this point.
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	free(commandCopy);
+	
+	return error;
+}
+
+int cfg2_callback_command(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -1146,7 +1282,7 @@ int cfg2_callback_command(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
-int cfg2_callback_delete(cfg2_var_t *var, const char *command) {
+int cfg2_callback_delete(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// Prevent execution on creation.
@@ -1213,10 +1349,92 @@ int cfg2_callback_delete(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
+#ifdef CLIENT
+
+int cfg2_callback_bind(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+	
+	char *arg1 = NULL, *arg2 = NULL, *arg3 = NULL, *arg4 = NULL;
+	cfg2_var_t *var2 = NULL, *var3 = NULL;
+	
+	char *commandCopy = malloc((strlen(command) + 1) * sizeof(char));
+	if (commandCopy == NULL) {
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	strcpy(commandCopy, command);
+	
+	// Now execute the command.
+	arg1 = strtok(commandCopy, " ");
+	if (arg1 == NULL) {
+		warning("Bad syntax for command \"%s\". (1)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	arg2 = strtok(NULL, " ");
+	if (arg2 == NULL) {
+		warning("Bad syntax for command \"%s\". (2)", var->name);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	
+	arg3 = strtok(NULL, " ");
+	if (arg3 != NULL) {
+		arg4 = strtok(NULL, " ");
+		if (arg4 != NULL) {
+			warning("Bad syntax for command \"%s\". (4)", var->name);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		}
+	}
+	
+	// Make sure variables exist. Functions can be added later since we are only storing the variable names and not the scripts themselves.
+	var2 = cfg2_findVar(arg2);
+	if (var2 == NULL) {
+		warning("Variable \"%s\" does not exist.", arg2);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	if (arg3 != NULL) {
+		var3 = cfg2_findVar(arg3);
+		if (var3 == NULL) {
+			warning("Variable \"%s\" does not exist.", arg2);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		}
+	}
+	
+	// Bind the command(s).
+	// arg3 can handle a NULL.
+	error = input_bind(arg1, arg2, arg3);
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	free(commandCopy);
+	
+	return error;
+}
+
+#endif
+
 /* cfg2 variable callbacks */
 /* ======================= */
 
-int cfg2_callback_maxRecursion(cfg2_var_t *var, const char *command) {
+int cfg2_callback_maxRecursion(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	
 	if (var->integer <= 0) {
 		var->integer = 1;
@@ -1231,8 +1449,8 @@ int cfg2_callback_maxRecursion(cfg2_var_t *var, const char *command) {
 /* cfg2 variable callbacks */
 /* ======================= */
 
-int cfg2_callback_callbackScript(cfg2_var_t *var, const char *command) {
-	return cfg2_execString(var->script, NULL);
+int cfg2_callback_callbackScript(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	return cfg2_execString(var->script, luaState, NULL);
 }
 
 /* cfg2 functions */
@@ -1350,7 +1568,7 @@ cfg2_var_t *cfg2_findVar(const char *name) {
 	return NULL;
 }
 
-int cfg2_setVariable(cfg2_var_t *var, const char *value, const char *tag) {
+int cfg2_setVariable(cfg2_var_t *var, const char *value, lua_State *luaState, const char *tag) {
 	int error = ERR_CRITICAL;
 	
 	if (strcmp(value, "") || ((var->type == cfg2_var_type_none) && (var->callback != NULL))) {
@@ -1392,7 +1610,7 @@ int cfg2_setVariable(cfg2_var_t *var, const char *value, const char *tag) {
 		
 		// Run callback.
 		if (var->callback != NULL) {
-			error = var->callback(var, value);
+			error = var->callback(var, value, luaState);
 			if (error) {
 				goto cleanup_l;
 			}
@@ -1442,7 +1660,7 @@ void cfg2_getInt(char *value, cfg2_var_t *var) {
 	value = var->string;
 }
 
-void cfg2_setCallback(cfg2_var_t *var, int (*callback)(cfg2_var_t *var, const char *command)) {
+void cfg2_setCallback(cfg2_var_t *var, int (*callback)(cfg2_var_t *var, const char *command, lua_State *luaState)) {
 
 	var->callback = NULL;
 	
@@ -1454,7 +1672,7 @@ void cfg2_setCallback(cfg2_var_t *var, int (*callback)(cfg2_var_t *var, const ch
 	var->callback = callback;
 }
 
-void cfg2_getCallback(int (*callback)(cfg2_var_t *var, const char *command), cfg2_var_t *var) {
+void cfg2_getCallback(int (*callback)(cfg2_var_t *var, const char *command, lua_State *luaState), cfg2_var_t *var) {
 
 	if (g_cfg2.adminLevel < var->permissionCallback) {
 		warning("Permissions not high enough to read callback for variable %s.", var->name);
@@ -1466,10 +1684,10 @@ void cfg2_getCallback(int (*callback)(cfg2_var_t *var, const char *command), cfg
 
 void cfg2_init(lua_State *luaState) {
 	g_cfg2.adminLevel = cfg2_admin_supervisor;
+	g_cfg2.adminLevelDisguise = cfg2_admin_supervisor;
 	g_cfg2.quit = false;
 	g_cfg2.vars = NULL;
 	g_cfg2.vars_length = 0;
-	g_cfg2.luaState = luaState;
 	g_cfg2.maxRecursion = 0;
 	g_cfg2.recursionDepth = 0;
 }
@@ -1477,7 +1695,7 @@ void cfg2_init(lua_State *luaState) {
 /* cfg2_createVariables
 Create variables from a list.
 */
-int cfg2_createVariables(const cfg2_var_init_t *varInit) {
+int cfg2_createVariables(const cfg2_var_init_t *varInit, lua_State *luaState) {
 	error = ERR_CRITICAL;
 	
 	int length;
@@ -1532,7 +1750,7 @@ int cfg2_createVariables(const cfg2_var_init_t *varInit) {
 		
 		// Run callback.
 		if (g_cfg2.vars[i + g_cfg2.vars_length].callback != NULL) {
-			error = g_cfg2.vars[i + g_cfg2.vars_length].callback(&g_cfg2.vars[i + g_cfg2.vars_length], "");
+			error = g_cfg2.vars[i + g_cfg2.vars_length].callback(&g_cfg2.vars[i + g_cfg2.vars_length], "", luaState);
 			if (error >= ERR_CRITICAL) {
 				goto cleanup_l;
 			}
@@ -1560,7 +1778,7 @@ void cfg2_free(void) {
 	g_cfg2.vars_length = 0;
 }
 
-int cfg2_execString(const char *line, const char *tag) {
+int cfg2_execString(const char *line, lua_State *luaState, const char *tag) {
 	int error = ERR_CRITICAL;
 	
 	cfg2_var_t *var;
@@ -1646,11 +1864,11 @@ int cfg2_execString(const char *line, const char *tag) {
 			if (error) {
 				goto cleanup_l;
 			}
-			error = cfg2_setVariable(var, value, tag);
+			error = cfg2_setVariable(var, value, luaState, tag);
 			insane_free(value);
 		}
 		else {
-			error = cfg2_setVariable(var, value, tag);
+			error = cfg2_setVariable(var, value, luaState, tag);
 		}
 		if (error) {
 			goto cleanup_l;
@@ -1668,7 +1886,7 @@ int cfg2_execString(const char *line, const char *tag) {
 	return error;
 }
 
-int cfg2_execFile(const char *filepath) {
+int cfg2_execFile(const char *filepath, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	PHYSFS_File *vfsFile;
@@ -1739,7 +1957,7 @@ int cfg2_execFile(const char *filepath) {
 			continue;
 		}
 		
-		error = cfg2_execString(line, (quiet & 2) ? "" : filepath);
+		error = cfg2_execString(line, luaState, (quiet & 2) ? "" : filepath);
 		if (error) {
 			error("Error on line %i, recursion level %i", linenumber, g_cfg2.recursionDepth);
 			break;

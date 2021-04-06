@@ -81,7 +81,7 @@ const cfg2_var_init_t g_serverVarInit[] = {
 	}
 };
 
-static void main_housekeeping(void) {
+static void main_housekeeping(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	// char sendString[100];
@@ -106,7 +106,7 @@ static void main_housekeeping(void) {
 	
 	/* Do terminal stuff */
 	
-	error = terminal_runTerminalCommand();
+	error = terminal_runTerminalCommand(luaState);
 	goto cleanup_l;
 	
 	error = ERR_OK;
@@ -138,7 +138,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	
 	cfg2_init(luaState);
 	
-	error = cfg2_createVariables(g_commonVarInit);
+	error = cfg2_createVariables(g_commonVarInit, luaState);
 	if (error == ERR_GENERIC) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
 		error = ERR_GENERIC;
@@ -150,7 +150,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	
-	error = cfg2_createVariables(g_serverVarInit);
+	error = cfg2_createVariables(g_serverVarInit, luaState);
 	if (error == ERR_GENERIC) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
 		error = ERR_GENERIC;
@@ -194,7 +194,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	if (PHYSFS_exists(AUTOEXEC)) {
 		info("Found \""AUTOEXEC"\"", "");
 		g_cfg2.recursionDepth = 0;
-		cfg2_execFile(AUTOEXEC);
+		cfg2_execFile(AUTOEXEC, luaState);
 	}
 	
 	// Unmount engine directory.
@@ -211,7 +211,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 		for (int i = 1; i < argc; i++) {
 			str2_copyMalloc(&tempString, argv[i]);
 			g_cfg2.recursionDepth = 0;
-			error = cfg2_execString(tempString, "Console");
+			error = cfg2_execString(tempString, luaState, "Console");
 			if (error == ERR_OUTOFMEMORY) {
 				critical_error("Out of memory", "");
 				goto cleanup_l;
@@ -358,7 +358,7 @@ int main(int argc, char *argv[]) {
 			goto cleanup_l;
 		}
 		
-        main_housekeeping();
+        main_housekeeping(Lua);
 	}
 	
 	// Run shutdown.

@@ -122,7 +122,7 @@ static int vfs_PHYSFS_saveScriptFilesEnumerator(void *data, const char *origdir,
 /* vfs_callback_loadMod
 Loads a mod. *.cfg and *.lua are read into memory.
 */
-int vfs_callback_loadMod(cfg2_var_t *var, const char *command) {
+int vfs_callback_loadMod(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	if (!strcmp(command, "")) {
@@ -170,7 +170,7 @@ int vfs_callback_loadMod(cfg2_var_t *var, const char *command) {
 /* Config callbacks */
 /* ================ */
 
-int vfs_callback_setWorkspace(cfg2_var_t *var, const char *command) {
+int vfs_callback_setWorkspace(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	g_workspace = var->string;
 	if (strcmp(g_workspace, "") && !PHYSFS_setWriteDir(g_workspace)) {
 		error("Could not set workspace to \"%s\": %s", g_workspace, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));

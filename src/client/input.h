@@ -2,9 +2,10 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#include <SDL2/SDL.h>
-#include <lua.h>
+#include "../common/types.h"
 
-int getInput(lua_State*);
+int input_init(void);
+int input_processSdlEvents(lua_State *luaState);
+int input_bind(const char * const key, const char * const downCommand, const char * const upCommand);
 
 #endif

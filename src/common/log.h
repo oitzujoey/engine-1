@@ -5,7 +5,7 @@
 #include "types.h"
 #include "common.h"
 
-int log_callback_updateLogLevel(cfg2_var_t *var, const char *command);
+int log_callback_updateLogLevel(cfg2_var_t *var, const char *command, lua_State *luaState);
 
 void log_info(const char *function, const char *fmt, ...);
 void log_warning(const char *function, const char *fmt, ...);

@@ -203,7 +203,7 @@ cnetwork_clientState_t g_clientState;
 
 /* Config variable handles */
 
-int cnetwork_callback_setIpAddress(cfg2_var_t *var, const char *command) {
+int cnetwork_callback_setIpAddress(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 
 	g_clientState.serverAddressString = var->string;
@@ -234,7 +234,7 @@ int cnetwork_callback_setIpAddress(cfg2_var_t *var, const char *command) {
 	return error;
 }
 
-int cnetwork_callback_setServerPort(cfg2_var_t *var, const char *command) {
+int cnetwork_callback_setServerPort(cfg2_var_t *var, const char *command, lua_State *luaState) {
 
 	// Shouldn't have to check type because it will always be hard coded when this function is run.
 	if (var->integer < 1024) {

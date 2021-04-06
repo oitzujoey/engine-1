@@ -159,7 +159,7 @@ int network_ipv4ToString(char **string, uint32_t ipAddress) {
 	return error;
 }
 
-int network_callback_connectionTimeout(cfg2_var_t *var, const char *command) {
+int network_callback_connectionTimeout(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	
 	g_connectionTimeout = var->integer;
 	

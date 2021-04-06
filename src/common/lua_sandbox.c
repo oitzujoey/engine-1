@@ -130,7 +130,6 @@ int lua_runFunction(lua_State *luaState, const char *functionName, uint32_t time
 		.functionName = functionName,
 		.luaState = luaState
 	};
-	SDL_TimerID timerId = SDL_AddTimer(timeout, lua_luaTimeout, &luaTimeout);
 	
 	error = lua_getglobal(luaState, luaTimeout.functionName);
 	if (error != 6) {
@@ -138,6 +137,9 @@ int lua_runFunction(lua_State *luaState, const char *functionName, uint32_t time
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
+	
+	SDL_TimerID timerId = SDL_AddTimer(timeout, lua_luaTimeout, &luaTimeout);
+	
 	error = lua_pcall(luaState, 0, 0, 0);
 	// lua_call(luaState, 0, 0);
 	SDL_RemoveTimer(timerId);

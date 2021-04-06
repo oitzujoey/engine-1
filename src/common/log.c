@@ -15,7 +15,7 @@
 */
 int g_logLevel = 0;
 
-int log_callback_updateLogLevel(cfg2_var_t *var, const char *command) {
+int log_callback_updateLogLevel(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	if (var->integer > 4) {
 		var->integer = 4;
 		warning("Value out of range. Setting to %i.", var->integer);
@@ -140,7 +140,7 @@ int l_log_warning(lua_State *l) {
 	const char *function = lua_tostring(l, 1);
 	const char *message = lua_tostring(l, 2);
 
-	const char *infomessage = COLOR_CYAN"Lua "COLOR_GREEN"Warning: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
+	const char *infomessage = COLOR_CYAN"Lua "COLOR_MAGENTA"Warning: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
 	char *buf = malloc((strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1) * sizeof(char));
 	sprintf(buf, infomessage, function, message);
 	

@@ -6,6 +6,10 @@ This should do almost nothing. The server engine/script and client engine will d
 This script will draw the HUD, create and set 3D reference entities, and perform other menial tasks.
 --]]
 
+function doSomethingAwesome()
+	warning("doSomethingAwesome", "I can mess with your keys now!")
+end
+
 function startup()
 	info("main", "Lua start");
 	
@@ -40,6 +44,12 @@ function startup()
 		-- l_renderEntity(worldEntity, 0.0, 0.0, 1.0, 1.0)
 	end
 	
+	cfg2_setVariable("create none specialBind")
+	cfg2_setCallback("specialBind", "doSomethingAwesome")
+	cfg2_setVariable("bind k_97 specialBind")
+	cfg2_setVariable("bind k_113 quit")
+	-- cfg2_setVariable("specialBind")
+	
 	info("main", "Starting game")
 end
 
@@ -49,7 +59,7 @@ function main()
 		
 	
 		-- puts("Lua render")
-	render()
+	-- render()
 	
 		-- -- puts("Lua getInput")
 		-- input = (getInput())

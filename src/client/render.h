@@ -12,6 +12,6 @@ extern char *g_openglLogFileName;
 int render_callback_updateLogFileName(cfg2_var_t *var);
 
 int render_initOpenGL(void);
-int render(lua_State*);
+int render(entity_t entity);
 
 #endif

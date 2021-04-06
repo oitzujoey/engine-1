@@ -369,7 +369,9 @@ int render_initOpenGL(void) {
 	return error;
 }
 
-void renderModels(entity_t entity, vec3_t position, quat_t orientation) {
+int renderModels(entity_t entity, vec3_t position, quat_t orientation) {
+	int error = ERR_CRITICAL;
+	
 	// For each model...
 	for (int j = 0; j < entity.children_length; j++) {
 		
@@ -404,9 +406,13 @@ void renderModels(entity_t entity, vec3_t position, quat_t orientation) {
 		glBindVertexArray(g_vao);
 		glDrawArrays(GL_TRIANGLES, 0, 3 * model.faces_length);
 	}
+	
+	error = ERR_OK;
+	return error;
 }
 
-void renderEntity(entity_t entity, vec3_t *position, quat_t *orientation) {
+int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation) {
+	int error = ERR_CRITICAL;
 
 	vec3_t localPosition;
 	quat_t localOrientation;
@@ -414,7 +420,8 @@ void renderEntity(entity_t entity, vec3_t *position, quat_t *orientation) {
 	if (!entity.inUse) {
 		// Don't draw deleted entities.
 		warning("Attempted to draw deleted entity %i.", (int) (&entity - g_entityList.entities));
-		return;
+		error = ERR_GENERIC;
+		goto cleanup_l;
 	}
 	
 	vec3_add(&localPosition, position, &entity.position);
@@ -422,27 +429,33 @@ void renderEntity(entity_t entity, vec3_t *position, quat_t *orientation) {
 	quat_hamilton(&localOrientation, orientation, &entity.orientation);
 	
 	if (entity.childType == entity_childType_model) {
-		renderModels(entity, localPosition, localOrientation);
+		error = renderModels(entity, localPosition, localOrientation);
 	}
 	else if (entity.childType == entity_childType_entity) {
 		for (int i = 0; i < entity.children_length; i++) {
-			renderEntity(g_entityList.entities[entity.children[i]], &localPosition, &localOrientation);
+			error = renderEntity(g_entityList.entities[entity.children[i]], &localPosition, &localOrientation);
 		}
 	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
 }
 
-int render(lua_State *L) {
+int render(entity_t entity) {
+	int error = ERR_CRITICAL;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	// For each entity in the tree...
 	
 	// Render world entity.
-	renderEntity(g_entityList.entities[0], &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}});
+	error = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}});
 	
 	/* Show */
 	
 	SDL_GL_SwapWindow(g_window);
 	
-	return 0;
+	return error;
 }

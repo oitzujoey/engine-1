@@ -124,15 +124,16 @@ typedef struct cfg2_var_s {
 	cfg2_admin_t permissionDelete;      // Permission level required to delete
 	cfg2_admin_t permissionCallback;    // Permission level required to read and write callback.
 	unsigned int frequency; // Frequency that the variable is used by the console. Higher values mean it is used more.
-	int (*callback)(struct cfg2_var_s *var, const char *command);   // The callback.
+	int (*callback)(struct cfg2_var_s *var, const char *command, lua_State *luaState);   // The callback.
+	char *script;
 } cfg2_var_t;
 
 typedef struct {
 	bool quit;
 	cfg2_admin_t adminLevel;
+	cfg2_admin_t adminLevelDisguise;
 	cfg2_var_t *vars;
 	unsigned int vars_length;
-	lua_State *luaState;
 	unsigned int recursionDepth;
 	unsigned int maxRecursion;
 } cfg2_t;
@@ -147,7 +148,7 @@ typedef struct {
 	cfg2_admin_t permissionWrite;
 	cfg2_admin_t permissionDelete;
 	cfg2_admin_t permissionCallback;
-	int (*callback)(cfg2_var_t *var, const char *command);
+	int (*callback)(cfg2_var_t *var, const char *command, lua_State *luaState);
 } cfg2_var_init_t;
 
 
@@ -188,5 +189,63 @@ typedef struct {
 	char *path;
 	vfs_type_t workspace_type;
 } vfs_t;
+
+/* entity.h */
+/* ======== */
+
+typedef enum entity_childType_e {
+	entity_childType_none,
+	entity_childType_entity,
+	entity_childType_model
+} entity_childType_t;
+
+typedef struct {
+	// Children are specified by index and type.
+	int *children;
+	int children_length;
+	entity_childType_t childType;
+	vec3_t position;
+	quat_t orientation;
+	bool inUse;
+} entity_t;
+
+typedef struct {
+	entity_t *entities;
+	int entities_length;
+	/* entities_length_allocated always equals entities_length +
+	   deletedEntities_length, so it is not really needed. */
+	// int entities_length_allocated;
+	int *deletedEntities;
+	int deletedEntities_length;
+	int deletedEntities_length_allocated;
+} entityList_t;
+
+/* input.h */
+/* ======= */
+
+typedef enum {
+	buttonType_keyboard,
+	buttonType_mouse,
+	buttonType_joystick,
+	buttonType_controller
+} buttonType_t;
+
+typedef struct {
+	buttonType_t buttonType;
+	union {
+		SDL_Keycode keycode;
+		Uint8 mouseButton;
+		Uint8 joystickButton;
+		Uint8 controllerButton;
+	} key;
+	SDL_JoystickID which;
+	char *keyUpCommand;
+	char *keyDownCommand;
+} keybind_t;
+
+typedef struct {
+	keybind_t *keys;
+	size_t length;
+} keybinds_t;
 
 #endif

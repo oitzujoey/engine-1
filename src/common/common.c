@@ -145,6 +145,18 @@ const cfg2_var_init_t g_commonVarInit[] = {
 		.callback = cfg2_callback_su
 	},
 	{
+		.name = "suDisguise",
+		.vector = 0,
+		.integer = 0,
+		.string = "",
+		.type = cfg2_var_type_none,
+		.permissionRead = cfg2_admin_supervisor,
+		.permissionWrite = cfg2_admin_game,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = cfg2_callback_suDisguise
+	},
+	{
 		.name = "add",
 		.vector = 0,
 		.integer = 0,
@@ -203,6 +215,18 @@ const cfg2_var_init_t g_commonVarInit[] = {
 		.permissionDelete = cfg2_admin_supervisor,
 		.permissionCallback = cfg2_admin_supervisor,
 		.callback = cfg2_callback_if
+	},
+	{
+		.name = "ifn",
+		.vector = 0,
+		.integer = 0,
+		.string = "",
+		.type = cfg2_var_type_none,
+		.permissionRead = cfg2_admin_supervisor,
+		.permissionWrite = cfg2_admin_game,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = cfg2_callback_ifn
 	},
 	{
 		.name = "load_mod",

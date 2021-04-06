@@ -28,8 +28,8 @@ extern SDL_Window *g_window;
 // extern SDL_Surface *g_screenSurface;
 
 luaCFunc_t luaClientFunctions[] = {
-	{.func = render,                .name = "render"},
-	{.func = getInput,              .name = "getInput"},
+	// {.func = render,                .name = "render"},
+	// {.func = getInput,              .name = "getInput"},
 	// {.func = l_cnetwork_receive,    .name = "l_snetwork_receive"},
 	{.func = NULL,                  .name = NULL}
 };
@@ -50,6 +50,18 @@ luaCFunc_t luaClientFunctions[] = {
 
 const cfg2_var_init_t g_clientVarInit[] = {
 	// Commands
+	{
+		.name = "bind",
+		.vector = 0,
+		.integer = 0,
+		.string = "",
+		.type = cfg2_var_type_none,
+		.permissionRead = cfg2_admin_supervisor,
+		.permissionWrite = cfg2_admin_game,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = cfg2_callback_bind
+	},
 	// Variables
 	{
 		.name = "client",
@@ -101,19 +113,20 @@ const cfg2_var_init_t g_clientVarInit[] = {
 	}
 };
 
-static void main_housekeeping(void) {
+static void main_housekeeping(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
-	SDL_Event event;
-	
-	// This must come first to allow network disconnect.
-    if (SDL_PollEvent(&event)) {
-        if (event.type == SDL_QUIT) {
-            g_cfg2.quit = true;
-		}
-    }
+    error = render(g_entityList.entities[0]);
+    // if (error) {
+    //     goto cleanup_l;
+    // }
+    
+    error = input_processSdlEvents(luaState);
+	if (error) {
+		goto cleanup_l;
+	}
 
-	error = terminal_runTerminalCommand();
+	error = terminal_runTerminalCommand(luaState);
 	if (error) {
 		goto cleanup_l;
 	}
@@ -149,7 +162,7 @@ int windowInit(void) {
 	g_window = NULL;
 	// g_screenSurface = NULL;
 
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0) {
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) < 0) {
 		fprintf(stderr, "Error: SDL could not initialize | SDL_Error %s\n", SDL_GetError());
 		error = ERR_GENERIC;
 		goto cleanup_l;
@@ -199,11 +212,18 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	
+	error = input_init();
+	if (error) {
+		critical_error("Could not initialize user input", "");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
 	info("Initializing client vars", "");
 	
 	cfg2_init(luaState);
 	
-	error = cfg2_createVariables(g_commonVarInit);
+	error = cfg2_createVariables(g_commonVarInit, luaState);
 	if (error == ERR_GENERIC) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
 		error = ERR_GENERIC;
@@ -215,7 +235,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	
-	error = cfg2_createVariables(g_clientVarInit);
+	error = cfg2_createVariables(g_clientVarInit, luaState);
 	if (error) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
 		error = ERR_GENERIC;
@@ -239,7 +259,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	if (PHYSFS_exists(AUTOEXEC)) {
 		info("Found \""AUTOEXEC"\"", "");
 		g_cfg2.recursionDepth = 0;
-		cfg2_execFile(AUTOEXEC);
+		cfg2_execFile(AUTOEXEC, luaState);
 	}
 	
 	// Unmount engine directory.
@@ -254,7 +274,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		for (int i = 1; i < argc; i++) {
 			str2_copyMalloc(&tempString, argv[i]);
 			g_cfg2.recursionDepth = 0;
-			error = cfg2_execString(tempString, "Console");
+			error = cfg2_execString(tempString, luaState, "Console");
 			if (error == ERR_OUTOFMEMORY) {
 				critical_error("Out of memory", "");
 				goto cleanup_l;
@@ -398,6 +418,8 @@ int main (int argc, char *argv[]) {
 	
 	while (!g_cfg2.quit) {
 	
+        main_housekeeping(Lua);
+        
 		// Set timeout
 	
 		error = lua_runFunction(Lua, "main", MAIN_LUA_MAIN_TIMEOUT);
@@ -405,8 +427,6 @@ int main (int argc, char *argv[]) {
 			error = ERR_CRITICAL;
 			goto cleanup_l;
 		}
-		
-        main_housekeeping();
 	}
 	
 	// Run shutdown.

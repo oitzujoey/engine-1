@@ -9,6 +9,7 @@ int str2_copy(char *destination, const char *source);
 int str2_copyMalloc(char **destination, const char *source);
 int str2_copyLengthMalloc(char **destination, const char *source, size_t length);
 int str2_concatenateMalloc(char **destination, const char *source);
+int str2_concatenateCharMalloc(char **destination, const char source);
 // void str2_free(str2_t * string);
 int str2_removeLineComments(char *line, const char *linecomment);
 int str2_removeWhitespace(char *line, const char *config);
