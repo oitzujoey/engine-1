@@ -10,5 +10,6 @@ Relativity:
 		Blake suggested buffering game states and showing old game states to the player. It is essentially lag that is dependent upon another object's velocity relative to the observer's velocity. If two players are moving toward each other at near the speed of light, the lag each one sees is the same.
 		The problem:
 			Twins paradox. It is possible for one player to accumulate an excessive amount of lag compared to the other player. Since the lags aren't equal, and one is quite large, real time interaction may be impossible.
+		Solution: Use a single reference frame. Players control their space ships remotely.
 
 Time is the one constraint that I truly have no control over as a programmer.

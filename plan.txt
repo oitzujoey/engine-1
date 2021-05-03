@@ -475,6 +475,15 @@ Naming format: <type><device>_<key>
 
 Semicolons separate commands. Commas separate arguments in commands that accept scripts. These commas are then converted to semicolons when the argument is stored or executed. Think of it as lazy escaping, because that's essentially what it is. Quotes are too time consuming at the moment.
 
+And networking again...
+So far there is one stream: The server to client game state. I expect to completely redo that or figure out some way to use a structure instead.
+It's time to add another stream: input. It is going to be implemented just like the server stream, but from client to server.
+One of the problems that this presents that I will have to deal with soon is that the server needs to know when a message has been received. I may use a Lua callback like I did with key binding, but an event system like in Q3 and SDL could be used instead and would probably be faster. Polling is also an option.
+
+I think sending input to the server will be simple. Just send an array of keypresses.
+
+I've solved the problem I was having with the packet parser/generator. I really hate the idea of having to hard code the parser by repeating tons and tons of repetitive masking code. My idea is to make a function that does the parsing. Since each data type is different, there will also be a callback that is passed to it to parse that specific type. This should clean up what I've got quite a bit and hopefully fix some buffering related bugs.
+
 
 
 Graphics stuff I dream of adding:
@@ -532,13 +541,13 @@ Files to rewrite when it is somewhat working:
     [ ] (All) Merge source code from multiple mods.
     [ ] (All) Execute cached/merged files instead of latest files.
 ------------------------------------------------------------------
-[/] (Client) Get keyboard input
+[*] (Client) Get keyboard input
     [*] Get keys from SDL2.
     [*] Implement key binding.
         [*] Create scripting command that sets callbacks.
         [*] Create `bind` scripting command.
-    [ ] Send keys to Lua.
-        [ ] Allow Lua to manipulate and read scripting variables and callbacks.
+    [*] Send keys to Lua.
+        [*] Allow Lua to manipulate and read scripting variables and callbacks.
 [/] (Client) Get mouse input
 [ ] (Client) Send input
     [ ] Allow Lua to send arbitrary network messages using unreliable packets.
