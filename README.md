@@ -1,6 +1,6 @@
 # engine-1
 
-Honestly, I have no idea what this is going to be yet.
+Honestly, I have no idea what this is going to be yet. At this point, it's just a tech demo.
 Here is what I do know:
 
 * Written in C
@@ -12,8 +12,6 @@ Here is what I do know:
 
 ### Dependencies
 
-### Building
-
 Make sure you have these dependencies. GL and GLEW are required for the client only.
 
 ```text
@@ -24,6 +22,8 @@ Make sure you have these dependencies. GL and GLEW are required for the client o
     GL
     GLEW
 ```
+
+### Building
 
 ```bash
 mkdir build && cd build
