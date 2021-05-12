@@ -484,6 +484,8 @@ I think sending input to the server will be simple. Just send an array of keypre
 
 I've solved the problem I was having with the packet parser/generator. I really hate the idea of having to hard code the parser by repeating tons and tons of repetitive masking code. My idea is to make a function that does the parsing. Since each data type is different, there will also be a callback that is passed to it to parse that specific type. This should clean up what I've got quite a bit and hopefully fix some buffering related bugs.
 
+I think callbacks are overkill here.
+
 
 
 Graphics stuff I dream of adding:
