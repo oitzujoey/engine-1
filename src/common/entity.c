@@ -185,10 +185,10 @@ void entity_printEntity(int index) {
 			if (i != 0) {
 				printf(", ");
 			}
-			printf("%i", entity->children[i]);
+			printf("%td", entity->children[i]);
 		}
 		printf("}\n");
-		printf("\tchildren_length %i\n", entity->children_length);
+		printf("\tchildren_length %td\n", entity->children_length);
 		printf("\tchildType %i\n", entity->childType);
 		printf("\tposition {");
 		for (int i = 0; i < 3; i++) {

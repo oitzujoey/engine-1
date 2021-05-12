@@ -17,188 +17,7 @@ ENetHost *clientHost;
 ENetPeer *serverPeer;
 cnetwork_clientState_t g_clientState;
 
-
-// int cnetwork_closeSocket(UDPsocket socket) {
-// 	int error;
-	
-// 	if (socket == NULL) {
-// 		error("Socket is NULL", "");
-// 		error = ERR_GENERIC;
-// 		goto cleanup_l;
-// 	}
-	
-// 	// error = SDLNet_UDP_DelSocket(socketSet_g, socket);
-// 	// if (error == -1) {
-// 	// 	error("SDLNet_UDP_DelSocket returned %s", SDL_GetError());
-// 	// 	// Not that we care... The socket will be freed either way.
-// 	// }
-	
-// 	SDLNet_UDP_Close(socket);
-// 	socket = NULL;
-	
-// 	error = 0;
-// 	cleanup_l:
-	
-// 	return error;
-// }
-
-// int l_cnetwork_receive(Uint8 **data, int *length) {
-// 	int error;
-	
-// 	UDPpacket *packet = SDLNet_AllocPacket(100);
-// 	if (packet == NULL) {
-// 		error("SDLNet_AllocPacket returned %s", SDL_GetError());
-// 		error = ERR_GENERIC;
-// 		goto cleanup_l;
-// 	}
-	
-// 	error = SDLNet_UDP_Recv(g_clientSocket, packet);
-// 	if (error < 0) {
-// 		error("SDLNet_UDP_Recv returned %s", SDL_GetError());
-// 		error = ERR_GENERIC;
-// 		goto cleanup_l;
-// 	}
-// 	if (error > 0) {
-// 		// We got something!
-// 		*data = realloc(*data, packet->len * sizeof(Uint8));
-// 		memcpy(*data, packet->data, packet->len);
-// 		*length = packet->len;
-// 	}
-// 	else {
-// 		*length = 0;
-// 		// insane_free(data);
-// 	}
-	
-// 	error = 0;
-// 	cleanup_l:
-	
-// 	SDLNet_FreePacket(packet);
-	
-// 	return error;
-// }
-
-// // int l_cnetwork_send(const uint8_t *data, int length, IPaddress ipAddress) {
-// // 	int error;
-	
-// // 	UDPpacket *packet = SDLNet_AllocPacket(length);
-// // 	if (packet == NULL) {
-// // 		error("SDLNet_AllocPacket returned %s", SDL_GetError());
-// // 		error = ERR_GENERIC;
-// // 		goto cleanup_l;
-// // 	}
-	
-// // 	memcpy(packet->data, data, length);
-// // 	packet->len = length;
-	
-// // 	packet->address = ipAddress;
-	
-// // 	error = SDLNet_UDP_Send(g_serverSocket, -1, packet);
-	
-// // 	if (error == 0) {
-// // 		error("SDLNet_UDP_Send returned %s", SDL_GetError());
-// // 		error = ERR_GENERIC;
-// // 		goto cleanup_l;
-// // 	}
-	
-// // 	error = 0;
-// // 	cleanup_l:
-	
-// // 	SDL_free(packet);
-	
-// // 	return error;
-// // }
-
-// int cnetwork_init(void) {
-// 	int error;
-	
-// 	IPaddress ipAddress;
-// 	cfg_var_t *varClientPort;
-// 	cfg_var_t *varServerPort;
-// 	cfg_var_t *varIpAddress;
-	
-// 	error = SDLNet_Init();
-// 	if (error == -1) {
-// 		critical_error("SDLNet_Init returned %s", SDL_GetError());
-// 		error = ERR_CRITICAL;
-// 		goto cleanup_l;
-// 	}
-	
-// 	varClientPort = cfg_findVar("client_port");
-// 	if (varClientPort == NULL) {
-// 		critical_error("\"client_port\" undefined", "");
-// 		error = ERR_CRITICAL;
-// 		goto cleanup_l;
-// 	}
-	
-// 	g_clientSocket = SDLNet_UDP_Open(varClientPort->integer);
-// 	if (g_clientSocket == NULL) {
-// 		critical_error("SDLNet_UDP_Open returned %s", SDL_GetError());
-// 		error = ERR_CRITICAL;
-// 		goto cleanup_l;
-// 	}
-	
-// 	varServerPort = cfg_findVar("server_port");
-// 	if (varServerPort == NULL) {
-// 		critical_error("\"server_port\" undefined", "");
-// 		error = ERR_CRITICAL;
-// 		goto cleanup_l;
-// 	}
-	
-// 	varIpAddress = cfg_findVar("ip_address");
-// 	if (varIpAddress == NULL) {
-// 		critical_error("\"ip_address undefined", "");
-// 		error = ERR_CRITICAL;
-// 		goto cleanup_l;
-// 	}
-	
-// 	error = SDLNet_ResolveHost(&ipAddress, varIpAddress->string.value, varServerPort->integer);
-// 	if (error != 0) {
-// 		critical_error("SDLNet_ResolveHost returned %s", SDL_GetError());
-// 		error = ERR_CRITICAL;
-// 		goto cleanup_l;
-// 	}
-	
-// 	info("Opened UDP socket on port %i", varClientPort->integer);
-	
-// 	// socketSet_g = SDLNet_AllocSocketSet(MAX_CLIENTS + 1);
-// 	// if (socketSet_g == NULL) {
-// 	// 	critical_error("SDLNet_AllocSocketSet returned %s", SDL_GetError());
-// 	// 	error = ERR_CRITICAL;
-// 	// 	goto cleanup_l;
-// 	// }
-	
-// 	// error = SDLNet_UDP_AddSocket(socketSet_g, g_serverSocket);
-// 	// if (error == -1) {
-// 	// 	critical_error("SDLNet_UDP_AddSocket returned %s", SDL_GetError());
-// 	// 	error = ERR_CRITICAL;
-// 	// 	goto cleanup_l;
-// 	// }
-	
-// 	error = 0;
-	
-// 	cleanup_l:
-	
-// 	return error;
-// }
-
-// void cnetwork_quit(void) {
-
-// 	// Don't care about errors.
-// 	cnetwork_closeSocket(g_clientSocket);
-	
-// 	// for (int i = 0; i < MAX_CLIENTS; i++) {
-// 	// 	if (clients_g[i].socket == NULL) {
-// 	// 		continue;
-// 	// 	}
-// 	// 	// Don't care about errors.
-// 	// 	snetwork_closeSocket(clients_g[i].socket);
-// 	// }
-	
-// 	// SDLNet_FreeSocketSet(socketSet_g);
-// 	// socketSet_g = NULL;
-	
-// 	SDLNet_Quit();
-// }
+extern cfg2_t g_cfg2;
 
 
 /* Config variable handles */
@@ -279,23 +98,15 @@ static void cnetwork_connect(ENetEvent event) {
 static int cnetwork_receiveEntities(ENetEvent event) {
 	int error = ERR_CRITICAL;
 	
-	ENetPacket *packet;
+	const ENetPacket *packet;
 	int length;
-	enet_uint8 *data;
-	enet_uint8 *dataStart;
+	const enet_uint8 *data;
+	ptrdiff_t data_index = 0;
+	size_t data_length;
 	// entityList and entities in the packet must be preserved for checksum calculation, so we use these copies instead.
 	entityList_t entityList;
 	entity_t *entities;
-	// static quat_t lastQuat = {
-	// 	.s = 1,
-	// 	.v = {
-	// 		0,
-	// 		0,
-	// 		0
-	// 	}
-	// };
 	uint32_t checksum, calculatedChecksum;
-	// static int trap = 0;
 	static uint32_t lastPacketID = 0;
 	uint32_t packetID;
 	
@@ -311,14 +122,19 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 	
 	memcpy(&checksum, data, sizeof(uint32_t));
 	data += sizeof(uint32_t);
-	dataStart = data;
+	data_length = length - sizeof(uint32_t);
 	
-	memcpy(&packetID, data, sizeof(uint32_t));
-	data += sizeof(uint32_t);
+	error = network_packetRead_uint32(&packetID, 1, data, &data_index, data_length);
+	if (error) {
+		goto cleanup_l;
+	}
 	
-	memcpy(&entityList, data, sizeof(entityList_t));
-	data += sizeof(entityList_t);
+	error = network_packetRead_entityList(&entityList, 1, data, &data_index, data_length);
+	if (error) {
+		goto cleanup_l;
+	}
 	
+	// Allocate more space for entities if needed.
 	if (entityList.entities_length > g_entityList.entities_length) {
 		entityList.entities = realloc(g_entityList.entities, entityList.entities_length * sizeof(entity_t));
 		if (entityList.entities == NULL) {
@@ -334,6 +150,7 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 		entityList.entities = g_entityList.entities;
 	}
 	
+	// Allocate more space for deleted entity indices of needed.
 	if (entityList.deletedEntities_length > g_entityList.deletedEntities_length_allocated) {
 		entityList.deletedEntities = realloc(g_entityList.deletedEntities, entityList.deletedEntities_length * sizeof(int));
 		if (entityList.deletedEntities == NULL) {
@@ -348,33 +165,21 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 		entityList.deletedEntities = g_entityList.deletedEntities;
 	}
 	
-	memcpy(&g_entityList, &entityList, sizeof(entityList_t));
+	g_entityList = entityList;
 	
 	
-	// This uses newly updated length;
-	if (data - packet->data >= length) {
-		error("Malformed entity packet", "");
-		error = ERR_GENERIC;
-		goto cleanup_l;
-	}
-	
-	// entities = (entity_t *) data;
 	entities = calloc(g_entityList.entities_length, sizeof(entity_t));
 	if (entities == NULL) {
 		critical_error("Out of memory", "");
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
-	
-	memcpy(entities, data, g_entityList.entities_length * sizeof(entity_t));
-	
-	data += g_entityList.entities_length * sizeof(entity_t);
-	if (data - packet->data >= length) {
-		error("Malformed entity packet", "");
-		error = ERR_GENERIC;
+	error = network_packetRead_entity(entities, g_entityList.entities_length, data, &data_index, data_length);
+	if (error) {
 		goto cleanup_l;
 	}
 	
+	// Allocate more space for entities if needed.
 	for (int i = 0; i < g_entityList.entities_length; i++) {
 		if (entities[i].children_length > g_entityList.entities[i].children_length) {
 			entities[i].children = realloc(g_entityList.entities[i].children, entities[i].children_length * sizeof(int));
@@ -389,48 +194,22 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 		}
 	}
 	
+	// Copy entities into main entity list.
 	memcpy(g_entityList.entities, entities, g_entityList.entities_length * sizeof(entity_t));
 	free(entities);
 	
 	
-	if (data - packet->data >= length) {
-		error("Malformed entity packet", "");
-		error = ERR_GENERIC;
+	error = network_packetRead_ptrdiff(g_entityList.deletedEntities, g_entityList.deletedEntities_length, data, &data_index, data_length);
+	if (error) {
 		goto cleanup_l;
 	}
-	memcpy(g_entityList.deletedEntities, data, g_entityList.deletedEntities_length * sizeof(int));
-	data += g_entityList.deletedEntities_length * sizeof(int);
-	
 	
 	for (int i = 0; i < g_entityList.entities_length; i++) {
-		if (data - packet->data >= length) {
-			error("Malformed entity packet", "");
-			error = ERR_GENERIC;
+	
+		error = network_packetRead_ptrdiff(g_entityList.entities[i].children, g_entityList.entities[i].children_length, data, &data_index, data_length);
+		if (error) {
 			goto cleanup_l;
 		}
-		memcpy(g_entityList.entities[i].children, data, g_entityList.entities[i].children_length * sizeof(int));
-		data += g_entityList.entities[i].children_length * sizeof(int);
-		// if (i == 1) {
-		// 	// quat_print(&g_entityList.entities[i].orientation);
-		// 	// printf("%f\n", quat_norm(&g_entityList.entities[i].orientation));
-			
-		// 	quat_t q0, q1;
-		// 	quat_copy(&q0, &lastQuat);
-		// 	quat_unitInverse(&q0);
-		// 	quat_hamilton(&q1, &g_entityList.entities[i].orientation, &q0);
-		// 	quat_copy(&lastQuat, &g_entityList.entities[i].orientation);
-		// 	quat_print(&q1);
-		// 	if (q1.s < 0.99992) {
-		// 		printf("\t");
-		// 		quat_print(&g_entityList.entities[i].orientation);
-		// 		if (trap == 1) {
-		// 			trap++;
-		// 		}
-		// 		else {
-		// 			trap++;
-		// 		}
-		// 	}
-		// }
 	}
 	
 	if (lastPacketID + 1 < packetID) {
@@ -442,13 +221,11 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 	
 	lastPacketID = packetID;
 	
-	calculatedChecksum = network_generateChecksum(dataStart, data - dataStart);
+	calculatedChecksum = network_generateChecksum(data, data_length);
 	
 	if (checksum != calculatedChecksum) {
 		warning("Calculated bad checksum of %0X. Should be %0X", calculatedChecksum, checksum);
 	}
-	fflush(stdout);
-	fflush(stderr);
 	
 	error = ERR_OK;
 	cleanup_l:

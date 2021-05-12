@@ -29,6 +29,7 @@ typedef struct {
 /* Internal model structure */
 /* ======================== */
 
+/* DO NOT send this over the network. */
 typedef struct {
     // string_t name;
     vec3_t *vertices;
@@ -201,8 +202,8 @@ typedef enum entity_childType_e {
 
 typedef struct {
 	// Children are specified by index and type.
-	int *children;
-	int children_length;
+	ptrdiff_t *children;
+	size_t children_length;
 	entity_childType_t childType;
 	vec3_t position;
 	quat_t orientation;
@@ -211,13 +212,13 @@ typedef struct {
 
 typedef struct {
 	entity_t *entities;
-	int entities_length;
+	size_t entities_length;
 	/* entities_length_allocated always equals entities_length +
 	   deletedEntities_length, so it is not really needed. */
 	// int entities_length_allocated;
-	int *deletedEntities;
-	int deletedEntities_length;
-	int deletedEntities_length_allocated;
+	ptrdiff_t *deletedEntities;
+	size_t deletedEntities_length;
+	size_t deletedEntities_length_allocated;
 } entityList_t;
 
 /* input.h */

@@ -2,11 +2,7 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include <stdint.h>
-// #include <SDL2/SDL.h>
-// #include <SDL2/SDL_net.h>
-#include <enet/enet.h>
-#include "cfg2.h"
+#include "types.h"
 
 #define ENET_CHANNELS       2
 #define ENET_CHANNEL0       0
@@ -26,10 +22,20 @@
 
 extern int g_connectionTimeout;
 
+int network_packetAdd_uint32(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, const uint32_t *data, const ptrdiff_t data_length);
+int network_packetAdd_entityList(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, const entityList_t *data, const ptrdiff_t data_length);
+int network_packetAdd_entity(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, const entity_t *data, const ptrdiff_t data_length);
+int network_packetAdd_ptrdiff(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, const ptrdiff_t *data, const ptrdiff_t data_length);
+
+int network_packetRead_uint32(uint32_t *data, const ptrdiff_t data_length, const enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length);
+int network_packetRead_entityList(entityList_t *data, const ptrdiff_t data_length, const enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length);
+int network_packetRead_entity(entity_t *data, const ptrdiff_t data_length, const enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length);
+int network_packetRead_ptrdiff(ptrdiff_t *data, const ptrdiff_t data_length, const enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length);
+
 int network_ipv4ToString(char **string, uint32_t ipAddress);
 
 int network_callback_connectionTimeout(cfg2_var_t *var, const char *command, lua_State *luaState);
 
-uint32_t network_generateChecksum(uint8_t *data, size_t length);
+uint32_t network_generateChecksum(const uint8_t *data, size_t length);
 
 #endif
