@@ -47,6 +47,7 @@ function startup()
 	cfg2_setVariable("create none specialBind")
 	cfg2_setCallback("specialBind", "doSomethingAwesome")
 	cfg2_setVariable("bind k_97 specialBind")
+
 	cfg2_setVariable("bind k_113 quit")
 	-- cfg2_setVariable("specialBind")
 	

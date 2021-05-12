@@ -56,13 +56,6 @@ function startup()
 	worldRotation = {w=0.99985, x=0.005, y=0.01, z=-0.005}
 	worldOrientation = {w=1.0, x=0.0, y=0.0, z=0.0}
 	
-	-- extra()
-	
-	cfg2_setVariable("create none specialBind")
-	cfg2_setCallback("specialBind", "extra")
-	-- cfg2_setVariable("bind k_97 specialBind")
-	cfg2_setVariable("specialBind")
-	
 	info("main", "Starting game")
 end
 
