@@ -373,6 +373,597 @@ int network_packetRead_ptrdiff(ptrdiff_t *data, const ptrdiff_t data_length, con
 }
 
 
+/*
+clientState ::= data
+
+data ::= header none
+data ::= header boolean
+data ::= header integer
+data ::= header real
+data ::= header string
+data ::= header table
+
+
+header ::= keyType key type
+keyType ::= network_lua_type_t
+type ::= network_lua_type_t
+
+key ::= keyString_length keyString
+key ::= lua_Number
+key ::= lua_Integer
+keyString_length ::= lua_Unsigned
+keyString ::= keyString_length[char]
+
+
+none ::= ''
+
+boolean ::= int
+
+integer ::= lua_Integer
+
+real ::= lua_Number
+
+string ::= string_length string_length[char]
+string_length ::= lua_Unsigned
+
+table ::= table_length table_length[data]
+table_length ::= lua_Unsigned
+*/
+/*
+Adds the object at the top of the stack to the specfied position in the packet.
+Name has to be provided, but type comes straight from the data.
+*/
+int network_packetAdd_lua_object(lua_State *luaState, const void *name, network_lua_type_t nameType, ENetPacket *packet, ptrdiff_t *index) {
+	int error = ERR_CRITICAL;
+	
+	int luaType;
+	size_t newPacketLength = packet->dataLength;
+	bool isInteger = false;
+	ptrdiff_t structIndex = 0;
+	size_t name_length;
+	network_lua_type_t dataType;
+	lua_Integer tempLuaInteger;
+	lua_Number tempLuaReal;
+	int tempLuaBoolean;
+	const char *tempLuaString = NULL;
+	lua_Unsigned tempLuaString_length;
+	ptrdiff_t tableLengthIndex;
+	// const char *keyName = NULL;
+	lua_Unsigned tableLength = 0;
+	// network_lua_type_t keyType;
+	
+	luaType = lua_type(luaState, -1);
+	
+	// Check type and increase length.
+	switch (luaType) {
+	case LUA_TNIL:
+		error("Object is nil. Nil values cannot be sent over the network.", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	case LUA_TNUMBER:
+		isInteger = lua_isinteger(luaState, -1);
+		if (isInteger) {
+			dataType = integer;
+			newPacketLength += sizeof(lua_Integer);
+		}
+		else {
+			dataType = real;
+			newPacketLength += sizeof(lua_Number);
+		}
+		break;
+	case LUA_TBOOLEAN:
+		dataType = boolean;
+		// Bools are big. What a waste.
+		newPacketLength += sizeof(int);
+		break;
+	case LUA_TSTRING:
+		dataType = string;
+		// Length + string.
+		newPacketLength += sizeof(lua_Unsigned) + lua_rawlen(luaState, -1) * sizeof(char);
+		break;
+	case LUA_TTABLE:
+		dataType = table;
+		/*
+		Can find this now, but I don't feel like doing it twice. I'd rather do
+		malloc twice than iterate through the table multiple times.
+		What is easy to do here is to account for the table header.
+		*/
+		newPacketLength += sizeof(lua_Unsigned);
+		break;
+	case LUA_TFUNCTION:
+		error("Object is a function. Functions cannot be sent over the network (yet).", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	case LUA_TUSERDATA:
+		error("Object is userdata. Userdata cannot be sent over the network (yet).", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	case LUA_TTHREAD:
+		error("Object is a thread. Threads cannot be sent over the network (yet).", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	case LUA_TLIGHTUSERDATA:
+		error("Object is light userdata. Light userdata cannot be sent over the network (yet).", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	case LUA_TNONE:
+		dataType = none;
+		warning("Object is type \"none\". Is this what you intended to send?", "");
+		break;
+	default:
+		critical_error("Object has an invalid type.", "");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	// Add header length.
+	
+	switch (nameType) {
+	case integer:
+		newPacketLength += sizeof(lua_Integer);
+		break;
+	case real:
+		newPacketLength += sizeof(lua_Number);
+		break;
+	case string:
+		// Name. Length + string.
+		name_length = strlen((char *) name);
+		newPacketLength += sizeof(lua_Unsigned) + name_length * sizeof(char);
+		break;
+	default:
+		critical_error("Illegal type \"%i\" for object name.", nameType);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	// Data type + name type.
+	newPacketLength += 2 * sizeof(network_lua_type_t);
+	
+	// Allocate space for header and data.
+	error = enet_packet_resize(packet, newPacketLength);
+	if (error < 0) {
+		critical_error("May be out of memory.", "");
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	
+	// Create header.
+	
+	// Name type.
+	for (unsigned int i = 0; i < sizeof(network_lua_type_t); i++) {
+		packet->data[*index + structIndex++] = ((unsigned long long) nameType >> 8*i) & 0xFF;
+	}
+	
+	switch (nameType) {
+	case integer:
+		for (unsigned int i = 0; i < sizeof(lua_Integer); i++) {
+			packet->data[*index + structIndex++] = ((unsigned long long) *((lua_Integer *) name) >> 8*i) & 0xFF;
+		}
+		break;
+	case real:
+		for (unsigned int i = 0; i < sizeof(lua_Number); i++) {
+			packet->data[*index + structIndex++] = ((unsigned long long) *((lua_Number *) name) >> 8*i) & 0xFF;
+		}
+		break;
+	case string:
+		// Name length.
+		for (unsigned int i = 0; i < sizeof(lua_Unsigned); i++) {
+			packet->data[*index + structIndex++] = ((unsigned long long) name_length >> 8*i) & 0xFF;
+		}
+		// Name.
+		for (unsigned int i = 0; i < name_length; i++) {
+			packet->data[*index + structIndex++] = ((char *) name)[i];
+		}
+		break;
+	default:
+		critical_error("Illegal type \"%i\" for object name.", nameType);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	// Type.
+	for (unsigned int i = 0; i < sizeof(network_lua_type_t); i++) {
+		packet->data[*index + structIndex++] = ((unsigned long long) dataType >> 8*i) & 0xFF;
+	}
+	
+	// Insert data.
+	
+	switch (dataType) {
+	case integer:
+		tempLuaInteger = lua_tointeger(luaState, -1);
+		for (unsigned int i = 0; i < sizeof(lua_Integer); i++) {
+			packet->data[*index + structIndex++] = ((unsigned long long) tempLuaInteger >> 8*i) & 0xFF;
+		}
+		break;
+	case real:
+		tempLuaReal = lua_tonumber(luaState, -1);
+		for (unsigned int i = 0; i < sizeof(lua_Number); i++) {
+			packet->data[*index + structIndex++] = ((unsigned long long) tempLuaReal >> 8*i) & 0xFF;
+		}
+		break;
+	case boolean:
+		tempLuaBoolean = lua_toboolean(luaState, -1);
+		for (unsigned int i = 0; i < sizeof(int); i++) {
+			packet->data[*index + structIndex++] = ((unsigned long long) tempLuaBoolean >> 8*i) & 0xFF;
+		}
+		break;
+	case string:
+		tempLuaString = lua_tostring(luaState, -1);
+		tempLuaString_length = lua_rawlen(luaState, -1);
+		// String length.
+		for (unsigned int i = 0; i < sizeof(lua_Unsigned); i++) {
+			packet->data[*index + structIndex++] = ((unsigned long long) tempLuaString_length >> 8*i) & 0xFF;
+		}
+		// String.
+		for (unsigned int i = 0; i < tempLuaString_length; i++) {
+			packet->data[*index + structIndex++] = tempLuaString[i];
+		}
+		break;
+	case table:
+		// Save current index (start of table length).
+		tableLengthIndex = *index + structIndex;
+		
+		structIndex += sizeof(lua_Unsigned);
+		
+		// Update index to prepare for recursion.
+		*index += structIndex;
+		structIndex = 0;
+		
+		// For each key in the table...
+		lua_pushnil(luaState);  // First key.
+		while (lua_next(luaState, -2)) {
+		
+			switch (lua_type(luaState, -2)) {
+			case LUA_TNUMBER:
+				if (lua_isinteger(luaState, -2)) {
+					// Add the value to the packet.
+					tempLuaInteger = lua_tointeger(luaState, -2);
+					error = network_packetAdd_lua_object(luaState, &tempLuaInteger, integer, packet, index);
+				}
+				else {
+					// Add the value to the packet.
+					tempLuaReal = lua_tonumber(luaState, -2);
+					error = network_packetAdd_lua_object(luaState, &tempLuaReal, real, packet, index);
+				}
+				break;
+			case LUA_TSTRING:
+				// Add the value to the packet.
+				error = network_packetAdd_lua_object(luaState, lua_tostring(luaState, -2), string, packet, index);
+				break;
+			default:
+				critical_error("Bad key type. Can't happen.", "");
+				error = ERR_CRITICAL;
+				goto cleanup_l;
+			}
+			if (error) {
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
+			
+			// Pop value.
+			lua_pop(luaState, 1);
+			
+			tableLength++;
+		}
+		
+		// Fill in table length.
+		for (unsigned int i = 0; i < sizeof(lua_Unsigned); i++) {
+			packet->data[tableLengthIndex + structIndex++] = ((unsigned long long) tableLength >> 8*i) & 0xFF;
+		}
+		structIndex = 0;
+		break;
+	case none:
+		// Shouldn't have to push anything...
+		break;
+	default:
+		critical_error("\"%s\" has an invalid type.", name);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	// Increase the packet byte index.
+	*index += structIndex;
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
+}
+
+/*
+After running this function, the stack will look like this:
+-1  Value
+-2  Key
+-3  ...
+*/
+int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdiff_t *index) {
+	int error = ERR_CRITICAL;
+	
+	unsigned long long tempUnsignedLongLong;
+	int tempInt;
+	lua_Integer tempLuaInteger;
+	lua_Number tempLuaNumber;
+	lua_Unsigned tempLuaString_length;
+	char *tempLuaString = NULL;
+	lua_Unsigned tempLuaTable_length;
+	
+	ptrdiff_t structIndex = 0;
+	size_t data_byteLength = 0;
+	
+	network_lua_type_t keyType;
+	lua_Integer keyInteger;
+	lua_Number keyReal;
+	lua_Unsigned keyString_length;
+	char *keyString = NULL;
+	network_lua_type_t dataType;
+	
+	// Header //
+	
+	// Read key type.
+	
+	data_byteLength += sizeof(network_lua_type_t);
+	if (*index + data_byteLength > packet->dataLength) {
+		error = ERR_GENERIC;
+		error("Malformed packet. End of packet reached. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet->dataLength, data_byteLength);
+		goto cleanup_l;
+	}
+	
+	tempUnsignedLongLong = 0;
+	for (unsigned long i = 0; i < sizeof(network_lua_type_t); i++) {
+		tempUnsignedLongLong = tempUnsignedLongLong | ((unsigned long long) packet->data[*index + structIndex++] << 8*i);
+	}
+	keyType = *((network_lua_type_t *) &tempUnsignedLongLong);
+	
+	// Read key. This will be at index -2 at return.
+	
+	switch (keyType) {
+	case integer:
+		data_byteLength += sizeof(lua_Integer);
+		if (*index + data_byteLength > packet->dataLength) {
+			error = ERR_GENERIC;
+			error("Malformed packet. End of packet reached. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet->dataLength, data_byteLength);
+			goto cleanup_l;
+		}
+		
+		tempUnsignedLongLong = 0;
+		for (unsigned long i = 0; i < sizeof(lua_Integer); i++) {
+			tempUnsignedLongLong = tempUnsignedLongLong | ((unsigned long long) packet->data[*index + structIndex++] << 8*i);
+		}
+		keyInteger = *((lua_Integer *) &tempUnsignedLongLong);
+		
+		lua_pushinteger(luaState, keyInteger);
+		break;
+	case real:
+		data_byteLength += sizeof(lua_Number);
+		if (*index + data_byteLength > packet->dataLength) {
+			error = ERR_GENERIC;
+			error("Malformed packet. End of packet reached. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet->dataLength, data_byteLength);
+			goto cleanup_l;
+		}
+		
+		tempUnsignedLongLong = 0;
+		for (unsigned long i = 0; i < sizeof(lua_Number); i++) {
+			tempUnsignedLongLong = tempUnsignedLongLong | ((unsigned long long) packet->data[*index + structIndex++] << 8*i);
+		}
+		keyReal = *((lua_Number *) &tempUnsignedLongLong);
+		
+		lua_pushnumber(luaState, keyReal);
+		break;
+	case string:
+		// Length
+		data_byteLength += sizeof(lua_Unsigned);
+		if (*index + data_byteLength > packet->dataLength) {
+			error = ERR_GENERIC;
+			error("Malformed packet. End of packet reached. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet->dataLength, data_byteLength);
+			goto cleanup_l;
+		}
+		
+		tempUnsignedLongLong = 0;
+		for (unsigned long i = 0; i < sizeof(lua_Unsigned); i++) {
+			tempUnsignedLongLong = tempUnsignedLongLong | ((unsigned long long) packet->data[*index + structIndex++] << 8*i);
+		}
+		keyString_length = *((lua_Unsigned *) &tempUnsignedLongLong);
+		
+		// String
+		data_byteLength += keyString_length * sizeof(char);
+		if (*index + data_byteLength > packet->dataLength) {
+			error = ERR_GENERIC;
+			error("Malformed packet. End of packet reached. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet->dataLength, data_byteLength);
+			goto cleanup_l;
+		}
+		
+		keyString = malloc((keyString_length + 1) * sizeof(char));
+		if (keyString == NULL) {
+			critical_error("Out of memory.", "");
+			error = ERR_OUTOFMEMORY;
+			goto cleanup_l;
+		}
+		
+		for (lua_Unsigned i = 0; i < keyString_length; i++) {
+			keyString[i] = (char) packet->data[*index + structIndex++];
+		}
+		keyString[keyString_length] = '\0';
+		
+		lua_pushstring(luaState, keyString);
+		
+		insane_free(keyString);
+		keyString_length = 0;
+		break;
+	default:
+		error("Bad key type \"%i\".", keyType);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	// Read object type.
+	
+	data_byteLength += sizeof(network_lua_type_t);
+	if (*index + data_byteLength > packet->dataLength) {
+		error = ERR_GENERIC;
+		error("Malformed packet. End of packet reached. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet->dataLength, data_byteLength);
+		goto cleanup_l;
+	}
+	
+	tempUnsignedLongLong = 0;
+	for (unsigned long i = 0; i < sizeof(network_lua_type_t); i++) {
+		tempUnsignedLongLong = tempUnsignedLongLong | ((unsigned long long) packet->data[*index + structIndex++] << 8*i);
+	}
+	dataType = *((network_lua_type_t *) &tempUnsignedLongLong);
+	
+	// Create and set object. This will be at index -1 at return.
+	
+	switch (dataType) {
+	case none:
+		// We are done here.
+		break;
+	case integer:
+		data_byteLength += sizeof(lua_Integer);
+		if (*index + data_byteLength > packet->dataLength) {
+			error = ERR_GENERIC;
+			error("Malformed packet. End of packet reached. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet->dataLength, data_byteLength);
+			goto cleanup_l;
+		}
+		
+		tempUnsignedLongLong = 0;
+		for (unsigned long i = 0; i < sizeof(lua_Integer); i++) {
+			tempUnsignedLongLong = tempUnsignedLongLong | ((unsigned long long) packet->data[*index + structIndex++] << 8*i);
+		}
+		tempLuaInteger = *((lua_Integer *) &tempUnsignedLongLong);
+		
+		lua_pushinteger(luaState, tempLuaInteger);
+		break;
+	case real:
+		data_byteLength += sizeof(lua_Number);
+		if (*index + data_byteLength > packet->dataLength) {
+			error = ERR_GENERIC;
+			error("Malformed packet. End of packet reached. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet->dataLength, data_byteLength);
+			goto cleanup_l;
+		}
+		
+		tempUnsignedLongLong = 0;
+		for (unsigned long i = 0; i < sizeof(lua_Number); i++) {
+			tempUnsignedLongLong = tempUnsignedLongLong | ((unsigned long long) packet->data[*index + structIndex++] << 8*i);
+		}
+		tempLuaNumber = *((lua_Number *) &tempUnsignedLongLong);
+		
+		lua_pushnumber(luaState, tempLuaNumber);
+		break;
+	case boolean:
+		data_byteLength += sizeof(int);
+		if (*index + data_byteLength > packet->dataLength) {
+			error = ERR_GENERIC;
+			error("Malformed packet. End of packet reached. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet->dataLength, data_byteLength);
+			goto cleanup_l;
+		}
+		
+		tempUnsignedLongLong = 0;
+		for (unsigned long i = 0; i < sizeof(int); i++) {
+			tempUnsignedLongLong = tempUnsignedLongLong | ((unsigned long long) packet->data[*index + structIndex++] << 8*i);
+		}
+		tempInt = *((int *) &tempUnsignedLongLong);
+		
+		lua_pushboolean(luaState, tempInt);
+		break;
+	case string:
+		// Length
+		data_byteLength += sizeof(lua_Unsigned);
+		if (*index + data_byteLength > packet->dataLength) {
+			error = ERR_GENERIC;
+			error("Malformed packet. End of packet reached. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet->dataLength, data_byteLength);
+			goto cleanup_l;
+		}
+		
+		tempUnsignedLongLong = 0;
+		for (unsigned long i = 0; i < sizeof(lua_Unsigned); i++) {
+			tempUnsignedLongLong = tempUnsignedLongLong | ((unsigned long long) packet->data[*index + structIndex++] << 8*i);
+		}
+		tempLuaString_length = *((lua_Unsigned *) &tempUnsignedLongLong);
+		
+		// String
+		data_byteLength += tempLuaString_length * sizeof(char);
+		if (*index + data_byteLength > packet->dataLength) {
+			error = ERR_GENERIC;
+			error("Malformed packet. End of packet reached. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet->dataLength, data_byteLength);
+			goto cleanup_l;
+		}
+		
+		tempLuaString = malloc((tempLuaString_length + 1) * sizeof(char));
+		if (tempLuaString == NULL) {
+			critical_error("Out of memory.", "");
+			error = ERR_OUTOFMEMORY;
+			goto cleanup_l;
+		}
+		
+		for (lua_Unsigned i = 0; i < tempLuaString_length; i++) {
+			tempLuaString[i] = (char) packet->data[*index + structIndex++];
+		}
+		tempLuaString[tempLuaString_length] = '\0';
+		
+		lua_pushstring(luaState, tempLuaString);
+		
+		insane_free(tempLuaString);
+		tempLuaString_length = 0;
+		break;
+	case table:
+		// Length
+		data_byteLength += sizeof(lua_Unsigned);
+		if (*index + data_byteLength > packet->dataLength) {
+			error = ERR_GENERIC;
+			error("Malformed packet. End of packet reached. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet->dataLength, data_byteLength);
+			goto cleanup_l;
+		}
+		
+		tempUnsignedLongLong = 0;
+		for (unsigned int i = 0; i < sizeof(lua_Unsigned); i++) {
+			tempUnsignedLongLong = tempUnsignedLongLong | ((unsigned long long) packet->data[*index + structIndex++] << 8*i);
+		}
+		tempLuaTable_length = *((lua_Unsigned *) &tempUnsignedLongLong);
+		
+		// Table
+		lua_createtable(luaState, 0, tempLuaTable_length);
+		
+		// Prepare `*index` for recursion.
+		*index += structIndex;
+		structIndex = 0;
+		for (lua_Unsigned i = 0; i < tempLuaTable_length; i++) {
+			// No more length checking because this does it for us.
+			error = network_packetRead_lua_object(luaState, packet, index);
+			if (error) {
+				goto cleanup_l;
+			}
+			/*
+			Stack:
+			-1  Data
+			-2  Key
+			-3  The table that was just created.
+			-4  The key of the table that was just created.
+			-5  ...
+			*/
+			lua_settable(luaState, -3);
+		}
+		/*
+		Stack:
+		-1  The table that was just created.
+		-2  The key of the table that was just created.
+		-3  ...
+		*/
+		break;
+	default:
+		error("Object has an invalid type.", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	*index += structIndex;
+	structIndex = 0;
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
+}
+
+
 
 int network_ipv4ToString(char **string, uint32_t ipAddress) {
 	int error = ERR_CRITICAL;

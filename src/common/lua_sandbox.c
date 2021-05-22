@@ -132,7 +132,7 @@ int lua_runFunction(lua_State *luaState, const char *functionName, uint32_t time
 	};
 	
 	error = lua_getglobal(luaState, luaTimeout.functionName);
-	if (error != 6) {
+	if (error != LUA_TFUNCTION) {
 		error("Lua file does not contain \"%s\" function.", luaTimeout.functionName);
 		error = ERR_CRITICAL;
 		goto cleanup_l;

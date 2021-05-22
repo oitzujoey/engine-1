@@ -4,6 +4,11 @@
 
 #include "../common/types.h"
 
+#define CNETWORK_STATESTRING_TYPE_STRING    0U
+
+#define CNETWORK_STATESTRING_TYPE_LENGTH    1UL
+#define CNETWORK_STATESTRING_LENGTH_LENGTH  2UL
+
 // extern UDPsocket g_clientSocket;
 
 // int cnetwork_closeSocket(UDPsocket socket);
@@ -24,12 +29,15 @@ typedef struct cnetwork_clientState_s {
 	time_t lastResponseTime;
 } cnetwork_clientState_t;
 
-/* Config events */
+/* Config callbacks */
 int cnetwork_callback_setIpAddress(cfg2_var_t *var, const char *command, lua_State *luaState);
 int cnetwork_callback_setServerPort(cfg2_var_t *var, const char *command, lua_State *luaState);
 
+/* Lua functions */
+
 /* Network functions */
-int cnetwork_runEvents(void);
+int cnetwork_sendString(const char *string);
+int cnetwork_runEvents(lua_State *luaState);
 int cnetwork_init(void);
 void cnetwork_quit(void);
 

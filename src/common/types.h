@@ -249,4 +249,16 @@ typedef struct {
 	size_t length;
 } keybinds_t;
 
+/* network.h */
+/* ========= */
+
+typedef enum {
+	none,
+	integer,
+	real,
+	boolean,
+	string,
+	table
+} network_lua_type_t;
+
 #endif

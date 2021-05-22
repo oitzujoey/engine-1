@@ -6,8 +6,18 @@ This should do almost nothing. The server engine/script and client engine will d
 This script will draw the HUD, create and set 3D reference entities, and perform other menial tasks.
 --]]
 
-function doSomethingAwesome()
-	warning("doSomethingAwesome", "I can mess with your keys now!")
+specialKey = false
+
+--[[
+Key bind functions are run before networking happens.
+`main` is run after networking happens.
+--]]
+function key_rollClockwise()
+	clientState.right = true
+end
+
+function key_rollCounterClockwise()
+	clientState.left = true
 end
 
 function startup()
@@ -44,12 +54,30 @@ function startup()
 		-- l_renderEntity(worldEntity, 0.0, 0.0, 1.0, 1.0)
 	end
 	
-	cfg2_setVariable("create none specialBind")
-	cfg2_setCallback("specialBind", "doSomethingAwesome")
-	cfg2_setVariable("bind k_97 specialBind")
+	cfg2_setVariable("create none key_rollClockwise")
+	cfg2_setCallback("key_rollClockwise", "key_rollClockwise")
+	cfg2_setVariable("bind k_1073741903 key_rollClockwise")
+
+	cfg2_setVariable("create none key_rollCounterClockwise")
+	cfg2_setCallback("key_rollCounterClockwise", "key_rollCounterClockwise")
+	cfg2_setVariable("bind k_1073741904 key_rollCounterClockwise")
+
+	-- cfg2_setVariable("create none key_rollClockwise")
+	-- cfg2_setCallback("key_rollClockwise", "key_rollClockwise")
+	-- cfg2_setVariable("bind k_1073741903 key_rollClockwise")
+
+	-- cfg2_setVariable("create none key_rollClockwise")
+	-- cfg2_setCallback("key_rollClockwise", "key_rollClockwise")
+	-- cfg2_setVariable("bind k_1073741903 key_rollClockwise")
 
 	cfg2_setVariable("bind k_113 quit")
 	-- cfg2_setVariable("specialBind")
+	
+	-- Create keys/buttons
+	clientState.up = false
+	clientState.down = false
+	clientState.left = false
+	clientState.right = false
 	
 	info("main", "Starting game")
 end
@@ -74,6 +102,15 @@ function main()
 		-- puts("Lua looping")
 		
 		-- l_main_housekeeping()
+	
+	-- if clientState.up then
+	-- 	clientState["Hello"] = "world!"
+	-- end
+	
+	clientState.up = false
+	clientState.down = false
+	clientState.left = false
+	clientState.right = false
 end
 
 function shutdown()

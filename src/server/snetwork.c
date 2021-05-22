@@ -8,6 +8,7 @@
 #include "server.h"
 #include "../common/entity.h"
 #include "../common/vector.h"
+#include "../common/lua_common.h"
 
 // client_t g_clients[MAX_CLIENTS];
 // UDPsocket g_serverSocket;
@@ -89,26 +90,114 @@ static void snetwork_connect(ENetEvent event) {
 	insane_free(ipAddress);
 }
 
-static void snetwork_receive(ENetEvent event) {
+static int snetwork_receive(ENetEvent event, lua_State *luaState) {
+	int error = ERR_CRITICAL;
+
 	// info("Received packet of length %u from %X:%u on channel %u", event.packet->dataLength, event.peer->address.host, event.peer->address.port, event.channelID);
 	ENetPeer *peer = event.peer;
 	ENetPacket *packet = event.packet;
-	int index;
+	int clientNumber;
+	ptrdiff_t packetIndex = 0;
 	
+	// Check for bad guys.
 	if (event.peer->data == NULL) {
 		// Not a currently connected client.
+		error("Unconnected client sent message to server. Ignoring packet.", "");
 		enet_packet_destroy(packet);
-		return;
+		error = ERR_GENERIC;
+		goto cleanup_l;
 	}
 	
-	index = *((int *) peer->data);
+	clientNumber = *((int *) peer->data);
 	
-	printf("Client %u: ", index);
-	for (int i = 0; i < packet->dataLength; i++) {
-		putc(packet->data[i], stdout);
+	/* Stack
+	*/
+	
+	// Find the table.
+	error = lua_getglobal(luaState, NETWORK_LUA_CLIENTSTATE_NAME);
+	if (error != LUA_TTABLE) {
+		// It should have been created by `cnetwork_init`.
+		critical_error("Lua file does not contain the table \"%s\".", NETWORK_LUA_CLIENTSTATE_NAME);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
 	}
-	putc('\n', stdout);
+	
+	/* Stack
+	-1  global table
+	*/
+	
+	error = network_packetRead_lua_object(luaState, packet, &packetIndex);
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	/* Stack
+	-1  table (actual table)
+	-2  key (global table name)
+	-3  global table
+	*/
+	
+	lua_pushinteger(luaState, clientNumber);
+	
+	/* Stack
+	-1  key (client number, int)
+	-2  table (actual table)
+	-3  key (global table name, string)
+	-4  global table
+	*/
+	
+	lua_copy(luaState, -1, -3);
+	
+	/* Stack
+	-1  key (client number, int)
+	-2  table (actual table)
+	-3  key (client number, int)
+	-4  global table
+	*/
+	
+	lua_pop(luaState, 1);
+	
+	/* Stack
+	-1  table (actual table)
+	-2  key (client number, int)
+	-3  global table
+	*/
+	
+	lua_settable(luaState, -3);
+	
+	/* Stack
+	-1  global table
+	*/
+	
+	// int top = lua_gettop(luaState);
+	// for (int i = 1; i < top; i++)
+	// 	printf("%i : %s\n", -i, lua_typename(luaState, lua_type(luaState, -i)));
+	
+	// lua_common_printTable(luaState);
+	
+	// lua_pop(luaState, 1);
+	// lua_setglobal(luaState, NETWORK_LUA_CLIENTSTATE_NAME);
+	
+	/* Stack
+	*/
+	
+	// printf("Client %u: ", clientNumber);
+	// for (int i = 0; i < packet->dataLength; i++) {
+	// 	if (packet->data[i] < 0x20) {
+	// 		printf("<%0X>", packet->data[i]);
+	// 	}
+	// 	else {
+	// 		putc(packet->data[i], stdout);
+	// 	}
+	// }
+	// putc('\n', stdout);
+	
 	enet_packet_destroy(packet);
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
 }
 
 static void snetwork_disconnect(ENetEvent event) {
@@ -220,7 +309,7 @@ static int snetwork_sendEntityList(void) {
 	return error;
 }
 
-int snetwork_runEvents(void) {
+int snetwork_runEvents(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	ENetEvent event;
@@ -237,7 +326,10 @@ int snetwork_runEvents(void) {
 			snetwork_connect(event);
 			break;
 		case ENET_EVENT_TYPE_RECEIVE:
-			snetwork_receive(event);
+			error = snetwork_receive(event, luaState);
+			if (error >= ERR_CRITICAL) {
+				goto cleanup_l;
+			}
 			break;
 		case ENET_EVENT_TYPE_DISCONNECT:
 			snetwork_disconnect(event);

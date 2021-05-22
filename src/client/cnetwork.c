@@ -13,9 +13,16 @@
 // UDPsocket g_clientSocket;
 // // SDLNet_SocketSet socketSet_g;
 
-ENetHost *clientHost;
-ENetPeer *serverPeer;
+ENetHost *g_clientHost;
+ENetPeer *g_serverPeer;
 cnetwork_clientState_t g_clientState;
+
+/*
+A packet to send to the server. Will eventually contain keys and things like
+that.
+*/
+enet_uint8 *g_clientStateArray = NULL;
+int g_clientStateArray_length = 0;
 
 extern cfg2_t g_cfg2;
 
@@ -68,7 +75,7 @@ int cnetwork_callback_setServerPort(cfg2_var_t *var, const char *command, lua_St
 /* Networking functions */
 
 static void cnetwork_connectionReset(void) {
-	enet_peer_reset(serverPeer);
+	enet_peer_reset(g_serverPeer);
 	g_clientState.connected = false;
 	g_clientState.connectionState = cnetwork_connectionState_disconnected;
 	g_cfg2.quit = true;
@@ -76,14 +83,14 @@ static void cnetwork_connectionReset(void) {
 }
 
 static void cnetwork_requestDisconnect(void) {
-	enet_peer_disconnect(serverPeer, 0);
+	enet_peer_disconnect(g_serverPeer, 0);
 	info("Client disconnecting...", "");
 }
 
 static void cnetwork_requestConnect(void) {
 
 	info("Requesting to connect with %s:%i", g_clientState.serverAddressString, g_clientState.serverAddress.port);
-	serverPeer = enet_host_connect(clientHost, &g_clientState.serverAddress, ENET_CHANNELS, 0);
+	g_serverPeer = enet_host_connect(g_clientHost, &g_clientState.serverAddress, ENET_CHANNELS, 0);
 	g_clientState.lastResponseTime = time(NULL);
 	g_clientState.connectionState = cnetwork_connectionState_connecting;
 }
@@ -182,7 +189,7 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 	// Allocate more space for entities if needed.
 	for (int i = 0; i < g_entityList.entities_length; i++) {
 		if (entities[i].children_length > g_entityList.entities[i].children_length) {
-			entities[i].children = realloc(g_entityList.entities[i].children, entities[i].children_length * sizeof(int));
+			entities[i].children = realloc(g_entityList.entities[i].children, entities[i].children_length * sizeof(ptrdiff_t));
 			if (entities[i].children == NULL) {
 				critical_error("Out of memory.", "");
 				error = ERR_OUTOFMEMORY;
@@ -205,7 +212,6 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 	}
 	
 	for (int i = 0; i < g_entityList.entities_length; i++) {
-	
 		error = network_packetRead_ptrdiff(g_entityList.entities[i].children, g_entityList.entities[i].children_length, data, &data_index, data_length);
 		if (error) {
 			goto cleanup_l;
@@ -229,6 +235,68 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 	
 	error = ERR_OK;
 	cleanup_l:
+	
+	return error;
+}
+
+/*
+Here we are going to find the "clientState" table and convert it to a byte
+array. This is very similar to how the entities are sent to the client.
+*/
+static int cnetwork_sendState(lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	ENetPacket *packet = NULL;
+	ptrdiff_t index = 0;
+	
+	// Find the table.
+	error = lua_getglobal(luaState, NETWORK_LUA_CLIENTSTATE_NAME);
+	if (error != LUA_TTABLE) {
+		// It should have been created by `cnetwork_init`.
+		critical_error("Lua file does not contain the table \"%s\".", NETWORK_LUA_CLIENTSTATE_NAME);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	// // It might be empty. That's fine. Don't send.
+	// if (g_clientStateArray == NULL || g_clientStateArray_length == 0) {
+	// 	if (g_clientStateArray != NULL && g_clientStateArray_length == 0) {
+	// 		// Or we could have a bad pointer.
+	// 		critical_error("Array has length of 0 but is not NULL.", "");
+	// 		error = ERR_CRITICAL;
+	// 	} else {
+	// 		error = ERR_OK;
+	// 	}
+	// 	goto cleanup_l;
+	// }
+	
+	// Create the packet.
+	packet = enet_packet_create(NULL, 0, 0);
+	if (packet == NULL) {
+		critical_error("Out of memory.", "");
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	
+	// Send the table.
+	error = network_packetAdd_lua_object(luaState, NETWORK_LUA_CLIENTSTATE_NAME, string, packet, &index);
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	// Send to the server.
+	error = enet_peer_send(g_serverPeer, ENET_CHANNEL0, packet);
+	if (error < 0) {
+		error("Unable to send packet to server.", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	insane_free(g_clientStateArray);
+	g_clientStateArray_length = 0;
 	
 	return error;
 }
@@ -273,7 +341,7 @@ static void cnetwork_disconnect(ENetEvent event) {
 	info("Client disconnected.", "");
 }
 
-int cnetwork_runEvents(void) {
+int cnetwork_runEvents(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	ENetEvent event;
@@ -282,7 +350,7 @@ int cnetwork_runEvents(void) {
 	if (g_clientState.connectionState == cnetwork_connectionState_initial) {
 		// Note that time is not of the essence when connecting.
 		cnetwork_requestConnect();
-		error = enet_host_service(clientHost, &event, g_connectionTimeout);
+		error = enet_host_service(g_clientHost, &event, g_connectionTimeout);
 		// Connected.
 		if ((error > 0) && (event.type == ENET_EVENT_TYPE_CONNECT)) {
 			cnetwork_connect(event);
@@ -316,7 +384,7 @@ int cnetwork_runEvents(void) {
 	
 	if (g_cfg2.quit) {
 		cnetwork_requestDisconnect();
-		error = enet_host_service(clientHost, &event, g_connectionTimeout);
+		error = enet_host_service(g_clientHost, &event, g_connectionTimeout);
 		// Disconnected successfully.
 		if ((error > 0) && (event.type == ENET_EVENT_TYPE_DISCONNECT)) {
 			cnetwork_disconnect(event);
@@ -332,8 +400,15 @@ int cnetwork_runEvents(void) {
 		}
 	}
 	
+	if (g_clientState.connectionState == cnetwork_connectionState_connected) {
+		error = cnetwork_sendState(luaState);
+		if (error > ERR_GENERIC) {
+			goto cleanup_l;
+		}
+	}
+	
 	do {
-		error = enet_host_service(clientHost, &event, 0);
+		error = enet_host_service(g_clientHost, &event, 0);
 		
 		if (error > 0) {
 			switch (event.type) {
@@ -393,14 +468,19 @@ int cnetwork_init(void) {
 	
 	// Create UDP client.
 	// @TODO: Decide if we need to limit bandwidth.
-	clientHost = enet_host_create(NULL, 1, ENET_CHANNELS, 0, 0);
-	if (clientHost == NULL) {
+	g_clientHost = enet_host_create(NULL, 1, ENET_CHANNELS, 0, 0);
+	if (g_clientHost == NULL) {
 		critical_error("Could not create ENet client.", "");
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 	
-	enet_host_compress_with_range_coder(clientHost);
+	error = enet_host_compress_with_range_coder(g_clientHost);
+	if (error < 0) {
+		critical_error("Could not enable the packet compressor.", "");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -409,7 +489,7 @@ int cnetwork_init(void) {
 
 void cnetwork_quit(void) {
 	
-	enet_host_destroy(clientHost);
+	enet_host_destroy(g_clientHost);
 	enet_deinitialize();
 	
 }

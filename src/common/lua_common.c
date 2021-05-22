@@ -151,3 +151,51 @@ int l_cfg2_setCallback(lua_State *luaState) {
 	
 	return 1;
 }
+
+
+int lua_common_printTable(lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	if (lua_type(luaState, -2) == LUA_TSTRING) {
+		printf("%s\n", lua_tostring(luaState, -2));
+	}
+	
+	lua_pushnil(luaState);
+	while (lua_next(luaState, -2)) {
+		switch (lua_type(luaState, -1)) {
+		case LUA_TSTRING:
+			printf("%s : %s\n", lua_tostring(luaState, -2), lua_tostring(luaState, -1));
+			break;
+		case LUA_TNUMBER:
+			if (lua_isinteger(luaState, -1)) {
+				printf("%s : %lld\n", lua_tostring(luaState, -2), lua_tointeger(luaState, -1));
+			}
+			else {
+				printf("%s : %f\n", lua_tostring(luaState, -2), lua_tonumber(luaState, -1));
+			}
+			break;
+		case LUA_TBOOLEAN:
+			printf("%s : %i\n", lua_tostring(luaState, -2), lua_toboolean(luaState, -1));
+			break;
+		case LUA_TTABLE:
+			printf("{\n");
+			error = lua_common_printTable(luaState);
+			if (error) {
+				goto cleanup_l;
+			}
+			printf("}\n");
+			break;
+		default:
+			error("Unsupported type.", "");
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		}
+		
+		lua_pop(luaState, 1);
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	return error;
+}

@@ -8,6 +8,8 @@
 #define ENET_CHANNEL0       0
 #define ENET_CHANNEL1       1
 
+#define NETWORK_LUA_CLIENTSTATE_NAME   "clientState"
+
 // typedef struct {
 // 	uint16_t id;
 // 	uint16_t idAck;
@@ -31,6 +33,10 @@ int network_packetRead_uint32(uint32_t *data, const ptrdiff_t data_length, const
 int network_packetRead_entityList(entityList_t *data, const ptrdiff_t data_length, const enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length);
 int network_packetRead_entity(entity_t *data, const ptrdiff_t data_length, const enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length);
 int network_packetRead_ptrdiff(ptrdiff_t *data, const ptrdiff_t data_length, const enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length);
+
+
+int network_packetAdd_lua_object(lua_State *luaState, const void *name, network_lua_type_t nameType, ENetPacket *packet, ptrdiff_t *index);
+int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdiff_t *index);
 
 int network_ipv4ToString(char **string, uint32_t ipAddress);
 

@@ -99,7 +99,7 @@ static void main_housekeeping(lua_State *luaState) {
 	// strcpy(sendString, "Hello, world!");
 	// network_sendReliablePacket(g_serverSocket, ipAddress, (Uint8 *) sendString, strlen(sendString) + 1);
 	
-	error = snetwork_runEvents();
+	error = snetwork_runEvents(luaState);
 	if (error) {
 		goto cleanup_l;
 	}
@@ -287,7 +287,7 @@ static void main_quit(void) {
 int main(int argc, char *argv[]) {
 	
 	int error = 0;
-	lua_State *Lua;
+	lua_State *luaState;
 	const char *luaFileName = "smain.lua";
 	char *luaFilePath = NULL;
 	cfg2_var_t *lua_main_v;
@@ -295,7 +295,7 @@ int main(int argc, char *argv[]) {
 	
 	info("Starting engine-1 v0.0 (Server)", "");
 	
-	error = main_init(argc, argv, Lua);
+	error = main_init(argc, argv, luaState);
 	if (error) {
 		critical_error("main_init returned an error.", "");
 		error = ERR_CRITICAL;
@@ -328,23 +328,27 @@ int main(int argc, char *argv[]) {
 	
 	// Start Lua.
 	
-	error = lua_sandbox_init(&Lua, luaFilePath);
+	error = lua_sandbox_init(&luaState, luaFilePath);
 	if (error) {
 		error("Could not initialize Lua server.", "");
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 	
-	lua_sandbox_addFunctions(&Lua, luaCommonFunctions);
-	lua_sandbox_addFunctions(&Lua, luaServerFunctions);
+	lua_sandbox_addFunctions(&luaState, luaCommonFunctions);
+	lua_sandbox_addFunctions(&luaState, luaServerFunctions);
 	
     // Run startup.
     
-	error = lua_runFunction(Lua, "startup", MAIN_LUA_STARTUP_TIMEOUT);
+	error = lua_runFunction(luaState, "startup", MAIN_LUA_STARTUP_TIMEOUT);
     if (error) {
         error = ERR_CRITICAL;
         goto luaCleanup_l;
     }
+	
+	// Create table `NETWORK_LUA_CLIENTSTATE_NAME`.
+	lua_newtable(luaState);
+	lua_setglobal(luaState, NETWORK_LUA_CLIENTSTATE_NAME);
 	
 	// Run the main game.
 	
@@ -352,18 +356,18 @@ int main(int argc, char *argv[]) {
 	
 		// Set timeout
 	
-		error = lua_runFunction(Lua, "main", MAIN_LUA_MAIN_TIMEOUT);
+		error = lua_runFunction(luaState, "main", MAIN_LUA_MAIN_TIMEOUT);
 		if (error) {
 			error = ERR_CRITICAL;
 			goto cleanup_l;
 		}
 		
-        main_housekeeping(Lua);
+        main_housekeeping(luaState);
 	}
 	
 	// Run shutdown.
 	
-	error = lua_runFunction(Lua, "shutdown", MAIN_LUA_SHUTDOWN_TIMEOUT);
+	error = lua_runFunction(luaState, "shutdown", MAIN_LUA_SHUTDOWN_TIMEOUT);
     if (error) {
         error = ERR_CRITICAL;
         goto luaCleanup_l;
@@ -374,7 +378,7 @@ int main(int argc, char *argv[]) {
 	error = ERR_OK;
 	luaCleanup_l:
 	
-	lua_sandbox_quit(&Lua);
+	lua_sandbox_quit(&luaState);
 	
 	cleanup_l:
 	

@@ -1,0 +1,33 @@
+So I can't mess with time... but I can fake it.
+
+Full disclosure: I watched STEINS;GATE, and it gave me some ideas on simulating time. The goal would be to create a game with a similar time travel mechanism.
+
+Turn based
+FPS -- Time travel powerup.
+
+Spy vs. Spy could be interesting.
+
+Use of time travel would have to be limited.
+
+Turn based:
+	Partial-multiplayer
+		Players interact.
+		Player 1 time travels.
+		Player 1 does setup.
+		Player 2 waits for Player 1 to finish.
+		Players interact.
+		Player 2 time travels.
+		Player 2 does setup.
+		Player 1 waits for Player 2 to finish.
+		Players interact.
+	Full multiplayer
+		Not sure. Quake-like demos might be required.
+		1.
+			Omega 13 ­— Go back in time 13 seconds. This affects both players. This can only be used once by each player, though unlimited could be fun to try.
+	Scripted
+		Players write scripts for their avatars. Time travel can be initiated by the scripts. This allows actions in the past to be repeatable, but 
+	Team
+
+There seem to be two strategies: asymmetrical and asymmetrical
+	Asymmetrical: One player has to wait for the other player to catch up to the current time.
+	Symmetrical: Both players go back in time and the future is erased.

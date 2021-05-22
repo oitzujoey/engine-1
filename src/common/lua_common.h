@@ -10,4 +10,6 @@ int l_common_toString(lua_State *luaState);
 int l_cfg2_setVariable(lua_State *luaState);
 int l_cfg2_setCallback(lua_State *luaState);
 
+int lua_common_printTable(lua_State *luaState);
+
 #endif

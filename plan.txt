@@ -486,6 +486,87 @@ I've solved the problem I was having with the packet parser/generator. I really 
 
 I think callbacks are overkill here.
 
+Should backwards reconciliation be done in the engine or in the gamecode? Let's try the gamecode first. Q3A did it in the gamecode, but it was probably faster than Lua.
+
+Lua will send keys over an unreliable connection. The Client Lua will determine how to send the keys to the server Lua. I may add a function to convert a Lua table to a string. I may also have a "cnetwork_sendTable" function or something like that. All that function will do is add the data to an array that is then sent once per game cycle.
+Instead of a "cnetwork_sendString" function, maybe I should simply create a table and then have Lua add to it. The server would receive the table, but the table will be inside an array that is indexed by the client number.
+
+-- Client side:
+{
+    -- User table is here.
+    keys: [
+    
+    ],
+    say: [
+        {
+            recipients: [
+                int
+            ],
+            message: string
+        }
+    ]
+}
+
+-- Server side:
+clientState: [
+    {
+        -- User table is here.
+        keys: [
+        
+        ],
+        say: [
+            {
+                recipients: [
+                    int
+                ],
+                message: string
+            }
+        ]
+    }
+]
+
+size_t'nameLength
+nameLength'name
+1b'isArray 7b'type
+if isArray {
+	size_t'length
+	(typeToSize[type]*length)'elements
+}
+else {
+	typeToSize[type]'variable
+}
+
+table {
+size_t'11
+11B'"clientState"
+1B'(0x00 | stringToType["table"])
+size_t'??   // Length
+headers...
+}
+
+array {
+size_t'11
+11B'"clientState"
+1B'(0x80 | stringToType["byte"])
+size_t'??   // Length
+length'??   // Array of bytes
+}
+
+array {
+size_t'11
+11B'"clientState"
+1B'(0x00 | stringToType["byte"])
+1B'0x78
+}
+
+Data comes right after the header. This includes tables. In the case of a
+table, the length specifies the number of headers+data that should be found.
+The proper number of tables will then be iterated through. Other tables may
+be contained in that table. This will be dealt with using recursion.
+
+I don't know how to allocate this only once. I think I will have to
+reallocate once per header encountered.
+
 
 
 Graphics stuff I dream of adding:
@@ -501,10 +582,6 @@ Graphics stuff I dream of adding:
 
 Files to rewrite when it is somewhat working:
     obj
-    file
-    vfs
-    str
-    cfg (maybe)
 
 [*] (Client) Get something on the screen using SDL
 --------------------------------------------------
@@ -552,7 +629,8 @@ Files to rewrite when it is somewhat working:
         [*] Allow Lua to manipulate and read scripting variables and callbacks.
 [/] (Client) Get mouse input
 [ ] (Client) Send input
-    [ ] Allow Lua to send arbitrary network messages using unreliable packets.
+    [*] Allow Lua to send arbitrary network messages using unreliable packets.
+    [ ] Make server communicate with clients individually.
 ![ ] (All)    Get on those TODOs (ugly ones)
 [ ] (Server) Receive input
 [ ] (Server) Make an entity move based on input
@@ -586,3 +664,4 @@ Allow ^C after the engine has shutdown.
 Exec files using a path relative to the current file's directory.
 Hotplugging joysticks and controllers gives wrong ID.
 Note: SDL_IsGameController seems to cause lag when run in the main game loop.
+`critical_error("Out of memory.", "");` uses malloc. Ironic.

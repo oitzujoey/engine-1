@@ -2,10 +2,7 @@
 #ifndef SNETWORK_H
 #define SNETWORK_H
 
-// #include <SDL2/SDL.h>
-// #include <SDL2/SDL_net.h>
-#include <enet/enet.h>
-#include "../common/cfg2.h"
+#include "../common/types.h"
 
 // typedef struct {
 // 	int in_use;
@@ -21,7 +18,7 @@ int snetwork_callback_setServerPort(cfg2_var_t *var, const char *command, lua_St
 int snetwork_callback_enetMessage(cfg2_var_t *var, const char *command, lua_State *luaState);
 int snetwork_callback_maxClients(cfg2_var_t *var, const char *command, lua_State *luaState);
 
-int snetwork_runEvents(void);
+int snetwork_runEvents(lua_State *luaState);
 int snetwork_init(void);
 void snetwork_quit(void);
 
