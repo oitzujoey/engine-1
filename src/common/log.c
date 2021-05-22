@@ -102,6 +102,28 @@ void log_critical_error(const char *function, const char *fmt, ...) {
 	free(buf);
 }
 
+void log_outOfMemory(const char *function) {
+
+	size_t length;
+	const char *infoMessageStart = COLOR_RED"Critical error: "COLOR_BLUE"(";
+	const char *infoMessageEnd = ")"COLOR_NORMAL" Out of memory.\n";
+	
+	length = strlen(infoMessageStart);
+	for (unsigned int i = 0; i < length; i++) {
+		putc(infoMessageStart[i], stderr);
+	}
+	
+	length = strlen(function);
+	for (unsigned int i = 0; i < length; i++) {
+		putc(function[i], stderr);
+	}
+	
+	length = strlen(infoMessageEnd);
+	for (unsigned int i = 0; i < length; i++) {
+		putc(infoMessageEnd[i], stderr);
+	}
+}
+
 int l_log_info(lua_State *l) {
 	int error = ERR_CRITICAL;
 

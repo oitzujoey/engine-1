@@ -774,7 +774,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 		
 		keyString = malloc((keyString_length + 1) * sizeof(char));
 		if (keyString == NULL) {
-			critical_error("Out of memory.", "");
+			outOfMemory();
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}
@@ -889,7 +889,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 		
 		tempLuaString = malloc((tempLuaString_length + 1) * sizeof(char));
 		if (tempLuaString == NULL) {
-			critical_error("Out of memory.", "");
+			outOfMemory();
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}

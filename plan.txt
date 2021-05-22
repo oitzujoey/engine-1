@@ -664,4 +664,3 @@ Allow ^C after the engine has shutdown.
 Exec files using a path relative to the current file's directory.
 Hotplugging joysticks and controllers gives wrong ID.
 Note: SDL_IsGameController seems to cause lag when run in the main game loop.
-`critical_error("Out of memory.", "");` uses malloc. Ironic.

@@ -549,14 +549,14 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 	// Load vertices and normals into arrays now to save time when rendering.
 	model->glVertices = malloc(3 * 3 * model->faces_length * sizeof(vec_t));
 	if (model->glVertices == NULL) {
-		critical_error("Out of memory.", "");
+		outOfMemory();
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
 	
 	model->glNormals = malloc(3 * 3 * model->faces_length * sizeof(vec_t));
 	if (model->glNormals == NULL) {
-		critical_error("Out of memory.", "");
+		outOfMemory();
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
@@ -623,7 +623,7 @@ int l_obj_loadOoliteDAT(lua_State *luaState) {
 	insane_free(filePath);
 	
 	if (error == ERR_OUTOFMEMORY) {
-		critical_error("Out of memory.", "");
+		outOfMemory();
 		lua_error(luaState);
 	}
 	if (error) {

@@ -1813,7 +1813,7 @@ int cfg2_execString(const char *line, lua_State *luaState, const char *tag) {
 		
 		commands = realloc(commands, numCommands * sizeof(char *));
 		if (commands == NULL) {
-			critical_error("Out of memory.", "");
+			outOfMemory();
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}

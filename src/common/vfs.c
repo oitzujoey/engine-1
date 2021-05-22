@@ -28,7 +28,7 @@ static int vfs_PHYSFS_saveScriptFilesEnumerator(void *data, const char *origdir,
 	// origdir + / + fname + \0
 	char *filepath = malloc((strlen(origdir) + strlen(fname) + 2) * sizeof(char));
 	if (filepath == NULL) {
-		critical_error("Out of memory.", "");
+		outOfMemory();
 		error = PHYSFS_ENUM_ERROR;
 		goto cleanup_l;
 	}
@@ -71,7 +71,7 @@ static int vfs_PHYSFS_saveScriptFilesEnumerator(void *data, const char *origdir,
 	*filenames = realloc(*filenames, files_length * sizeof(char *));
 	*files = realloc(*files, files_length * sizeof(char *));
 	if ((*filenames == NULL) || (*files == NULL)) {
-		critical_error("Out of memory.", "");
+		outOfMemory();
 		error = PHYSFS_ENUM_ERROR;
 		goto cleanup_l;
 	}
@@ -80,7 +80,7 @@ static int vfs_PHYSFS_saveScriptFilesEnumerator(void *data, const char *origdir,
 	(*filenames)[files_length - 1] = NULL;
 	error = str2_copyMalloc(&(*filenames)[files_length - 1], filepath);
 	if (error) {
-		critical_error("Out of memory.", "");
+		outOfMemory();
 		error = PHYSFS_ENUM_ERROR;
 		goto cleanup_l;
 	}
@@ -95,7 +95,7 @@ static int vfs_PHYSFS_saveScriptFilesEnumerator(void *data, const char *origdir,
 	(*files)[files_length - 1] = calloc((PHYSFS_fileLength(file) + 1), sizeof(char));
 	file_length = PHYSFS_fileLength(file);
 	if ((*files)[files_length - 1] == NULL) {
-		critical_error("Out of memory.", "");
+		outOfMemory();
 		error = PHYSFS_ENUM_ERROR;
 		goto cleanupPhys_l;
 	}

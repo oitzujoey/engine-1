@@ -257,7 +257,7 @@ static int snetwork_sendEntityList(void) {
 	// Create unreliable packet.
 	packet = enet_packet_create(NULL, packetlength, 0);
 	if (packet == NULL) {
-		critical_error("Out of memory.", "");
+		outOfMemory();
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}

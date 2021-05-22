@@ -39,7 +39,7 @@ int cnetwork_callback_setIpAddress(cfg2_var_t *var, const char *command, lua_Sta
 		
 		var->string = realloc(var->string, (strlen("localhost") + 1) * sizeof(char));
 		if (var->string == NULL) {
-			critical_error("Out of memory.", "");
+			outOfMemory();
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}
@@ -145,7 +145,7 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 	if (entityList.entities_length > g_entityList.entities_length) {
 		entityList.entities = realloc(g_entityList.entities, entityList.entities_length * sizeof(entity_t));
 		if (entityList.entities == NULL) {
-			critical_error("Out of memory.", "");
+			outOfMemory();
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}
@@ -161,7 +161,7 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 	if (entityList.deletedEntities_length > g_entityList.deletedEntities_length_allocated) {
 		entityList.deletedEntities = realloc(g_entityList.deletedEntities, entityList.deletedEntities_length * sizeof(int));
 		if (entityList.deletedEntities == NULL) {
-			critical_error("Out of memory.", "");
+			outOfMemory();
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}
@@ -191,7 +191,7 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 		if (entities[i].children_length > g_entityList.entities[i].children_length) {
 			entities[i].children = realloc(g_entityList.entities[i].children, entities[i].children_length * sizeof(ptrdiff_t));
 			if (entities[i].children == NULL) {
-				critical_error("Out of memory.", "");
+				outOfMemory();
 				error = ERR_OUTOFMEMORY;
 				goto cleanup_l;
 			}
@@ -273,7 +273,7 @@ static int cnetwork_sendState(lua_State *luaState) {
 	// Create the packet.
 	packet = enet_packet_create(NULL, 0, 0);
 	if (packet == NULL) {
-		critical_error("Out of memory.", "");
+		outOfMemory();
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}

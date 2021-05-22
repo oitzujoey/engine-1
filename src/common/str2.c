@@ -16,7 +16,7 @@
 // 	destination->value = malloc((strlen(source) + 1) * sizeof(char));
 // 	destination->length = strlen(source);
 // 	if (destination->value == NULL) {
-// 		critical_error("Out of memory.", "");
+// 		outOfMemory();
 // 		error = ERR_CRITICAL;
 // 		goto cleanup_l;
 // 	}
@@ -33,7 +33,7 @@ int str2_realloc(char **string, size_t length) {
 	
 	*string = realloc(*string, (length + 1) * sizeof(char));
 	if (*string == NULL) {
-		critical_error("Out of memory.", "");
+		outOfMemory();
 		return ERR_OUTOFMEMORY;
 	}
 	return ERR_OK;
