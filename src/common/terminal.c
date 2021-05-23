@@ -49,7 +49,7 @@ int terminal_callback_updateCommandHistoryLength(cfg2_var_t *var, const char *co
 	
 		g_commandHistory = realloc(g_commandHistory, g_commandHistoryLength * sizeof(char *));
 		if (g_commandHistory == NULL) {
-			critical_error("Out of memory", "");
+			outOfMemory();
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}
@@ -464,7 +464,7 @@ int terminal_runTerminalCommand(lua_State *luaState) {
 			g_cfg2.adminLevel = tempAdminLevel;
 			
 			if (error == ERR_OUTOFMEMORY) {
-				critical_error("Out of memory", "");
+				outOfMemory();
 				goto cleanup_l;
 			}
 			if (error == ERR_CRITICAL) {
@@ -576,7 +576,7 @@ int terminal_runTerminalCommand(lua_State *luaState) {
 					g_consoleCommand_length++;
 					error = str2_realloc(&g_consoleCommand, g_consoleCommand_length);
 					if (error) {
-						critical_error("Out of memory", "");
+						outOfMemory();
 						error = ERR_OUTOFMEMORY;
 						goto cleanup_l;
 					}
@@ -777,7 +777,7 @@ int terminal_initConsole(void) {
 	
 	g_commandHistory = malloc(v_historyLength->integer * sizeof(char *));
 	if (g_commandHistory == NULL) {
-		critical_error("Out of memory", "");
+		outOfMemory();
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}

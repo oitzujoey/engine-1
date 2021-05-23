@@ -230,7 +230,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	else if (error == ERR_OUTOFMEMORY) {
-		log_critical_error(__func__, "Out of memory.");
+		outOfMemory();
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
@@ -242,7 +242,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	else if (error == ERR_OUTOFMEMORY) {
-		log_critical_error(__func__, "Out of memory.");
+		outOfMemory();
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
@@ -276,7 +276,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 			g_cfg2.recursionDepth = 0;
 			error = cfg2_execString(tempString, luaState, "Console");
 			if (error == ERR_OUTOFMEMORY) {
-				critical_error("Out of memory", "");
+				outOfMemory();
 				goto cleanup_l;
 			}
 			if (error == ERR_CRITICAL) {

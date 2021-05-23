@@ -177,7 +177,7 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 	
 	entities = calloc(g_entityList.entities_length, sizeof(entity_t));
 	if (entities == NULL) {
-		critical_error("Out of memory", "");
+		outOfMemory();
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
@@ -416,7 +416,10 @@ int cnetwork_runEvents(lua_State *luaState) {
 				cnetwork_connect(event);
 				break;
 			case ENET_EVENT_TYPE_RECEIVE:
-				cnetwork_receive(event);
+				error = cnetwork_receive(event);
+				if (error > ERR_GENERIC) {
+					goto cleanup_l;
+				}
 				break;
 			case ENET_EVENT_TYPE_DISCONNECT:
 				cnetwork_disconnect(event);

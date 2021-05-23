@@ -85,13 +85,17 @@ int network_packetAdd_entityList(enet_uint8 *packet, ptrdiff_t *index, const ptr
 	return error;
 }
 
-int network_packetAdd_entity(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, const entity_t *data, const ptrdiff_t data_length) {
+int network_packetAdd_entity(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, entity_t *data, const ptrdiff_t data_length, unsigned int clientNumber) {
 	int error = ERR_CRITICAL;
 	
-	const size_t data_size = sizeof(ptrdiff_t) + sizeof(size_t) + sizeof(entity_childType_t) + 7*sizeof(vec_t) + sizeof(bool);
+	const size_t data_size = sizeof(ptrdiff_t) + sizeof(size_t) + sizeof(entity_childType_t) + 7*sizeof(vec_t) + 2*sizeof(bool);
 	const size_t data_byteLength = data_size / sizeof(enet_uint8) * data_length;
 	
 	ptrdiff_t structIndex = 0;
+	
+#ifdef SERVER
+	vec_t tempVec = 0.0f;
+#endif
 	
 	if (*index + data_byteLength > packet_length) {
 		error = ERR_GENERIC;
@@ -117,23 +121,78 @@ int network_packetAdd_entity(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff
 		// position
 		for (ptrdiff_t j = 0; j < sizeof(vec3_t)/sizeof(vec_t); j++) {
 			for (unsigned int k = 0; k < sizeof(vec_t); k++) {
-				packet[*index + structIndex++] = (*((unsigned long long int *) &data[i].position[j]) >> 8*k) & 0xFF;
+#ifdef SERVER
+				if (data[i].isVisible) {
+#endif
+					packet[*index + structIndex++] = (*((unsigned long long int *) &data[i].position[j]) >> 8*k) & 0xFF;
+#ifdef SERVER
+				}
+				else {
+					packet[*index + structIndex++] = (*((unsigned long long int *) &tempVec) >> 8*k) & 0xFF;
+				}
+#endif
 			}
 		}
 		// orientation.s
+#ifdef SERVER
+		tempVec = 1.0f;
+#endif
 		for (unsigned int j = 0; j < sizeof(vec_t); j++) {
 			// packet[*index + structIndex++] = ((unsigned long long int) data[i].orientation.s >> 8*j) & 0xFF;
-			packet[*index + structIndex++] = (*((unsigned long long int *) &data[i].orientation.s) >> 8*j) & 0xFF;
+#ifdef SERVER
+			if (data[i].isVisible) {
+#endif
+				packet[*index + structIndex++] = (*((unsigned long long int *) &data[i].orientation.s) >> 8*j) & 0xFF;
+#ifdef SERVER
+			}
+			else {
+				packet[*index + structIndex++] = (*((unsigned long long int *) &tempVec) >> 8*j) & 0xFF;
+			}
+#endif
 		}
 		// orientation.v
+#ifdef SERVER
+		tempVec = 0.0f;
+#endif
 		for (ptrdiff_t j = 0; j < sizeof(vec3_t)/sizeof(vec_t); j++) {
 			for (unsigned int k = 0; k < sizeof(vec_t); k++) {
-				packet[*index + structIndex++] = (*((unsigned long long int *) &data[i].orientation.v[j]) >> 8*k) & 0xFF;
+#ifdef SERVER
+				if (data[i].isVisible) {
+#endif
+					packet[*index + structIndex++] = (*((unsigned long long int *) &data[i].orientation.v[j]) >> 8*k) & 0xFF;
+#ifdef SERVER
+				}
+				else {
+					packet[*index + structIndex++] = (*((unsigned long long int *) &tempVec) >> 8*k) & 0xFF;
+				}
+#endif
 			}
 		}
 		// inUse
 		for (unsigned int j = 0; j < sizeof(bool); j++) {
-			packet[*index + structIndex++] = ((unsigned long long int) data[i].inUse >> 8*j) & 0xFF;
+#ifdef SERVER
+			if (data[i].isVisible) {
+#endif
+				packet[*index + structIndex++] = ((unsigned long long int) data[i].inUse >> 8*j) & 0xFF;
+#ifdef SERVER
+			}
+			else {
+				packet[*index + structIndex++] = ((unsigned long long int) false >> 8*j) & 0xFF;
+			}
+#endif
+		}
+		// shown
+		for (unsigned int j = 0; j < sizeof(bool); j++) {
+#ifdef SERVER
+			if (data[i].isVisible) {
+#endif
+				packet[*index + structIndex++] = ((unsigned long long int) data[i].shown >> 8*j) & 0xFF;
+#ifdef SERVER
+			}
+			else {
+				packet[*index + structIndex++] = ((unsigned long long int) false >> 8*j) & 0xFF;
+			}
+#endif
 		}
 	}
 	
@@ -268,7 +327,7 @@ int network_packetRead_entityList(entityList_t *data, const ptrdiff_t data_lengt
 int network_packetRead_entity(entity_t *data, const ptrdiff_t data_length, const enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length) {
 	int error = ERR_CRITICAL;
 	
-	const size_t data_size = sizeof(ptrdiff_t) + sizeof(size_t) + sizeof(entity_childType_t) + 7*sizeof(vec_t) + sizeof(bool);
+	const size_t data_size = sizeof(ptrdiff_t) + sizeof(size_t) + sizeof(entity_childType_t) + 7*sizeof(vec_t) + 2*sizeof(bool);
 	const size_t data_byteLength = data_size / sizeof(enet_uint8) * data_length;
 	
 	unsigned long long int tempUnsignedLongLongInt;
@@ -325,6 +384,12 @@ int network_packetRead_entity(entity_t *data, const ptrdiff_t data_length, const
 		for (unsigned int j = 0; j < sizeof(bool); j++) {
 			data[i].inUse = (bool) ((unsigned long long int) data[i].inUse | ((unsigned long long int) packet[*index + structIndex++] << 8*j));
 		}
+		// shown
+		data[i].shown = 0;
+		for (unsigned int j = 0; j < sizeof(bool); j++) {
+			data[i].shown = (bool) ((unsigned long long int) data[i].shown | ((unsigned long long int) packet[*index + structIndex++] << 8*j));
+		}
+	
 		// printf("children %lu\n", (unsigned long) data[i].children);
 		// printf("children_length %lu\n", (unsigned long) data[i].children_length);
 		// printf("childType %lu\n", (unsigned long) data[i].childType);

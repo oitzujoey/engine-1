@@ -39,8 +39,6 @@
 
 #define AUTOEXEC    "autoexec.cfg"
 
-#define MAX_CLIENTS         2
-
 #define ENGINE_MAN_NAME "Scott"
 
 // Macros have completion support. Strings don't.

@@ -13,11 +13,11 @@ Key bind functions are run before networking happens.
 `main` is run after networking happens.
 --]]
 function key_rollClockwise()
-	clientState.right = true
+	clientState.keys.right = true
 end
 
 function key_rollCounterClockwise()
-	clientState.left = true
+	clientState.keys.left = true
 end
 
 function startup()
@@ -74,10 +74,11 @@ function startup()
 	-- cfg2_setVariable("specialBind")
 	
 	-- Create keys/buttons
-	clientState.up = false
-	clientState.down = false
-	clientState.left = false
-	clientState.right = false
+	clientState.keys = {}
+	clientState.keys.up = false
+	clientState.keys.down = false
+	clientState.keys.left = false
+	clientState.keys.right = false
 	
 	info("main", "Starting game")
 end
@@ -107,10 +108,10 @@ function main()
 	-- 	clientState["Hello"] = "world!"
 	-- end
 	
-	clientState.up = false
-	clientState.down = false
-	clientState.left = false
-	clientState.right = false
+	clientState.keys.up = false
+	clientState.keys.down = false
+	clientState.keys.left = false
+	clientState.keys.right = false
 end
 
 function shutdown()

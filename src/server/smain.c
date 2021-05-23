@@ -25,7 +25,8 @@
 int l_main_checkQuit(lua_State *luaState);
 
 luaCFunc_t luaServerFunctions[] = {
-	{.func = NULL,  .name = NULL}
+	{.func = l_entity_setVisible,   .name = "entity_setVisible"},
+	{.func = NULL,                  .name = NULL}
 };
 
 const cfg2_var_init_t g_serverVarInit[] = {
@@ -145,7 +146,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	else if (error == ERR_OUTOFMEMORY) {
-		log_critical_error(__func__, "Out of memory.");
+		outOfMemory();
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
@@ -157,7 +158,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	else if (error == ERR_OUTOFMEMORY) {
-		log_critical_error(__func__, "Out of memory.");
+		outOfMemory();
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
@@ -213,7 +214,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 			g_cfg2.recursionDepth = 0;
 			error = cfg2_execString(tempString, luaState, "Console");
 			if (error == ERR_OUTOFMEMORY) {
-				critical_error("Out of memory", "");
+				outOfMemory();
 				goto cleanup_l;
 			}
 			if (error == ERR_CRITICAL) {

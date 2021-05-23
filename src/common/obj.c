@@ -57,7 +57,7 @@ int modelList_createModel(model_t **model, int *index) {
 		g_modelList.models_length_actual++;
 		g_modelList.models = realloc(g_modelList.models, g_modelList.models_length_actual * sizeof(model_t));
 		if (g_modelList.models == NULL) {
-			critical_error("Out of memory", "");
+			outOfMemory();
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}
@@ -523,7 +523,7 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 	// Create suface normals.
 	model->surface_normals = malloc(model->faces_length * sizeof(vec3_t));
 	if (model->surface_normals == NULL) {
-		critical_error("Out of memory", "");
+		outOfMemory();
 		error = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}

@@ -142,6 +142,7 @@ inUse           Internal variable used to check if an entity is deleted. Can be 
 
 This structure only exists in the engine, but the engine provides functions to manipulate it.
 Note that position and orientation are cumulative. This allows multiple models to be moved and rotated as one unit. When an entity is moved in space, all its children are moved as well since a child's reference frame is always its parent entity. The same happens when an entity is rotated. The children are rotated around the entity's origin, and the orientation of the children is rotated as well.
+Something to watch out for is dangling indices and index reuse. The entity list is not an associative array. It is not a linked list. It is a normal array. The index that Lua is given is not a key, but an index to an array. The list can grow but never shrinks. When an entity is deleted, it is marked deleted, but it is not actually freed. References to a deleted entity will trigger a Lua error. When a new entity is created, it will look on the deleted entity list to see if any can be reused. If this is the case, the old deleted entity is revived with a different purpose. In this case, if the index of the deleted entity is used, the operation may be valid but will likely return an unexpected result.
 
 #### Entity functions
 

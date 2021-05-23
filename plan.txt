@@ -567,6 +567,9 @@ be contained in that table. This will be dealt with using recursion.
 I don't know how to allocate this only once. I think I will have to
 reallocate once per header encountered.
 
+I want to both receive entities from the server, but I also want the client to be able to add its own. I think a good solution to this problem is to have a server entity list and a client entity list. Both are rendered by the client. This is to keep the server's constantly changing entities from messing up the client's entities' indices.
+It seems like it may be a good idea to create a client entity type.
+
 
 
 Graphics stuff I dream of adding:
@@ -628,14 +631,16 @@ Files to rewrite when it is somewhat working:
     [*] Send keys to Lua.
         [*] Allow Lua to manipulate and read scripting variables and callbacks.
 [/] (Client) Get mouse input
-[ ] (Client) Send input
+[/] (Client) Send input
     [*] Allow Lua to send arbitrary network messages using unreliable packets.
     [ ] Make server communicate with clients individually.
 ![ ] (All)    Get on those TODOs (ugly ones)
-[ ] (Server) Receive input
-[ ] (Server) Make an entity move based on input
+[*] (Server) Receive input
+[*] (Server) Make an entity move based on input
 -----------------------------------------------
 [ ] (Client) Attach camera to moving entity
+    [ ] (Server) Send Lua table to client
+    [ ] (Server) Send camera entity index to client
 =================================================
 * * engine-1 is now officially a game engine. ***
 =================================================

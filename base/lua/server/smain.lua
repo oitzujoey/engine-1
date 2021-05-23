@@ -72,7 +72,8 @@ function main()
 	-- l_main_housekeeping()
 	-- end
 	
-	if clientState[0] ~= nil then
+	for i = 0,1,1 do
+		if clientState[i] ~= nil then
 	-- 	if clientState[0].up ~= nil then
 			-- if clientState[0].up then
 			-- 	info("main", "right")
@@ -85,22 +86,20 @@ function main()
 			-- 	info("main", "not right")
 			-- end
 			-- info("main", "running")
-			if clientState[0].left then
-				-- info("main", "left")
-				worldOrientation, error = hamiltonProduct(worldOrientation, worldRotation)
-			-- else
-				-- info("main", "not left")
-			end
-			if clientState[0].right then
+			if clientState[i].keys.left then
 				worldOrientation, error = hamiltonProduct(worldOrientation, worldCounterRotation)
-				-- info("main", "right")
-			-- else
-				-- info("main", "not right")
 			end
-	-- 	end
+			if clientState[i].keys.right then
+				worldOrientation, error = hamiltonProduct(worldOrientation, worldRotation)
+			end
+			
+			entity_setVisible(worldEntity, i)
+			entity_setVisible(cobra3Entity, i)
+		end
 	end
 	worldOrientation, error = quatNormalize(worldOrientation)
 	entity_setOrientation(worldEntity, worldOrientation)
+	
 end
 
 function shutdown()

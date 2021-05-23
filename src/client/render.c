@@ -424,6 +424,12 @@ int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation) {
 		goto cleanup_l;
 	}
 	
+	if (!entity.shown) {
+		printf("Not shown\n");
+		error = ERR_OK;
+		goto cleanup_l;
+	}
+	
 	vec3_add(&localPosition, position, &entity.position);
 	vec3_rotate(&localPosition, orientation);
 	quat_hamilton(&localOrientation, orientation, &entity.orientation);

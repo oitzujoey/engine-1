@@ -8,6 +8,8 @@
 #include <lua.h>
 #include <enet/enet.h>
 
+#define MAX_CLIENTS         2
+
 /* Vector math structures */
 /* ====================== */
 
@@ -208,6 +210,10 @@ typedef struct {
 	vec3_t position;
 	quat_t orientation;
 	bool inUse;
+	bool shown;
+#ifdef SERVER
+	bool isVisible[MAX_CLIENTS];
+#endif
 } entity_t;
 
 typedef struct {

@@ -175,22 +175,10 @@ static int snetwork_receive(ENetEvent event, lua_State *luaState) {
 	
 	// lua_common_printTable(luaState);
 	
-	// lua_pop(luaState, 1);
-	// lua_setglobal(luaState, NETWORK_LUA_CLIENTSTATE_NAME);
+	lua_pop(luaState, 1);
 	
 	/* Stack
 	*/
-	
-	// printf("Client %u: ", clientNumber);
-	// for (int i = 0; i < packet->dataLength; i++) {
-	// 	if (packet->data[i] < 0x20) {
-	// 		printf("<%0X>", packet->data[i]);
-	// 	}
-	// 	else {
-	// 		putc(packet->data[i], stdout);
-	// 	}
-	// }
-	// putc('\n', stdout);
 	
 	enet_packet_destroy(packet);
 	
@@ -236,73 +224,89 @@ static int snetwork_sendEntityList(void) {
 	g_entityList->entities->children will be set to the local address of the children array in the packet.
 	*/
 	
+	static uint32_t packetID = 0;
+	
 	ENetPacket *packet;
-	size_t packetlength = 0;
+	size_t packetlength;
 	enet_uint8 *data;
-	ptrdiff_t data_index = 0;
+	ptrdiff_t data_index;
 	entityList_t *entityList;
 	uint32_t checksum;
-	static uint32_t packetID = 0;
 	size_t data_length;
+	
+	for (int clientNumber = 0; clientNumber < MAX_CLIENTS; clientNumber++) {
+		if (!g_clients[clientNumber].inUse) {
+			continue;
+		}
 		
-	packetlength += sizeof(uint32_t);   // Checksum
-	packetlength += sizeof(uint32_t);   // Packet counter
-	packetlength += sizeof(entityList_t);
-	packetlength += g_entityList.entities_length * sizeof(entity_t);
-	packetlength += g_entityList.deletedEntities_length * sizeof(int);
-	for (int i = 0; i < g_entityList.entities_length; i++) {
-		packetlength += g_entityList.entities[i].children_length * sizeof(int);
-	}
+		packetlength = 0;
+		data_index = 0;
 	
-	// Create unreliable packet.
-	packet = enet_packet_create(NULL, packetlength, 0);
-	if (packet == NULL) {
-		outOfMemory();
-		error = ERR_OUTOFMEMORY;
-		goto cleanup_l;
-	}
-	data = packet->data + sizeof(uint32_t); // packet->data + checksum
-	data_length = packetlength - sizeof(uint32_t);
-	
-	error = network_packetAdd_uint32(data, &data_index, data_length, &packetID, 1);
-	if (error) {
-		goto cleanup_l;
-	}
-	packetID++;
-	
-	entityList = (entityList_t *) &data[data_index];
-	error = network_packetAdd_entityList(data, &data_index, data_length, &g_entityList, 1);
-	if (error) {
-		goto cleanup_l;
-	}
-	
-	entityList->entities = (entity_t *) (&data[data_index] - packet->data);
-	error = network_packetAdd_entity(data, &data_index, data_length, g_entityList.entities, g_entityList.entities_length);
-	if (error) {
-		goto cleanup_l;
-	}
-	
-	entityList->deletedEntities = (ptrdiff_t *) (&data[data_index] - packet->data);
-	error = network_packetAdd_ptrdiff(data, &data_index, data_length, g_entityList.deletedEntities, g_entityList.deletedEntities_length);
-	if (error) {
-		goto cleanup_l;
-	}
-	
-	for (int i = 0; i < g_entityList.entities_length; i++) {
-	
-		error = network_packetAdd_ptrdiff(data, &data_index, data_length, g_entityList.entities[i].children, g_entityList.entities[i].children_length);
+		packetlength += sizeof(uint32_t);   // Checksum
+		packetlength += sizeof(uint32_t);   // Packet counter
+		packetlength += sizeof(entityList_t);
+		packetlength += g_entityList.entities_length * sizeof(entity_t);
+		packetlength += g_entityList.deletedEntities_length * sizeof(int);
+		for (int i = 0; i < g_entityList.entities_length; i++) {
+			packetlength += g_entityList.entities[i].children_length * sizeof(int);
+		}
+		
+		// Create unreliable packet.
+		packet = enet_packet_create(NULL, packetlength, 0);
+		if (packet == NULL) {
+			outOfMemory();
+			error = ERR_OUTOFMEMORY;
+			goto cleanup_l;
+		}
+		data = packet->data + sizeof(uint32_t); // packet->data + checksum
+		data_length = packetlength - sizeof(uint32_t);
+		
+		error = network_packetAdd_uint32(data, &data_index, data_length, &packetID, 1);
 		if (error) {
 			goto cleanup_l;
-		}	
+		}
+		packetID++;
+		
+		entityList = (entityList_t *) &data[data_index];
+		error = network_packetAdd_entityList(data, &data_index, data_length, &g_entityList, 1);
+		if (error) {
+			goto cleanup_l;
+		}
+		
+		entityList->entities = (entity_t *) (&data[data_index] - packet->data);
+		error = network_packetAdd_entity(data, &data_index, data_length, g_entityList.entities, g_entityList.entities_length, clientNumber);
+		if (error) {
+			goto cleanup_l;
+		}
+		
+		entityList->deletedEntities = (ptrdiff_t *) (&data[data_index] - packet->data);
+		error = network_packetAdd_ptrdiff(data, &data_index, data_length, g_entityList.deletedEntities, g_entityList.deletedEntities_length);
+		if (error) {
+			goto cleanup_l;
+		}
+		
+		for (int i = 0; i < g_entityList.entities_length; i++) {
+		
+			error = network_packetAdd_ptrdiff(data, &data_index, data_length, g_entityList.entities[i].children, g_entityList.entities[i].children_length);
+			if (error) {
+				goto cleanup_l;
+			}	
+		}
+		
+		checksum = network_generateChecksum(data, data_length);
+		// Put checksum at the start of the packet.
+		// network_packetAdd_uint32 is not used here because this variable is at the beginning, not the end of the packet.
+		memcpy(packet->data, &checksum, sizeof(uint32_t));
+		
+		// Send packet to all clients.
+		// enet_host_broadcast(g_server.host, ENET_CHANNEL0, packet);
+		error = enet_peer_send(g_clients[clientNumber].peer, ENET_CHANNEL0, packet);
+		if (error < 0) {
+			error("Unable to send packet to client %i.", clientNumber);
+			error = ERR_GENERIC;
+			goto cleanup_l;
+		}
 	}
-	
-	checksum = network_generateChecksum(data, data_length);
-	// Put checksum at the start of the packet.
-	// network_packetAdd_uint32 is not used here because this variable is at the beginning, not the end of the packet.
-	memcpy(packet->data, &checksum, sizeof(uint32_t));
-	
-	// Send packet to all clients.
-	enet_host_broadcast(g_server.host, ENET_CHANNEL0, packet);
 	
 	error = ERR_OK;
 	cleanup_l:

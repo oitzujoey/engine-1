@@ -15,5 +15,8 @@ int l_entity_createEntity(lua_State *luaState);
 int l_entity_linkChild(lua_State *luaState);
 int l_entity_setPosition(lua_State *luaState);
 int l_entity_setOrientation(lua_State *luaState);
+#ifdef SERVER
+int l_entity_setVisible(lua_State *luaState);
+#endif
 
 #endif
