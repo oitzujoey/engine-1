@@ -18,6 +18,8 @@ char **g_commandHistory;
 size_t g_commandHistoryLength = 0;
 char *g_commandComplete;
 
+struct termios g_originalConfig;
+
 int terminal_getHistoryLine(char **line, int *index);
 int terminal_addLineToHistory(const char *line);
 void terminal_logCommandFrequency(const char *line);
@@ -92,6 +94,8 @@ int terminal_terminalInit(void) {
 		goto cleanup_l;
 	}
 	
+	g_originalConfig = config;
+	
 	config.c_iflag &= ~(IGNBRK | BRKINT | ICRNL | INLCR | PARMRK | INPCK | ISTRIP | IXON);
 	// config.c_iflag = INLCR;
 	// config.c_oflag = ONLCR;
@@ -125,6 +129,35 @@ int terminal_terminalInit(void) {
 	cleanup_l:
 	
 	return error;
+}
+
+void terminal_terminalQuit(void) {
+
+#ifdef LINUX
+	struct termios config;
+	
+	if (tcgetattr(STDIN_FILENO, &config) < 0) {
+		critical_error("Can't get TTY. Shouldn't happen.", "");
+		goto cleanup_l;
+	}
+	
+	config = g_originalConfig;
+	
+	// if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_originalConfig) < 0) {
+	// 	critical_error("Terminal configuration error. Shouldn't happen.", "");
+	// 	error = ERR_CRITICAL;
+	// 	goto cleanup_l;
+	// }
+	// fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
+	
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &config) < 0) {
+		critical_error("Terminal configuration error. Shouldn't happen.", "");
+		goto cleanup_l;
+	}
+	
+	cleanup_l:
+	return;
+#endif
 }
 
 // This is for the function below.
