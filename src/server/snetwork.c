@@ -99,6 +99,9 @@ static int snetwork_receive(ENetEvent event, lua_State *luaState) {
 	int clientNumber;
 	ptrdiff_t packetIndex = 0;
 	
+	// static uint32_t lastPacketID[8] = {0};
+	// uint32_t packetID;
+	
 	// Check for bad guys.
 	if (event.peer->data == NULL) {
 		// Not a currently connected client.
@@ -173,7 +176,7 @@ static int snetwork_receive(ENetEvent event, lua_State *luaState) {
 	// for (int i = 1; i < top; i++)
 	// 	printf("%i : %s\n", -i, lua_typename(luaState, lua_type(luaState, -i)));
 	
-	// lua_common_printTable(luaState);
+	lua_common_printTable(luaState);
 	
 	lua_pop(luaState, 1);
 	
@@ -224,7 +227,7 @@ static int snetwork_sendEntityList(void) {
 	g_entityList->entities->children will be set to the local address of the children array in the packet.
 	*/
 	
-	static uint32_t packetID = 0;
+	static uint32_t packetID[MAX_CLIENTS] = {0};
 	
 	ENetPacket *packet;
 	size_t packetlength;
@@ -261,11 +264,11 @@ static int snetwork_sendEntityList(void) {
 		data = packet->data + sizeof(uint32_t); // packet->data + checksum
 		data_length = packetlength - sizeof(uint32_t);
 		
-		error = network_packetAdd_uint32(data, &data_index, data_length, &packetID, 1);
+		error = network_packetAdd_uint32(data, &data_index, data_length, &packetID[clientNumber], 1);
 		if (error) {
 			goto cleanup_l;
 		}
-		packetID++;
+		packetID[clientNumber]++;
 		
 		entityList = (entityList_t *) &data[data_index];
 		error = network_packetAdd_entityList(data, &data_index, data_length, &g_entityList, 1);

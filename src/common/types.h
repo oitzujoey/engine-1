@@ -139,6 +139,7 @@ typedef struct {
 	unsigned int vars_length;
 	unsigned int recursionDepth;
 	unsigned int maxRecursion;
+	Uint32 maxFramerate;
 } cfg2_t;
 
 typedef struct {

@@ -570,6 +570,13 @@ reallocate once per header encountered.
 I want to both receive entities from the server, but I also want the client to be able to add its own. I think a good solution to this problem is to have a server entity list and a client entity list. Both are rendered by the client. This is to keep the server's constantly changing entities from messing up the client's entities' indices.
 It seems like it may be a good idea to create a client entity type.
 
+The keyboard to video latency is too slow. By this I mean that at no time should I have to wait a five seconds to get a response. Once the entity is moving, it seems like the throughput is reasonably good. It feels like there is a buffer in there somewhere that is inserting lag.
+Buffers:
+    enet internal send buffer
+    enet internal receive buffer
+    
+cengine seems to be running too slow. I suspect that it is not receiving the entity list. It does not seem to be sending the keys either.
+
 
 
 Graphics stuff I dream of adding:
@@ -665,7 +672,6 @@ Remember this:
     git status | grep modified: | sed 's/\tmodified:   //'
 
 Disallow Lua bytecode.
-Allow ^C after the engine has shutdown.
 Exec files using a path relative to the current file's directory.
 Hotplugging joysticks and controllers gives wrong ID.
 Note: SDL_IsGameController seems to cause lag when run in the main game loop.

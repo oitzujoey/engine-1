@@ -52,6 +52,8 @@
 #define CFG_IP_ADDRESS_DEFAULT          "localhost"
 #define CFG_CONNECTION_TIMEOUT  "net_timeout"
 #define CFG_CONNECTION_TIMEOUT_DEFAULT  10000   // Milliseconds
+#define CFG_MAX_FRAMERATE       "max_framerate"
+#define CFG_MAX_FRAMERATE_DEFAULT  100   // Milliseconds
 #define CFG_MAX_CLIENTS         "max_clients"
 #define CFG_MAX_CLIENTS_DEFAULT         MAX_CLIENTS
 #define CFG_MAX_RECURSION       "max_recursion_depth"

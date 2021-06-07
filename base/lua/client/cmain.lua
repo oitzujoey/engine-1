@@ -6,18 +6,42 @@ This should do almost nothing. The server engine/script and client engine will d
 This script will draw the HUD, create and set 3D reference entities, and perform other menial tasks.
 --]]
 
-specialKey = false
+Keys = {}
 
 --[[
 Key bind functions are run before networking happens.
 `main` is run after networking happens.
 --]]
-function key_rollClockwise()
-	clientState.keys.right = true
+function key_rollClockwise_d()
+	Keys.right = true
+	if not clientState.keys.right then
+		clientState.keys.right = true
+		clientState.keys.left = false
+	end
 end
 
-function key_rollCounterClockwise()
-	clientState.keys.left = true
+function key_rollClockwise_u()
+	Keys.right = false
+	clientState.keys.right = false
+	if Keys.left then
+		clientState.keys.left = true
+	end
+end
+
+function key_rollCounterClockwise_d()
+	Keys.left = true
+	if not clientState.keys.left then
+		clientState.keys.left = true
+		clientState.keys.right = false
+	end
+end
+
+function key_rollCounterClockwise_u()
+	Keys.left = false
+	clientState.keys.left = false
+	if Keys.right then
+		clientState.keys.right = true
+	end
 end
 
 function startup()
@@ -43,32 +67,19 @@ function startup()
 	cobra3Model, error = loadOoliteModel(modelPath .. cobra3ModelName)
 	if cobra3Model ~= -1 then
 		info("main", "Loaded " .. cobra3ModelName)
-		-- cobra3Entity, error = l_createEntity(type_model)
-		-- error = l_entity_linkChild(worldEntity, cobra3Entity)
-		-- error = l_entity_linkChild(cobra3Entity, cobra3Model)
-		-- -- l_cnetwork_receiveEntityTree will set the 
-		-- l_entity_setPosition(cobra3Entity, {x=20, y=0, z=0})
-		-- l_entity_setOrientation(cobra3Entity, {w=1, x=0, y=0, z=0})
-		
-		-- l_snetwork_sendEntityTree()
-		-- l_renderEntity(worldEntity, 0.0, 0.0, 1.0, 1.0)
 	end
 	
-	cfg2_setVariable("create none key_rollClockwise")
-	cfg2_setCallback("key_rollClockwise", "key_rollClockwise")
-	cfg2_setVariable("bind k_1073741903 key_rollClockwise")
+	cfg2_setVariable("create none +key_rollClockwise")
+	cfg2_setVariable("create none -key_rollClockwise")
+	cfg2_setCallback("+key_rollClockwise", "key_rollClockwise_d")
+	cfg2_setCallback("-key_rollClockwise", "key_rollClockwise_u")
+	cfg2_setVariable("bind k_1073741903 +key_rollClockwise -key_rollClockwise")
 
-	cfg2_setVariable("create none key_rollCounterClockwise")
-	cfg2_setCallback("key_rollCounterClockwise", "key_rollCounterClockwise")
-	cfg2_setVariable("bind k_1073741904 key_rollCounterClockwise")
-
-	-- cfg2_setVariable("create none key_rollClockwise")
-	-- cfg2_setCallback("key_rollClockwise", "key_rollClockwise")
-	-- cfg2_setVariable("bind k_1073741903 key_rollClockwise")
-
-	-- cfg2_setVariable("create none key_rollClockwise")
-	-- cfg2_setCallback("key_rollClockwise", "key_rollClockwise")
-	-- cfg2_setVariable("bind k_1073741903 key_rollClockwise")
+	cfg2_setVariable("create none +key_rollCounterClockwise")
+	cfg2_setVariable("create none -key_rollCounterClockwise")
+	cfg2_setCallback("+key_rollCounterClockwise", "key_rollCounterClockwise_d")
+	cfg2_setCallback("-key_rollCounterClockwise", "key_rollCounterClockwise_u")
+	cfg2_setVariable("bind k_1073741904 +key_rollCounterClockwise -key_rollCounterClockwise")
 
 	cfg2_setVariable("bind k_113 quit")
 	-- cfg2_setVariable("specialBind")
@@ -80,38 +91,15 @@ function startup()
 	clientState.keys.left = false
 	clientState.keys.right = false
 	
+	Keys.up = false
+	Keys.down = false
+	Keys.left = false
+	Keys.right = false
+	
 	info("main", "Starting game")
 end
 
 function main()
-	-- while l_checkQuit() == 0 do
-	
-		
-	
-		-- puts("Lua render")
-	-- render()
-	
-		-- -- puts("Lua getInput")
-		-- input = (getInput())
-		-- if input then
-		-- 	-- puts("Lua got input");
-		-- 	if input == 256 then
-		-- 		break
-		-- 	end
-		-- end
-		
-		-- puts("Lua looping")
-		
-		-- l_main_housekeeping()
-	
-	-- if clientState.up then
-	-- 	clientState["Hello"] = "world!"
-	-- end
-	
-	clientState.keys.up = false
-	clientState.keys.down = false
-	clientState.keys.left = false
-	clientState.keys.right = false
 end
 
 function shutdown()

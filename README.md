@@ -186,4 +186,41 @@ This will take some time to document. Currently the API can be found in smain.c,
 
 In the meantime, one important note: Since the standard libraries cannot be loaded, the `require` function cannot be called to include other scripts. In its place is the function `include`, which is called in about the same way.
 
+### Key binding
+
+Key binding is more complicated than I would have liked. Key bind functions can be found in input.c.  
+How to bind a key:
+
+1. Create a variable.
+2. Set a callback for that variable (the action to be taken when the key is pressed).
+3. Bind the variable to the key using the `bind` command.
+
+This actually isn't that complicated from a user's perspective. The engine, autoexec, or gamecode should create all the bind variables and set the callbacks. The only thing the user should have to do is bind the prepared variable to the key. Here is an example.
+
+```text
+# This is done by the developer.
+create none key_quit    # Create a command variable.
+command key_quit quit   # Bind the command `quit` to the variable.
+
+# This is done by the user.
+bind k_27 key_quit      # Yes, this is horrible. I need to add nice names for all the keys.
+```
+
+Keys can be given both up and down actions.
+
+```text
+# Print all vars when ESC is pressed, and then quit when ESC is released.
+create none +key_esc
+create none -key_esc
+command +key_esc vars
+command -key_esc quit
+bind k_27 +key_esc -key_esc
+```
+
+`+` and `-` mean nothing special. They are normal characters that are used here to easily differentiate between up and down actions.
+
+This can also be done from Lua since it can execute config commands. The real power of this is that Lua can set a Lua function as the callback to a config variable. When the key is pressed, the Lua function is called, and then Lua can act on the key press.
+
+A key is pressed. The key bind is found. The callback is run. If the callback is a Lua function, then that function is run. This likely sets a variable. Maybe it's just me, but this seems like way too many layers.
+
 <b id="f1">[1](#a1)</b> Jesus is also coming soon. Expect the time frame to be about the same.

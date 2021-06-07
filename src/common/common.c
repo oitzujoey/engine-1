@@ -10,6 +10,8 @@
 
 int error;
 
+static int common_callback_maxFramerate(cfg2_var_t *var, const char *command, lua_State *luaState);
+
 const cfg2_var_init_t g_commonVarInit[] = {
 	// Commands
 	{
@@ -330,6 +332,18 @@ const cfg2_var_init_t g_commonVarInit[] = {
 		.callback = network_callback_connectionTimeout
 	},
 	{
+		.name = CFG_MAX_FRAMERATE,
+		.vector = 0,
+		.integer = CFG_MAX_FRAMERATE_DEFAULT,
+		.string = "",
+		.type = cfg2_var_type_integer,
+		.permissionRead = cfg2_admin_game,
+		.permissionWrite = cfg2_admin_administrator,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = common_callback_maxFramerate
+	},
+	{
 		.name = CFG_MAX_RECURSION,
 		.vector = 0,
 		.integer = CFG_MAX_RECURSION_DEFAULT,
@@ -422,4 +436,15 @@ int MSB(int n) {
 	for (i = 0; (1<<i) <= n; i++);
 	
 	return i - 1;
+}
+
+static int common_callback_maxFramerate(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	g_cfg2.maxFramerate = var->integer;
+	
+	if (var->integer <= 0) {
+		warning("Variable \"%s\" out of range. Setting to 1.", var->name);
+		var->integer = 1;
+	}
+	
+	return ERR_OK;
 }

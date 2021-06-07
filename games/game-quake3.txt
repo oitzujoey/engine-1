@@ -83,6 +83,11 @@ Tools:
 		Bounces (1 part)
 		Color (0 parts)
 		Damage = (knockback) * vec3_dotProduct((projectile velocity), (player velocity))
+	It would be interesting if someone else could pickup/exchange your weapon when you die.
+	Portal gun
+		Portal portals would be fun.
+		Could take from game-0.txt and allow them to trigger backwards time travel.
+		Either a time difference can be set, or the time difference is constant (13 sec? 1.3 sec is probably more like it).
 
 A limited set of configurable tools allows many more weapon types than Q3A, but also keeps the player's set of choices low. It is expected that the players will keep several different configurations handy to easily swap tools out. A default set of tool configs will be supplied with the game.
 

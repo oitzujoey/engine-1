@@ -87,14 +87,16 @@ function main()
 			-- end
 			-- info("main", "running")
 			if clientState[i].keys.left then
+				info("main", "left")
 				worldOrientation, error = hamiltonProduct(worldOrientation, worldCounterRotation)
 			end
 			if clientState[i].keys.right then
+				info("main", "right")
 				worldOrientation, error = hamiltonProduct(worldOrientation, worldRotation)
 			end
 			
-			entity_setVisible(worldEntity, i)
-			entity_setVisible(cobra3Entity, i)
+			-- entity_setVisible(worldEntity, i)
+			-- entity_setVisible(cobra3Entity, i)
 		end
 	end
 	worldOrientation, error = quatNormalize(worldOrientation)

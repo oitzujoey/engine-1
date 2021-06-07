@@ -25,9 +25,14 @@ Turn based:
 		1.
 			Omega 13 ­— Go back in time 13 seconds. This affects both players. This can only be used once by each player, though unlimited could be fun to try.
 	Scripted
-		Players write scripts for their avatars. Time travel can be initiated by the scripts. This allows actions in the past to be repeatable, but 
+		Players write scripts for their avatars. Time travel can be initiated by the scripts. This allows actions in the past to be repeatable, but most people don't want to write scripts.
 	Team
 
 There seem to be two strategies: asymmetrical and asymmetrical
 	Asymmetrical: One player has to wait for the other player to catch up to the current time.
 	Symmetrical: Both players go back in time and the future is erased.
+
+Time travel seems kind of brutal. In Quake, probably not so much, though it would throw off item timing, but that's what clocks are for. Where this could really hurt is in a strategy game like Twilight Imperium (which is already brutal).
+	Let's assume that this game is computerized, since it would take an enormous amount of work to reset the game state.
+	All the players have spent the past half hour straining to push their master plan forward. Progress has been made. In fact, one player has won a decisive battle against another player, which has guaranteed him a victory. Half a second later, the losing player announces "I wish to play an action card.", and on the table lays the card "Temporal Rift". This causes the game to be reset to the beginning of the action phases, which forces the last half hour of the game to be thrown away. The formerly losing player can now repeat his actions and hope for better luck in the impending battle, or he can fix that one critical mistake that was only caught in retrospect, causing him to win the game.
+	Then there's fog of war, which is the nice version.

@@ -145,7 +145,7 @@ static void main_housekeeping(lua_State *luaState) {
 	//     entity_printEntity(i);
 	// }
 
-	// SDL_Delay(10);
+	// SDL_Delay(8);
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -340,7 +340,8 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 void main_quit(void) {
 
 	terminal_quitConsole();
-
+	terminal_terminalQuit();
+	
 	cnetwork_quit();
 	
 	modelList_free();
@@ -353,6 +354,11 @@ void main_quit(void) {
 	cfg2_free();
 }
 
+// static uint32_t main_callback_block(uint32_t interval, void *param) {
+// 	*((bool *) param) = true;
+// 	return 0;
+// }
+
 int main (int argc, char *argv[]) {
 
 	int error = 0;
@@ -360,6 +366,8 @@ int main (int argc, char *argv[]) {
 	const char *luaFileName = "cmain.lua";
 	char *luaFilePath = NULL;
 	cfg2_var_t *v_luaMain;
+	// SDL_TimerID timerId;
+	// bool proceed;
 	
 	info("Starting engine-1 v0.0 (Client)", "");
 	
@@ -422,6 +430,9 @@ int main (int argc, char *argv[]) {
 	
 	while (!g_cfg2.quit) {
 	
+		// proceed = false;
+		// timerId = SDL_AddTimer(g_cfg2.maxFramerate, main_callback_block, &proceed);
+	
         main_housekeeping(luaState);
         
 		// Set timeout
@@ -431,6 +442,9 @@ int main (int argc, char *argv[]) {
 			error = ERR_CRITICAL;
 			goto cleanup_l;
 		}
+		
+        // while (!proceed) {}
+		// SDL_RemoveTimer(timerId);
 	}
 	
 	// Run shutdown.

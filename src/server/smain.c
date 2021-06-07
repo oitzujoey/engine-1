@@ -116,7 +116,7 @@ static void main_housekeeping(lua_State *luaState) {
 		g_cfg2.quit = true;
 	}
 	
-	SDL_Delay(8);
+	// SDL_Delay(8);
 }
 
 static int main_init(int argc, char *argv[], lua_State *luaState) {
@@ -285,6 +285,11 @@ static void main_quit(void) {
 	
 }
 
+static uint32_t main_callback_block(uint32_t interval, void *param) {
+	*((bool *) param) = true;
+	return 0;
+}
+
 int main(int argc, char *argv[]) {
 	
 	int error = 0;
@@ -293,6 +298,8 @@ int main(int argc, char *argv[]) {
 	char *luaFilePath = NULL;
 	cfg2_var_t *lua_main_v;
 	char *tempString = NULL;
+	SDL_TimerID timerId;
+	bool proceed;
 	
 	info("Starting engine-1 v0.0 (Server)", "");
 	
@@ -357,13 +364,19 @@ int main(int argc, char *argv[]) {
 	
 		// Set timeout
 	
+		proceed = false;
+		timerId = SDL_AddTimer(g_cfg2.maxFramerate, main_callback_block, &proceed);
+	
+        main_housekeeping(luaState);
+        
 		error = lua_runFunction(luaState, "main", MAIN_LUA_MAIN_TIMEOUT);
 		if (error) {
 			error = ERR_CRITICAL;
 			goto cleanup_l;
 		}
 		
-        main_housekeeping(luaState);
+        while (!proceed) {}
+		SDL_RemoveTimer(timerId);
 	}
 	
 	// Run shutdown.
@@ -388,6 +401,7 @@ int main(int argc, char *argv[]) {
 	// vfs_free(&g_vfs);
 	
 	terminal_quitConsole();
+	terminal_terminalQuit();
 	cfg2_free();
 	
 	insane_free(luaFilePath);

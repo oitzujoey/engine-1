@@ -13,3 +13,4 @@ Makefile
 log*.txt
 callgrind.out.*
 *.pcapng
+cachegrind.out.*
