@@ -260,12 +260,12 @@ typedef struct {
 /* ========= */
 
 typedef enum {
-	none,
-	integer,
-	real,
-	boolean,
-	string,
-	table
+	network_lua_type_none,
+	network_lua_type_integer,
+	network_lua_type_real,
+	network_lua_type_boolean,
+	network_lua_type_string,
+	network_lua_type_table
 } network_lua_type_t;
 
 #endif

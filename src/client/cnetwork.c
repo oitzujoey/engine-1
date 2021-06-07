@@ -279,7 +279,7 @@ static int cnetwork_sendState(lua_State *luaState) {
 	}
 	
 	// Send the table.
-	error = network_packetAdd_lua_object(luaState, NETWORK_LUA_CLIENTSTATE_NAME, string, packet, &index);
+	error = network_packetAdd_lua_object(luaState, NETWORK_LUA_CLIENTSTATE_NAME, network_lua_type_string, packet, &index);
 	if (error) {
 		goto cleanup_l;
 	}

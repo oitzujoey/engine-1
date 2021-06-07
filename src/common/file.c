@@ -137,10 +137,10 @@ int file_concatenatePath(char **destination, const char *source) {
 	return error;
 }
 
-void file_getWorkingDirectory(char *workingDirectory) {
-	free(workingDirectory);
-	workingDirectory = getcwd(NULL, 0);
-}
+// void file_getWorkingDirectory(char *workingDirectory) {
+// 	free(workingDirectory);
+// 	workingDirectory = getcwd(NULL, 0);
+// }
 
 void file_resolveRelativePaths(char *path) {
 	// int error = ERR_CRITICAL;
