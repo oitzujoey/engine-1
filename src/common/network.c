@@ -508,26 +508,26 @@ int network_packetAdd_lua_object(lua_State *luaState, const void *name, network_
 	case LUA_TNUMBER:
 		isInteger = lua_isinteger(luaState, -1);
 		if (isInteger) {
-			dataType = integer;
+			dataType = network_lua_type_integer;
 			newPacketLength += sizeof(lua_Integer);
 		}
 		else {
-			dataType = real;
+			dataType = network_lua_type_real;
 			newPacketLength += sizeof(lua_Number);
 		}
 		break;
 	case LUA_TBOOLEAN:
-		dataType = boolean;
+		dataType = network_lua_type_boolean;
 		// Bools are big. What a waste.
 		newPacketLength += sizeof(int);
 		break;
 	case LUA_TSTRING:
-		dataType = string;
+		dataType = network_lua_type_string;
 		// Length + string.
 		newPacketLength += sizeof(lua_Unsigned) + lua_rawlen(luaState, -1) * sizeof(char);
 		break;
 	case LUA_TTABLE:
-		dataType = table;
+		dataType = network_lua_type_table;
 		/*
 		Can find this now, but I don't feel like doing it twice. I'd rather do
 		malloc twice than iterate through the table multiple times.
@@ -552,7 +552,7 @@ int network_packetAdd_lua_object(lua_State *luaState, const void *name, network_
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	case LUA_TNONE:
-		dataType = none;
+		dataType = network_lua_type_none;
 		warning("Object is type \"none\". Is this what you intended to send?", "");
 		break;
 	default:
@@ -564,13 +564,13 @@ int network_packetAdd_lua_object(lua_State *luaState, const void *name, network_
 	// Add header length.
 	
 	switch (nameType) {
-	case integer:
+	case network_lua_type_integer:
 		newPacketLength += sizeof(lua_Integer);
 		break;
-	case real:
+	case network_lua_type_real:
 		newPacketLength += sizeof(lua_Number);
 		break;
-	case string:
+	case network_lua_type_string:
 		// Name. Length + string.
 		name_length = strlen((char *) name);
 		newPacketLength += sizeof(lua_Unsigned) + name_length * sizeof(char);
@@ -600,17 +600,17 @@ int network_packetAdd_lua_object(lua_State *luaState, const void *name, network_
 	}
 	
 	switch (nameType) {
-	case integer:
+	case network_lua_type_integer:
 		for (unsigned int i = 0; i < sizeof(lua_Integer); i++) {
 			packet->data[*index + structIndex++] = ((unsigned long long) *((lua_Integer *) name) >> 8*i) & 0xFF;
 		}
 		break;
-	case real:
+	case network_lua_type_real:
 		for (unsigned int i = 0; i < sizeof(lua_Number); i++) {
 			packet->data[*index + structIndex++] = ((unsigned long long) *((lua_Number *) name) >> 8*i) & 0xFF;
 		}
 		break;
-	case string:
+	case network_lua_type_string:
 		// Name length.
 		for (unsigned int i = 0; i < sizeof(lua_Unsigned); i++) {
 			packet->data[*index + structIndex++] = ((unsigned long long) name_length >> 8*i) & 0xFF;
@@ -634,25 +634,25 @@ int network_packetAdd_lua_object(lua_State *luaState, const void *name, network_
 	// Insert data.
 	
 	switch (dataType) {
-	case integer:
+	case network_lua_type_integer:
 		tempLuaInteger = lua_tointeger(luaState, -1);
 		for (unsigned int i = 0; i < sizeof(lua_Integer); i++) {
 			packet->data[*index + structIndex++] = ((unsigned long long) tempLuaInteger >> 8*i) & 0xFF;
 		}
 		break;
-	case real:
+	case network_lua_type_real:
 		tempLuaReal = lua_tonumber(luaState, -1);
 		for (unsigned int i = 0; i < sizeof(lua_Number); i++) {
 			packet->data[*index + structIndex++] = ((unsigned long long) tempLuaReal >> 8*i) & 0xFF;
 		}
 		break;
-	case boolean:
+	case network_lua_type_boolean:
 		tempLuaBoolean = lua_toboolean(luaState, -1);
 		for (unsigned int i = 0; i < sizeof(int); i++) {
 			packet->data[*index + structIndex++] = ((unsigned long long) tempLuaBoolean >> 8*i) & 0xFF;
 		}
 		break;
-	case string:
+	case network_lua_type_string:
 		tempLuaString = lua_tostring(luaState, -1);
 		tempLuaString_length = lua_rawlen(luaState, -1);
 		// String length.
@@ -664,7 +664,7 @@ int network_packetAdd_lua_object(lua_State *luaState, const void *name, network_
 			packet->data[*index + structIndex++] = tempLuaString[i];
 		}
 		break;
-	case table:
+	case network_lua_type_table:
 		// Save current index (start of table length).
 		tableLengthIndex = *index + structIndex;
 		
@@ -683,17 +683,17 @@ int network_packetAdd_lua_object(lua_State *luaState, const void *name, network_
 				if (lua_isinteger(luaState, -2)) {
 					// Add the value to the packet.
 					tempLuaInteger = lua_tointeger(luaState, -2);
-					error = network_packetAdd_lua_object(luaState, &tempLuaInteger, integer, packet, index);
+					error = network_packetAdd_lua_object(luaState, &tempLuaInteger, network_lua_type_integer, packet, index);
 				}
 				else {
 					// Add the value to the packet.
 					tempLuaReal = lua_tonumber(luaState, -2);
-					error = network_packetAdd_lua_object(luaState, &tempLuaReal, real, packet, index);
+					error = network_packetAdd_lua_object(luaState, &tempLuaReal, network_lua_type_real, packet, index);
 				}
 				break;
 			case LUA_TSTRING:
 				// Add the value to the packet.
-				error = network_packetAdd_lua_object(luaState, lua_tostring(luaState, -2), string, packet, index);
+				error = network_packetAdd_lua_object(luaState, lua_tostring(luaState, -2), network_lua_type_string, packet, index);
 				break;
 			default:
 				critical_error("Bad key type. Can't happen.", "");
@@ -717,7 +717,7 @@ int network_packetAdd_lua_object(lua_State *luaState, const void *name, network_
 		}
 		structIndex = 0;
 		break;
-	case none:
+	case network_lua_type_none:
 		// Shouldn't have to push anything...
 		break;
 	default:
@@ -782,7 +782,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 	// Read key. This will be at index -2 at return.
 	
 	switch (keyType) {
-	case integer:
+	case network_lua_type_integer:
 		data_byteLength += sizeof(lua_Integer);
 		if (*index + data_byteLength > packet->dataLength) {
 			error = ERR_GENERIC;
@@ -798,7 +798,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 		
 		lua_pushinteger(luaState, keyInteger);
 		break;
-	case real:
+	case network_lua_type_real:
 		data_byteLength += sizeof(lua_Number);
 		if (*index + data_byteLength > packet->dataLength) {
 			error = ERR_GENERIC;
@@ -814,7 +814,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 		
 		lua_pushnumber(luaState, keyReal);
 		break;
-	case string:
+	case network_lua_type_string:
 		// Length
 		data_byteLength += sizeof(lua_Unsigned);
 		if (*index + data_byteLength > packet->dataLength) {
@@ -878,10 +878,10 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 	// Create and set object. This will be at index -1 at return.
 	
 	switch (dataType) {
-	case none:
+	case network_lua_type_none:
 		// We are done here.
 		break;
-	case integer:
+	case network_lua_type_integer:
 		data_byteLength += sizeof(lua_Integer);
 		if (*index + data_byteLength > packet->dataLength) {
 			error = ERR_GENERIC;
@@ -897,7 +897,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 		
 		lua_pushinteger(luaState, tempLuaInteger);
 		break;
-	case real:
+	case network_lua_type_real:
 		data_byteLength += sizeof(lua_Number);
 		if (*index + data_byteLength > packet->dataLength) {
 			error = ERR_GENERIC;
@@ -913,7 +913,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 		
 		lua_pushnumber(luaState, tempLuaNumber);
 		break;
-	case boolean:
+	case network_lua_type_boolean:
 		data_byteLength += sizeof(int);
 		if (*index + data_byteLength > packet->dataLength) {
 			error = ERR_GENERIC;
@@ -929,7 +929,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 		
 		lua_pushboolean(luaState, tempInt);
 		break;
-	case string:
+	case network_lua_type_string:
 		// Length
 		data_byteLength += sizeof(lua_Unsigned);
 		if (*index + data_byteLength > packet->dataLength) {
@@ -969,7 +969,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 		insane_free(tempLuaString);
 		tempLuaString_length = 0;
 		break;
-	case table:
+	case network_lua_type_table:
 		// Length
 		data_byteLength += sizeof(lua_Unsigned);
 		if (*index + data_byteLength > packet->dataLength) {
