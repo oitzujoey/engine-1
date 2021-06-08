@@ -152,7 +152,7 @@ int entity_deleteEntity(int index) {
 	return error;
 }
 
-int entity_linkChild(int parentIndex, int childIndex) {
+int entity_linkChild(ptrdiff_t parentIndex, ptrdiff_t childIndex) {
 	int error = ERR_CRITICAL;
 	
 	entity_t *parent;
@@ -161,7 +161,7 @@ int entity_linkChild(int parentIndex, int childIndex) {
 	
 	// Allocate index.
 	parent->children_length++;
-	parent->children = realloc(parent->children, parent->children_length * sizeof(int));
+	parent->children = realloc(parent->children, parent->children_length * sizeof(ptrdiff_t));
 	if (parent->children == NULL) {
 		outOfMemory();
 		error = ERR_OUTOFMEMORY;
