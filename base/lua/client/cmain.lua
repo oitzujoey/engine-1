@@ -6,7 +6,7 @@ This should do almost nothing. The server engine/script and client engine will d
 This script will draw the HUD, create and set 3D reference entities, and perform other menial tasks.
 --]]
 
-include "keys.lua"
+include "../client/keys.lua"
 
 Keys = {}
 
