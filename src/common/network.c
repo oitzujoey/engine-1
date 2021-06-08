@@ -170,16 +170,16 @@ int network_packetAdd_entity(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff
 		}
 		// inUse
 		for (unsigned int j = 0; j < sizeof(bool); j++) {
-#ifdef SERVER
-			if (data[i].isVisible[clientNumber]) {
-#endif
+// #ifdef SERVER
+// 			if (data[i].isVisible[clientNumber]) {
+// #endif
 				packet[*index + structIndex++] = ((unsigned long long int) data[i].inUse >> 8*j) & 0xFF;
-#ifdef SERVER
-			}
-			else {
-				packet[*index + structIndex++] = ((unsigned long long int) false >> 8*j) & 0xFF;
-			}
-#endif
+// #ifdef SERVER
+// 			}
+// 			else {
+// 				packet[*index + structIndex++] = ((unsigned long long int) false >> 8*j) & 0xFF;
+// 			}
+// #endif
 		}
 		// shown
 		for (unsigned int j = 0; j < sizeof(bool); j++) {

@@ -593,7 +593,7 @@ z ← 1 - 2/z
 
 (0, Inf) → (-1, 1)
 
-The world should be the same from every client's perspective. The only difference between them is which entities are present and what position and orientation the world (really the player) is in.
+The world should be the same from every client's perspective. The only difference between them is which entities are present and what position and orientation the world (really the player) is in. Since I want to keep every entity list as close to the same as possible, I will send the client position and orientation as a Lua table.
 
 
 
@@ -656,9 +656,9 @@ Files to rewrite when it is somewhat working:
     [*] Send keys to Lua.
         [*] Allow Lua to manipulate and read scripting variables and callbacks.
 [/] (Client) Get mouse input
-[/] (Client) Send input
+[*] (Client) Send input
     [*] Allow Lua to send arbitrary network messages using unreliable packets.
-    [ ] Make server communicate with clients individually.
+    [*] Make server communicate with clients individually.
 ![ ] (All)    Get on those TODOs (ugly ones)
 [*] (Server) Receive input
 [*] (Server) Make an entity move based on input

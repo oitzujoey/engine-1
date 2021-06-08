@@ -426,7 +426,7 @@ int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation) {
 
 	vec3_t localPosition;
 	quat_t localOrientation;
-
+	
 	if (!entity.inUse) {
 		// Don't draw deleted entities.
 		warning("Attempted to draw deleted entity %i.", (int) (&entity - g_entityList.entities));
@@ -435,7 +435,7 @@ int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation) {
 	}
 	
 	if (!entity.shown) {
-		printf("Not shown\n");
+		// This is done client side because the entity doesn't contain any useful information.
 		error = ERR_OK;
 		goto cleanup_l;
 	}
