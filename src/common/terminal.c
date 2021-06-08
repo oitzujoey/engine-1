@@ -12,13 +12,23 @@
 #include <fcntl.h>
 #endif
 
+#ifdef WINDOWS
+#include <io.h>
+#endif
+
 char *g_consoleCommand;
 size_t g_consoleCommand_length = 0;
 char **g_commandHistory;
 size_t g_commandHistoryLength = 0;
 char *g_commandComplete;
 
+#ifdef LINUX
 struct termios g_originalConfig;
+#endif
+
+#ifdef WINDOWS
+HANDLE g_stdinHandle;
+#endif
 
 int terminal_getHistoryLine(char **line, int *index);
 int terminal_addLineToHistory(const char *line);
@@ -123,6 +133,22 @@ int terminal_terminalInit(void) {
 	}
 	fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
 	
+#endif
+
+#ifdef WINDOWS
+	DWORD mode;
+
+	g_stdinHandle = GetStdHandle(STD_INPUT_HANDLE);
+	if (g_stdinHandle == INVALID_HANDLE_VALUE) {
+		critical_error("Could not get handle for stdin. Windows error code: %ld", GetLastError());
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+
+	if (GetConsoleMode(g_stdinHandle, &mode)) {
+		mode &= ~(ENABLE_LINE_INPUT);
+		SetConsoleMode(g_stdinHandle, mode);
+	}
 #endif
 	
 	error = ERR_OK;
@@ -356,6 +382,9 @@ int terminal_runTerminalCommand(lua_State *luaState) {
 	int tempInt;
 	static cfg2_admin_t adminLevel = cfg2_admin_administrator;
 	cfg2_admin_t tempAdminLevel;
+	#ifdef WINDOWS
+	DWORD charsRead;
+	#endif
 	
 	if (!printedPrompt) {
 		printedPrompt = true;
@@ -365,9 +394,17 @@ int terminal_runTerminalCommand(lua_State *luaState) {
 	
 #ifdef LINUX
 	if (read(STDIN_FILENO, &character, 1) > 0) {
+#elif WINDOWS
+	// if (_read(STDIN_FILENO, &character, 1) > 0) {
+	// if (!PeekConsoleInput(g_stdinHandle, &character, 1, &charsRead, NULL)) {
+	// 	error("Error reading from console. Windows error code %ld", GetLastError());
+	// }
+	charsRead = 0;
+	character = 0;
+	if (charsRead != 0) {
 #else
 #error "Must rewrite for non-Linux platforms"
-	{
+{
 #endif
 		if (controlSequence) {
 			switch (character) {

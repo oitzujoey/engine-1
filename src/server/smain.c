@@ -1,4 +1,6 @@
 
+#define SDL_MAIN_HANDLED
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -208,6 +210,9 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 
 	// Run command line arguments.
 
+	cfg2_admin_t savedAdminLevel = g_cfg2.adminLevel;
+	g_cfg2.adminLevel = cfg2_admin_supervisor;
+
 	if (argc > 1) {
 		for (int i = 1; i < argc; i++) {
 			str2_copyMalloc(&tempString, argv[i]);
@@ -225,6 +230,8 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 			}
 		}
 	}
+	
+	g_cfg2.adminLevel = savedAdminLevel;
 	
 	// Check for the workspace.
 	

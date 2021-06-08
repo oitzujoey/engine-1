@@ -1,4 +1,6 @@
 
+#define SDL_MAIN_HANDLED
+
 #include <stdio.h>
 #include <lua.h>
 #include <lauxlib.h>
@@ -270,6 +272,9 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 
+	cfg2_admin_t savedAdminLevel = g_cfg2.adminLevel;
+	g_cfg2.adminLevel = cfg2_admin_supervisor;
+
 	if (argc > 1) {
 		for (int i = 1; i < argc; i++) {
 			str2_copyMalloc(&tempString, argv[i]);
@@ -287,6 +292,8 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 			}
 		}
 	}
+
+	g_cfg2.adminLevel = savedAdminLevel;
 	
 	error = windowInit();
 	if (error) {
@@ -354,10 +361,10 @@ void main_quit(void) {
 	cfg2_free();
 }
 
-// static uint32_t main_callback_block(uint32_t interval, void *param) {
-// 	*((bool *) param) = true;
-// 	return 0;
-// }
+static uint32_t main_callback_block(uint32_t interval, void *param) {
+	*((bool *) param) = true;
+	return 0;
+}
 
 int main (int argc, char *argv[]) {
 
@@ -366,8 +373,8 @@ int main (int argc, char *argv[]) {
 	const char *luaFileName = "cmain.lua";
 	char *luaFilePath = NULL;
 	cfg2_var_t *v_luaMain;
-	// SDL_TimerID timerId;
-	// bool proceed;
+	SDL_TimerID timerId;
+	bool proceed;
 	
 	info("Starting engine-1 v0.0 (Client)", "");
 	
@@ -430,8 +437,8 @@ int main (int argc, char *argv[]) {
 	
 	while (!g_cfg2.quit) {
 	
-		// proceed = false;
-		// timerId = SDL_AddTimer(g_cfg2.maxFramerate, main_callback_block, &proceed);
+		proceed = false;
+		timerId = SDL_AddTimer(g_cfg2.maxFramerate, main_callback_block, &proceed);
 	
         main_housekeeping(luaState);
         
@@ -443,8 +450,8 @@ int main (int argc, char *argv[]) {
 			goto cleanup_l;
 		}
 		
-        // while (!proceed) {}
-		// SDL_RemoveTimer(timerId);
+        while (!proceed) {}
+		SDL_RemoveTimer(timerId);
 	}
 	
 	// Run shutdown.

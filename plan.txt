@@ -576,6 +576,7 @@ Buffers:
     enet internal receive buffer
     
 cengine seems to be running too slow. I suspect that it is not receiving the entity list. It does not seem to be sending the keys either.
+I think I figured out what is going on. It seems likely that my framerate is supposed to be 60 Hz. This is approximately equal to 16.67 ms. I have been trying to set the game cycle time to 10 ms. What is probably happening is that rendering is going to fast or something like that. I honestly don't know. 20 ms works just fine though, so I think I will change the default to that.
 
 
 

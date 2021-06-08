@@ -4,7 +4,7 @@ Honestly, I have no idea what this is going to be yet. At this point, it's just 
 Here is what I do know:
 
 * Written in C
-* Cross-platform (Linux + Windows 10) (Currently only runs on Linux because of terminal code)
+* Cross-platform (Linux + Windows 10) (Console does not currently work on Windows.)
 * Client-server
 * Moddable through Lua
 
@@ -12,7 +12,7 @@ Here is what I do know:
 
 ### Dependencies
 
-Make sure you have these dependencies. GL and GLEW are required for the client only.
+Make sure you have these dependencies before building. GL and GLEW are required for the client only.
 
 ```text
     SDL2
@@ -23,6 +23,9 @@ Make sure you have these dependencies. GL and GLEW are required for the client o
     GLEW
 ```
 
+On linux, you will need these installed to run.  
+On Windows, you will either need these installed, or you will need the DLLs in the working directory. I wish you luck in your library compilation.
+
 ### Building
 
 ```bash
@@ -30,6 +33,8 @@ mkdir build && cd build
 cmake ..
 make
 ```
+
+I recommend using MSYS2 and mingw to build for Windows. It was pretty painless compared to building on Ubuntu (WSL) and Arch Linux.
 
 ### Configuration
 

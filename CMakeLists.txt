@@ -15,7 +15,9 @@ else()
 	add_compile_options(-std=c17 -O3)
 endif()
 
+# I should learn CMake better.
 add_compile_options(-DLINUX)
+# add_compile_options(-DWINDOWS)
 
 add_executable(sengine-1)
 add_executable(cengine-1)
@@ -30,3 +32,4 @@ add_subdirectory(src)
 
 target_link_libraries(sengine-1 SDL2 lua m enet physfs)
 target_link_libraries(cengine-1 SDL2 lua m enet physfs GL GLEW)
+# target_link_libraries(cengine-1 SDL2 lua m enet physfs opengl32 glew32)
