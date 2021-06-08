@@ -578,6 +578,21 @@ Buffers:
 cengine seems to be running too slow. I suspect that it is not receiving the entity list. It does not seem to be sending the keys either.
 I think I figured out what is going on. It seems likely that my framerate is supposed to be 60 Hz. This is approximately equal to 16.67 ms. I have been trying to set the game cycle time to 10 ms. What is probably happening is that rendering is going to fast or something like that. I honestly don't know. 20 ms works just fine though, so I think I will change the default to that.
 
+Lua should load the shaders if they are not built into the model format.
+
+Time to project into 2D properly. I need the FOV and the aspect ratio. I think I will make the FOV a width instead of an angle. Actually, longest dimention of the screen is probably better.
+Screen width will always be 1. Screen height will vary.
+
+It would be interesting to not have any 2D sprites and use 3D for everything.
+
+I need to project the vertex into 2D and then set the z-axis to place it in the right position relative to other models.
+
+x ← vx/vz * 1
+y ← vy/vz * height
+z ← 1 - 2/z
+
+(0, Inf) → (-1, 1)
+
 
 
 Graphics stuff I dream of adding:

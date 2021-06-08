@@ -133,6 +133,213 @@ void quat_print(quat_t *q) {
 /* Lua */
 /* === */
 
+/* l_vec3_crossProduct
+a0: vec3_t vector0
+a1: vec3_t vector1
+r0: vec3_t crossProduct
+*/
+int l_vec3_crossProduct(lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	vec3_t v0, v1, result;
+	
+	lua_pushstring(luaState, "x");
+	if (lua_gettable(luaState, 1) != LUA_TNUMBER) {
+		error("Key x must be a number", "");
+		lua_error(luaState);
+	}
+	v0[0] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "y");
+	if (lua_gettable(luaState, 1) != LUA_TNUMBER) {
+		error("Key y must be a number", "");
+		lua_error(luaState);
+	}
+	v0[1] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "z");
+	if (lua_gettable(luaState, 1) != LUA_TNUMBER) {
+		error("Key z must be a number", "");
+		lua_error(luaState);
+	}
+	v0[2] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	
+	// lua_pushstring(luaState, "w");
+	// if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+	// 	error("Key w must be a number", "");
+	// 	lua_error(luaState);
+	// }
+	// q.s = lua_tonumber(luaState, -1);
+	// lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "x");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key x must be a number", "");
+		lua_error(luaState);
+	}
+	v1[0] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "y");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key y must be a number", "");
+		lua_error(luaState);
+	}
+	v1[1] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "z");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key z must be a number", "");
+		lua_error(luaState);
+	}
+	v1[2] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	
+	result[0] = v0[1]*v1[2] - v0[2]*v1[1];
+	result[1] = v0[2]*v1[0] - v0[0]*v1[2];
+	result[2] = v0[0]*v1[1] - v0[1]*v1[0];
+	
+	
+	error = ERR_OK;
+	
+	lua_newtable(luaState);
+	
+	lua_pushliteral(luaState, "x");
+	lua_pushnumber(luaState, result[0]);
+	lua_settable(luaState, -3);
+
+	lua_pushliteral(luaState, "y");
+	lua_pushnumber(luaState, result[1]);
+	lua_settable(luaState, -3);
+
+	lua_pushliteral(luaState, "z");
+	lua_pushnumber(luaState, result[2]);
+	lua_settable(luaState, -3);
+
+
+	lua_pushinteger(luaState, error);
+
+	return 2;
+}
+
+
+/* l_vec3_rotate
+a0: vec3_t vector
+a1: quat_t orientation
+r0: vec3_t rotatedVector
+*/
+int l_vec3_rotate(lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	quat_t q, qInverse, v;
+	
+	// lua_pushstring(luaState, "w");
+	// if (lua_gettable(luaState, 1) != LUA_TNUMBER) {
+	// 	error("Key w must be a number", "");
+	// 	lua_error(luaState);
+	// }
+	// q0.s = lua_tonumber(luaState, -1);
+	// lua_pop(luaState, 1);
+	
+	v.s = 0;
+	
+	lua_pushstring(luaState, "x");
+	if (lua_gettable(luaState, 1) != LUA_TNUMBER) {
+		error("Key x must be a number", "");
+		lua_error(luaState);
+	}
+	v.v[0] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "y");
+	if (lua_gettable(luaState, 1) != LUA_TNUMBER) {
+		error("Key y must be a number", "");
+		lua_error(luaState);
+	}
+	v.v[1] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "z");
+	if (lua_gettable(luaState, 1) != LUA_TNUMBER) {
+		error("Key z must be a number", "");
+		lua_error(luaState);
+	}
+	v.v[2] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	
+	lua_pushstring(luaState, "w");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key w must be a number", "");
+		lua_error(luaState);
+	}
+	q.s = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "x");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key x must be a number", "");
+		lua_error(luaState);
+	}
+	q.v[0] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "y");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key y must be a number", "");
+		lua_error(luaState);
+	}
+	q.v[1] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	lua_pushstring(luaState, "z");
+	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
+		error("Key z must be a number", "");
+		lua_error(luaState);
+	}
+	q.v[2] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+	
+	
+	quat_copy(&qInverse, &q);
+	quat_unitInverse(&qInverse);
+	
+	quat_hamilton(&v, &q, &v);
+	quat_hamilton(&v, &v, &qInverse);
+	
+	
+	error = ERR_OK;
+	
+	lua_newtable(luaState);
+	
+	// lua_pushstring(luaState, "w");
+	// lua_pushnumber(luaState, v.s);
+	// lua_settable(luaState, -3);
+	
+	lua_pushliteral(luaState, "x");
+	lua_pushnumber(luaState, v.v[0]);
+	lua_settable(luaState, -3);
+
+	lua_pushliteral(luaState, "y");
+	lua_pushnumber(luaState, v.v[1]);
+	lua_settable(luaState, -3);
+
+	lua_pushliteral(luaState, "z");
+	lua_pushnumber(luaState, v.v[2]);
+	lua_settable(luaState, -3);
+
+
+	lua_pushinteger(luaState, error);
+
+	return 2;
+}
+
 int l_hamiltonProduct(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	

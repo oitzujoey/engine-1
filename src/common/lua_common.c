@@ -24,6 +24,8 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_entity_linkChild,        .name = "entity_linkChild"},
 	{.func = l_entity_setPosition,      .name = "entity_setPosition"},
 	{.func = l_entity_setOrientation,   .name = "entity_setOrientation"},
+	{.func = l_vec3_crossProduct,       .name = "vec3_crossProduct"},
+	{.func = l_vec3_rotate,             .name = "vec3_rotate"},
 	{.func = l_hamiltonProduct,         .name = "hamiltonProduct"},
 	{.func = l_quatNormalize,           .name = "quatNormalize"},
 	{.func = l_cfg2_setVariable,        .name = "cfg2_setVariable"},

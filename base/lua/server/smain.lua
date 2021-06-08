@@ -26,6 +26,9 @@ function startup()
 	
 	info("startup", "Loading world tree")
 	
+	speed = 1
+	position = {x=0, y=0, z=200}
+	
 	cobra3Model, error = loadOoliteModel(modelPath .. "oolite_cobra3.dat")
 	if cobra3Model ~= -1 then
 		cobra3Entity, error = createEntity(type_model)
@@ -33,7 +36,7 @@ function startup()
 		error = entity_linkChild(worldEntity, cobra3Entity)
 		info("startup", "Linking model to entity.")
 		error = entity_linkChild(cobra3Entity, cobra3Model)
-		entity_setPosition(cobra3Entity, {x=0, y=0, z=50})
+		entity_setPosition(cobra3Entity, position)
 		-- l_entity_setOrientation(cobra3Entity, {w=1, x=0, y=0, z=0})
 		
 		-- l_snetwork_sendEntityTree()
@@ -57,51 +60,71 @@ function startup()
 	worldCounterRotation = {w=0.99985, x=-0.005, y=-0.01, z=0.005}
 	worldOrientation = {w=1.0, x=0.0, y=0.0, z=0.0}
 	
+	TurnRate = 100
+	
+	Vec3_xn = {x=-1, y=0, z=0}
+	Vec3_xp = {x=1, y=0, z=0}
+	Vec3_yn = {x=0, y=-1, z=0}
+	Vec3_yp = {x=0, y=1, z=0}
+	Vec3_zn = {x=0, y=0, z=-1}
+	Vec3_zp = {x=0, y=0, z=1}
+	
 	info("startup", "Starting game")
 end
 
 function main()
-	-- Main program loop. l_checkQuit() checks if the program is supposed to end and ends it if needed.
-	-- while l_checkQuit() == 0 do
-	-- orientation, error = l_hamiltonProduct(orientation, rotation)
-	-- orientation, error = l_quatNormalize(orientation)
-	-- -- l_log_info("main", orientation.w .. " " .. orientation.x .. " " .. orientation.y .. " " .. orientation.z)
-	-- l_entity_setOrientation(cobra3Entity, orientation)
-	
-	-- This runs once per loop. It does tasks such as read from the terminal and send and receive packets.
-	-- l_main_housekeeping()
-	-- end
+	-- Main program loop.
 	
 	for i = 0,1,1 do
 		if clientState[i] ~= nil then
-	-- 	if clientState[0].up ~= nil then
-			-- if clientState[0].up then
-			-- 	info("main", "right")
-			-- else
-			-- 	info("main", "not right")
-			-- end
-			-- if clientState[0].down then
-			-- 	info("main", "right")
-			-- else
-			-- 	info("main", "not right")
-			-- end
-			-- info("main", "running")
+			tempVec3 = {x=0, y=0, z=0}
 			if clientState[i].keys.left then
-				info("main", "left")
-				worldOrientation, error = hamiltonProduct(worldOrientation, worldCounterRotation)
+				tempVec3 = vec3_crossProduct(Vec3_yp, Vec3_xp)
+				tempQuat = {w=0, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}
+				tempQuat = quatNormalize(tempQuat)
+				tempQuat.w = TurnRate
+				tempQuat = quatNormalize(tempQuat)
+				orientation, error = hamiltonProduct(orientation, tempQuat)
 			end
 			if clientState[i].keys.right then
-				info("main", "right")
-				worldOrientation, error = hamiltonProduct(worldOrientation, worldRotation)
+				tempVec3 = vec3_crossProduct(Vec3_yp, Vec3_xn)
+				tempQuat = {w=0, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}
+				tempQuat = quatNormalize(tempQuat)
+				tempQuat.w = TurnRate
+				tempQuat = quatNormalize(tempQuat)
+				orientation, error = hamiltonProduct(orientation, tempQuat)
+			end
+			if clientState[i].keys.up then
+				tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_yn)
+				tempQuat = {w=0, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}
+				tempQuat = quatNormalize(tempQuat)
+				tempQuat.w = TurnRate
+				tempQuat = quatNormalize(tempQuat)
+				orientation, error = hamiltonProduct(orientation, tempQuat)
+			end
+			if clientState[i].keys.down then
+				tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_yp)
+				tempQuat = {w=0, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}
+				tempQuat = quatNormalize(tempQuat)
+				tempQuat.w = TurnRate
+				tempQuat = quatNormalize(tempQuat)
+				orientation, error = hamiltonProduct(orientation, tempQuat)
 			end
 			
 			-- entity_setVisible(worldEntity, i)
 			-- entity_setVisible(cobra3Entity, i)
 		end
 	end
-	worldOrientation, error = quatNormalize(worldOrientation)
-	entity_setOrientation(worldEntity, worldOrientation)
 	
+	orientation, error = quatNormalize(orientation)
+	
+	rotatedVec3, error = vec3_rotate({x=0, y=0, z=1}, orientation)
+	position.x = position.x + speed * rotatedVec3.x
+	position.y = position.y + speed * rotatedVec3.y
+	position.z = position.z + speed * rotatedVec3.z
+	
+	entity_setOrientation(cobra3Entity, orientation)
+	entity_setPosition(cobra3Entity, position)
 end
 
 function shutdown()

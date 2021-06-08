@@ -17,6 +17,7 @@ GLuint g_VertexVbo;
 GLuint g_colorVbo;
 GLint g_orientationUniform;
 GLint g_positionUniform;
+GLint g_screenHeightUniform;
 GLuint g_vao;
 GLuint g_shaderProgram[2];
 char *g_openglLogFileName;
@@ -224,45 +225,47 @@ int render_initOpenGL(void) {
 	
 	const char* vertexShaderSource0 =
 		"#version 400\n"
-		"layout(location = 0) in vec3 vp;"
-		"layout(location = 1) in vec3 normal;"
-		"uniform vec4 orientation;"
-		"uniform vec3 position;"
-		"out vec3 color;"
+		"layout(location = 0) in vec3 vp;\n"
+		"layout(location = 1) in vec3 normal;\n"
+		"uniform vec4 orientation;\n"
+		"uniform vec3 position;\n"
+		"uniform float screenHeight;\n"
+		"out vec3 color;\n"
 		
-		"vec4 conjugate(vec4 a) {"
-		"  return vec4("
-		"    -a.x,"
-		"    -a.y,"
-		"    -a.z,"
-		"    a.w"
-		"  );"
-		"}"
+		"vec4 conjugate(vec4 a) {\n"
+		"  return vec4(\n"
+		"    -a.x,\n"
+		"    -a.y,\n"
+		"    -a.z,\n"
+		"    a.w\n"
+		"  );\n"
+		"}\n"
 		
-		"vec4 hamilton(vec4 a, vec4 b) {"
-		"  return vec4("
-		"    a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,"
-		"    a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,"
-		"    a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,"
-		"    a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z"
-		"  );"
-		"}"
+		"vec4 hamilton(vec4 a, vec4 b) {\n"
+		"  return vec4(\n"
+		"    a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,\n"
+		"    a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,\n"
+		"    a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,\n"
+		"    a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z\n"
+		"  );\n"
+		"}\n"
 		
-		"vec3 rotate(vec3 v, vec4 q) {"
-		"  vec4 v4 = vec4(v, 0);"
-		"  v4 = hamilton(hamilton(q, v4), conjugate(q));"
-		"  return vec3(v4.x, v4.y, v4.z);"
-		"}"
+		"vec3 rotate(vec3 v, vec4 q) {\n"
+		"  vec4 v4 = vec4(v, 0);\n"
+		"  v4 = hamilton(hamilton(q, v4), conjugate(q));\n"
+		"  return vec3(v4.x, v4.y, v4.z);\n"
+		"}\n"
 		
-		"void main() {"
-		"  vec3 vertex;"
-		"  vertex = rotate(vp, orientation);"
-		"  vertex += position;"
-		"  vertex *= 0.01;"
-		"  vertex.z = 2.0 * (vertex.z - 0.5);"
-		"  gl_Position = vec4(vertex, 1.0);"
-		"  color = rotate(normal, orientation);"
-		"}";
+		"void main() {\n"
+		"  vec3 vertex;\n"
+		"  vertex = rotate(vp, orientation);\n"
+		"  vertex += position;\n"
+		"  vertex.x = vertex.x/vertex.z;\n"
+		"  vertex.y = vertex.y/vertex.z / screenHeight;\n"
+		"  vertex.z = vertex.z / 10000.0 - 1.0;\n"
+		"  gl_Position = vec4(vertex, 1.0);\n"
+		"  color = rotate(normal, orientation);\n"
+		"}\n";
 	
 	const char* fragmentShaderSource0 =
 		"#version 400\n"
@@ -355,6 +358,13 @@ int render_initOpenGL(void) {
 	
 	g_positionUniform = glGetUniformLocation(g_shaderProgram[0], "position");
 	if (g_positionUniform < 0) {
+		critical_error("Could not get uniform from program.", "");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	g_screenHeightUniform = glGetUniformLocation(g_shaderProgram[0], "screenHeight");
+	if (g_screenHeightUniform < 0) {
 		critical_error("Could not get uniform from program.", "");
 		error = ERR_CRITICAL;
 		goto cleanup_l;
@@ -455,6 +465,9 @@ int render(entity_t entity) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	// For each entity in the tree...
+	
+	// Set FOV.
+	glUniform1f(g_screenHeightUniform, 9.0f/16.0f);
 	
 	// Render world entity.
 	error = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}});
