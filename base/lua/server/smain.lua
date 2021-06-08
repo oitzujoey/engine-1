@@ -111,10 +111,11 @@ function main()
 				orientation, error = hamiltonProduct(orientation, tempQuat)
 			end
 			
-			-- entity_setVisible(worldEntity, i)
-			-- entity_setVisible(cobra3Entity, i)
 		end
 	end
+	
+	entity_setVisible(worldEntity, 1)
+	entity_setVisible(cobra3Entity, 1)
 	
 	orientation, error = quatNormalize(orientation)
 	

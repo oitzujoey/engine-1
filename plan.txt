@@ -593,6 +593,8 @@ z ← 1 - 2/z
 
 (0, Inf) → (-1, 1)
 
+The world should be the same from every client's perspective. The only difference between them is which entities are present and what position and orientation the world (really the player) is in.
+
 
 
 Graphics stuff I dream of adding:

@@ -122,7 +122,7 @@ int network_packetAdd_entity(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff
 		for (ptrdiff_t j = 0; j < sizeof(vec3_t)/sizeof(vec_t); j++) {
 			for (unsigned int k = 0; k < sizeof(vec_t); k++) {
 #ifdef SERVER
-				if (data[i].isVisible) {
+				if (data[i].isVisible[clientNumber]) {
 #endif
 					packet[*index + structIndex++] = (*((unsigned long long int *) &data[i].position[j]) >> 8*k) & 0xFF;
 #ifdef SERVER
@@ -140,7 +140,7 @@ int network_packetAdd_entity(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff
 		for (unsigned int j = 0; j < sizeof(vec_t); j++) {
 			// packet[*index + structIndex++] = ((unsigned long long int) data[i].orientation.s >> 8*j) & 0xFF;
 #ifdef SERVER
-			if (data[i].isVisible) {
+			if (data[i].isVisible[clientNumber]) {
 #endif
 				packet[*index + structIndex++] = (*((unsigned long long int *) &data[i].orientation.s) >> 8*j) & 0xFF;
 #ifdef SERVER
@@ -157,7 +157,7 @@ int network_packetAdd_entity(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff
 		for (ptrdiff_t j = 0; j < sizeof(vec3_t)/sizeof(vec_t); j++) {
 			for (unsigned int k = 0; k < sizeof(vec_t); k++) {
 #ifdef SERVER
-				if (data[i].isVisible) {
+				if (data[i].isVisible[clientNumber]) {
 #endif
 					packet[*index + structIndex++] = (*((unsigned long long int *) &data[i].orientation.v[j]) >> 8*k) & 0xFF;
 #ifdef SERVER
@@ -171,7 +171,7 @@ int network_packetAdd_entity(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff
 		// inUse
 		for (unsigned int j = 0; j < sizeof(bool); j++) {
 #ifdef SERVER
-			if (data[i].isVisible) {
+			if (data[i].isVisible[clientNumber]) {
 #endif
 				packet[*index + structIndex++] = ((unsigned long long int) data[i].inUse >> 8*j) & 0xFF;
 #ifdef SERVER
@@ -184,7 +184,7 @@ int network_packetAdd_entity(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff
 		// shown
 		for (unsigned int j = 0; j < sizeof(bool); j++) {
 #ifdef SERVER
-			if (data[i].isVisible) {
+			if (data[i].isVisible[clientNumber]) {
 #endif
 				packet[*index + structIndex++] = ((unsigned long long int) data[i].shown >> 8*j) & 0xFF;
 #ifdef SERVER
