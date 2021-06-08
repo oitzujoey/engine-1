@@ -82,6 +82,7 @@ static int l_lua_sandbox_include(lua_State *luaState) {
 	
 	error = vfs_getFileText(&fileText, luaFilePath);
 	if (error) {
+		error("Could not read text from file \"%s\".", luaFilePath);
 		error = ERR_GENERIC;
 		insane_free(luaFilePath);
 		lua_error(luaState);
