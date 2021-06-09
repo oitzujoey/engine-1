@@ -88,7 +88,7 @@ int network_packetAdd_entityList(enet_uint8 *packet, ptrdiff_t *index, const ptr
 int network_packetAdd_entity(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, entity_t *data, const ptrdiff_t data_length, unsigned int clientNumber) {
 	int error = ERR_CRITICAL;
 	
-	const size_t data_size = sizeof(ptrdiff_t) + sizeof(size_t) + sizeof(entity_childType_t) + 7*sizeof(vec_t) + 2*sizeof(bool);
+	const size_t data_size = sizeof(ptrdiff_t *) + sizeof(size_t) + sizeof(entity_childType_t) + 7*sizeof(vec_t) + 2*sizeof(bool);
 	const size_t data_byteLength = data_size / sizeof(enet_uint8) * data_length;
 	
 	ptrdiff_t structIndex = 0;
@@ -215,7 +215,7 @@ int network_packetAdd_ptrdiff(enet_uint8 *packet, ptrdiff_t *index, const ptrdif
 	
 	if (*index + data_byteLength > packet_length) {
 		error = ERR_GENERIC;
-		error("Packet too small for data. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, data_byteLength);
+		error("Packet too small for data. "COLOR_BLUE"[packet_length] "COLOR_CYAN"%td "COLOR_BLUE"[data_length] "COLOR_CYAN"%td"COLOR_NORMAL, packet_length, *index + data_byteLength);
 		goto cleanup_l;
 	}
 	
@@ -327,7 +327,7 @@ int network_packetRead_entityList(entityList_t *data, const ptrdiff_t data_lengt
 int network_packetRead_entity(entity_t *data, const ptrdiff_t data_length, const enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length) {
 	int error = ERR_CRITICAL;
 	
-	const size_t data_size = sizeof(ptrdiff_t) + sizeof(size_t) + sizeof(entity_childType_t) + 7*sizeof(vec_t) + 2*sizeof(bool);
+	const size_t data_size = sizeof(ptrdiff_t *) + sizeof(size_t) + sizeof(entity_childType_t) + 7*sizeof(vec_t) + 2*sizeof(bool);
 	const size_t data_byteLength = data_size / sizeof(enet_uint8) * data_length;
 	
 	unsigned long long int tempUnsignedLongLongInt;

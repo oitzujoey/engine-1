@@ -355,6 +355,10 @@ int main(int argc, char *argv[]) {
 	
     // Run startup.
     
+	// Create number maxClients
+	lua_pushinteger(luaState, MAX_CLIENTS);
+	lua_setglobal(luaState, NETWORK_LUA_MAXCLIENTS_NAME);
+	
 	error = lua_runFunction(luaState, "startup", MAIN_LUA_STARTUP_TIMEOUT);
     if (error) {
         error = ERR_CRITICAL;
@@ -363,7 +367,32 @@ int main(int argc, char *argv[]) {
 	
 	// Create table `NETWORK_LUA_CLIENTSTATE_NAME`.
 	lua_newtable(luaState);
+	// for (int i = 0; i < MAX_CLIENTS; i++) {
+	// 	// Indices start at one. :|
+	// 	lua_pushinteger(luaState, i + 1);
+	// 	lua_newtable(luaState);
+	// 	/*
+	// 	-1  0
+	// 	-2  i
+	// 	-3  clientState
+	// 	*/
+	// 	lua_settable(luaState, -3);
+	// }
 	lua_setglobal(luaState, NETWORK_LUA_CLIENTSTATE_NAME);
+	
+	lua_newtable(luaState);
+	for (int i = 0; i < MAX_CLIENTS; i++) {
+		// Indices start at one. :|
+		lua_pushinteger(luaState, i + 1);
+		lua_newtable(luaState);
+		/*
+		-1  0
+		-2  i
+		-3  serverState
+		*/
+		lua_settable(luaState, -3);
+	}
+	lua_setglobal(luaState, NETWORK_LUA_SERVERSTATE_NAME);
 	
 	// Run the main game.
 	

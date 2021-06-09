@@ -425,6 +425,8 @@ int main (int argc, char *argv[]) {
 	lua_newtable(luaState);
 	lua_setglobal(luaState, NETWORK_LUA_CLIENTSTATE_NAME);
 	
+	lua_newtable(luaState);
+	lua_setglobal(luaState, NETWORK_LUA_SERVERSTATE_NAME);
     // Run startup.
     
 	error = lua_runFunction(luaState, "startup", MAIN_LUA_STARTUP_TIMEOUT);

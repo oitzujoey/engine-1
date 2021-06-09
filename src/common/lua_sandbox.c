@@ -25,7 +25,7 @@ static const luaL_Reg luaLibs[] = {
 	{NULL, NULL}
 };
 
-static uint32_t lua_luaTimeout(uint32_t interval, void *param) {
+uint32_t lua_luaTimeout(uint32_t interval, void *param) {
 	luaTimeout_t *luaTimeout = param;
 	error("Lua function \"%s\" timed out.", luaTimeout->functionName);
 	lua_error(luaTimeout->luaState);

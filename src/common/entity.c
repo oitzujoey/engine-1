@@ -130,7 +130,8 @@ int entity_deleteEntity(int index) {
 	// Allocate a new spot.
 	else {
 		g_entityList.deletedEntities_length_allocated++;
-		g_entityList.deletedEntities = realloc(g_entityList.deletedEntities, g_entityList.deletedEntities_length_allocated * sizeof(int));
+		g_entityList.deletedEntities_length++;
+		g_entityList.deletedEntities = realloc(g_entityList.deletedEntities, g_entityList.deletedEntities_length_allocated * sizeof(ptrdiff_t));
 		if (g_entityList.deletedEntities == NULL) {
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
@@ -246,6 +247,27 @@ int l_entity_createEntity(lua_State *luaState) {
 	lua_pushinteger(luaState, error);
 	
 	return 2;
+}
+
+int l_entity_deleteEntity(lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	if (!lua_isinteger(luaState, 1)) {
+		error("Argument 1 must be an integer.", "");
+		lua_error(luaState);
+	}
+	
+	error = entity_deleteEntity(lua_tointeger(luaState, 1));
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	lua_pushinteger(luaState, error);
+	
+	return 1;
 }
 
 int l_entity_linkChild(lua_State *luaState) {
@@ -447,7 +469,7 @@ int l_entity_setVisible(lua_State *luaState) {
 		lua_error(luaState);
 	}
 	
-	clientNumber = lua_tointeger(luaState, 2);
+	clientNumber = lua_tointeger(luaState, 2) - 1;
 	if ((clientNumber < 0) || (clientNumber >= MAX_CLIENTS)) {
 		error("Client %i is not connected.", clientNumber);
 		lua_error(luaState);

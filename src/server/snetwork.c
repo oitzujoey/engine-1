@@ -9,6 +9,7 @@
 #include "../common/entity.h"
 #include "../common/vector.h"
 #include "../common/lua_common.h"
+#include "../common/lua_sandbox.h"
 
 // client_t g_clients[MAX_CLIENTS];
 // UDPsocket g_serverSocket;
@@ -59,7 +60,9 @@ int snetwork_callback_maxClients(cfg2_var_t *var, const char *command, lua_State
 }
 
 
-static void snetwork_connect(ENetEvent event) {
+static int snetwork_connect(ENetEvent event, lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
 	ENetPeer *peer = event.peer;
 	int index;
 	char *ipAddress = NULL;
@@ -71,7 +74,8 @@ static void snetwork_connect(ENetEvent event) {
 		network_ipv4ToString(&ipAddress, peer->address.host);
 		info("%s:%u attempted to connect, but server is full.", ipAddress, peer->address.port);
 		insane_free(ipAddress);
-		return;
+		error = ERR_OK;
+		goto cleanup_l;
 	}
 	
 	// Find a suitable client number to use.
@@ -88,6 +92,35 @@ static void snetwork_connect(ENetEvent event) {
 	network_ipv4ToString(&ipAddress, peer->address.host);
 	info("%s:%u (Client %i) connected", ipAddress, peer->address.port, index);
 	insane_free(ipAddress);
+	
+	
+	luaTimeout_t luaTimeout = {
+		.functionName = "clientConnect",
+		.luaState = luaState
+	};
+	
+	error = lua_getglobal(luaState, luaTimeout.functionName);
+	if (error != LUA_TFUNCTION) {
+		error("Lua file does not contain \"%s\" function.", luaTimeout.functionName);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	lua_pushinteger(luaState, index + 1);
+	
+	SDL_TimerID timerId = SDL_AddTimer(100, lua_luaTimeout, &luaTimeout);
+	
+	error = lua_pcall(luaState, 1, 0, 0);
+	SDL_RemoveTimer(timerId);
+	if (error) {
+		error("Lua function \"%s\" exited with error %s", luaTimeout.functionName, luaError[error]);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	return error;
 }
 
 static int snetwork_receive(ENetEvent event, lua_State *luaState) {
@@ -140,7 +173,7 @@ static int snetwork_receive(ENetEvent event, lua_State *luaState) {
 	-3  global table
 	*/
 	
-	lua_pushinteger(luaState, clientNumber);
+	lua_pushinteger(luaState, clientNumber + 1);
 	
 	/* Stack
 	-1  key (client number, int)
@@ -191,13 +224,15 @@ static int snetwork_receive(ENetEvent event, lua_State *luaState) {
 	return error;
 }
 
-static void snetwork_disconnect(ENetEvent event) {
+static int snetwork_disconnect(ENetEvent event, lua_State *luaState) {
+	int error = ERR_CRITICAL;
 	
 	int index;
 	
 	if (event.peer->data == NULL) {
 		// Not a currently connected client.
-		return;
+		error = ERR_OK;
+		goto cleanup_l;
 	}
 	
 	index = *((int *) event.peer->data);
@@ -205,11 +240,41 @@ static void snetwork_disconnect(ENetEvent event) {
 	insane_free(event.peer->data);
 	if (index < 0) {
 		// Not a currently connected client.
-		return;
+		error = ERR_OK;
+		goto cleanup_l;
 	}
 	g_clients[index].inUse = false;
 	--g_server.connectedClients;
 	info("Client %u disconnected", index);
+	
+	
+	luaTimeout_t luaTimeout = {
+		.functionName = "clientDisconnect",
+		.luaState = luaState
+	};
+	
+	error = lua_getglobal(luaState, luaTimeout.functionName);
+	if (error != LUA_TFUNCTION) {
+		error("Lua file does not contain \"%s\" function.", luaTimeout.functionName);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	lua_pushinteger(luaState, index + 1);
+	
+	SDL_TimerID timerId = SDL_AddTimer(100, lua_luaTimeout, &luaTimeout);
+	
+	error = lua_pcall(luaState, 1, 0, 0);
+	SDL_RemoveTimer(timerId);
+	if (error) {
+		error("Lua function \"%s\" exited with error %s", luaTimeout.functionName, luaError[error]);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	return error;
 }
 
 static int snetwork_sendEntityList(void) {
@@ -249,9 +314,9 @@ static int snetwork_sendEntityList(void) {
 		packetlength += sizeof(uint32_t);   // Packet counter
 		packetlength += sizeof(entityList_t);
 		packetlength += g_entityList.entities_length * sizeof(entity_t);
-		packetlength += g_entityList.deletedEntities_length * sizeof(int);
+		packetlength += g_entityList.deletedEntities_length * sizeof(ptrdiff_t);
 		for (int i = 0; i < g_entityList.entities_length; i++) {
-			packetlength += g_entityList.entities[i].children_length * sizeof(int);
+			packetlength += g_entityList.entities[i].children_length * sizeof(ptrdiff_t);
 		}
 		
 		// Create unreliable packet.
@@ -266,33 +331,33 @@ static int snetwork_sendEntityList(void) {
 		
 		error = network_packetAdd_uint32(data, &data_index, data_length, &packetID[clientNumber], 1);
 		if (error) {
-			goto cleanup_l;
+			goto enet_cleanup_l;
 		}
 		packetID[clientNumber]++;
 		
 		entityList = (entityList_t *) &data[data_index];
 		error = network_packetAdd_entityList(data, &data_index, data_length, &g_entityList, 1);
 		if (error) {
-			goto cleanup_l;
+			goto enet_cleanup_l;
 		}
 		
 		entityList->entities = (entity_t *) (&data[data_index] - packet->data);
 		error = network_packetAdd_entity(data, &data_index, data_length, g_entityList.entities, g_entityList.entities_length, clientNumber);
 		if (error) {
-			goto cleanup_l;
+			goto enet_cleanup_l;
 		}
 		
 		entityList->deletedEntities = (ptrdiff_t *) (&data[data_index] - packet->data);
 		error = network_packetAdd_ptrdiff(data, &data_index, data_length, g_entityList.deletedEntities, g_entityList.deletedEntities_length);
 		if (error) {
-			goto cleanup_l;
+			goto enet_cleanup_l;
 		}
 		
 		for (int i = 0; i < g_entityList.entities_length; i++) {
 		
 			error = network_packetAdd_ptrdiff(data, &data_index, data_length, g_entityList.entities[i].children, g_entityList.entities[i].children_length);
 			if (error) {
-				goto cleanup_l;
+				goto enet_cleanup_l;
 			}	
 		}
 		
@@ -312,6 +377,11 @@ static int snetwork_sendEntityList(void) {
 	}
 	
 	error = ERR_OK;
+	goto cleanup_l;
+	
+	enet_cleanup_l:
+	enet_free(packet);
+	
 	cleanup_l:
 	return error;
 }
@@ -330,7 +400,10 @@ int snetwork_runEvents(lua_State *luaState) {
 	while (enet_host_service(g_server.host, &event, 0) > 0) {
 		switch (event.type) {
 		case ENET_EVENT_TYPE_CONNECT:
-			snetwork_connect(event);
+			error = snetwork_connect(event, luaState);
+			if (error) {
+				goto cleanup_l;
+			}
 			break;
 		case ENET_EVENT_TYPE_RECEIVE:
 			error = snetwork_receive(event, luaState);
@@ -339,7 +412,10 @@ int snetwork_runEvents(lua_State *luaState) {
 			}
 			break;
 		case ENET_EVENT_TYPE_DISCONNECT:
-			snetwork_disconnect(event);
+			error = snetwork_disconnect(event, luaState);
+			if (error) {
+				goto cleanup_l;
+			}
 			break;
 		default:
 			critical_error("Can't happen.", "");

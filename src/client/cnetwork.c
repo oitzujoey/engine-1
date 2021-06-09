@@ -159,7 +159,7 @@ static int cnetwork_receiveEntities(ENetEvent event) {
 	
 	// Allocate more space for deleted entity indices of needed.
 	if (entityList.deletedEntities_length > g_entityList.deletedEntities_length_allocated) {
-		entityList.deletedEntities = realloc(g_entityList.deletedEntities, entityList.deletedEntities_length * sizeof(int));
+		entityList.deletedEntities = realloc(g_entityList.deletedEntities, entityList.deletedEntities_length * sizeof(ptrdiff_t));
 		if (entityList.deletedEntities == NULL) {
 			outOfMemory();
 			error = ERR_OUTOFMEMORY;

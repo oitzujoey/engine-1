@@ -8,7 +8,9 @@
 #define ENET_CHANNEL0       0
 #define ENET_CHANNEL1       1
 
-#define NETWORK_LUA_CLIENTSTATE_NAME   "clientState"
+#define NETWORK_LUA_CLIENTSTATE_NAME    "clientState"
+#define NETWORK_LUA_SERVERSTATE_NAME    "serverState"
+#define NETWORK_LUA_MAXCLIENTS_NAME     "maxClients"
 
 // typedef struct {
 // 	uint16_t id;

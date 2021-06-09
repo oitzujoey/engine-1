@@ -12,6 +12,7 @@ int entity_createEntity(int *index, entity_childType_t type);
 void entity_printEntity(int index);
 
 int l_entity_createEntity(lua_State *luaState);
+int l_entity_deleteEntity(lua_State *luaState);
 int l_entity_linkChild(lua_State *luaState);
 int l_entity_setPosition(lua_State *luaState);
 int l_entity_setOrientation(lua_State *luaState);

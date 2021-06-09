@@ -595,6 +595,24 @@ z ← 1 - 2/z
 
 The world should be the same from every client's perspective. The only difference between them is which entities are present and what position and orientation the world (really the player) is in. Since I want to keep every entity list as close to the same as possible, I will send the client position and orientation as a Lua table.
 
+Server:
+    number maxClients = MAX_CLIENTS
+    table serverState[MAX_CLIENTS]
+    table clientState[MAX_CLIENTS]
+    function setup
+    function main
+    function shutdown
+    function clientConnect(clientNumber)
+    function clientDisconnect(clientNumber)
+    
+Client:
+    table clientState
+    table serverState
+    function setup
+    function main
+    function shutdown
+    function <keybind_callbacks>
+
 
 
 Graphics stuff I dream of adding:
@@ -663,6 +681,7 @@ Files to rewrite when it is somewhat working:
 [*] (Server) Receive input
 [*] (Server) Make an entity move based on input
 -----------------------------------------------
+[*] (All) Fix memory allocation problems.
 [ ] (Client) Attach camera to moving entity
     [ ] (Server) Send Lua table to client
     [ ] (Server) Send camera entity index to client
@@ -693,3 +712,4 @@ Disallow Lua bytecode.
 Exec files using a path relative to the current file's directory.
 Hotplugging joysticks and controllers gives wrong ID.
 Note: SDL_IsGameController seems to cause lag when run in the main game loop.
+Note: Networking code is hard. Don't change types last minute. You will get bugs.
