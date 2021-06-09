@@ -112,7 +112,7 @@ function main()
 				tempQuat = quatNormalize(tempQuat)
 				tempQuat.w = TurnRate
 				tempQuat = quatNormalize(tempQuat)
-				orientation, error = hamiltonProduct(orientation, tempQuat)
+				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
 			end
 			if clientState[i].keys.right then
 				tempVec3 = vec3_crossProduct(Vec3_yp, Vec3_xn)
@@ -120,7 +120,7 @@ function main()
 				tempQuat = quatNormalize(tempQuat)
 				tempQuat.w = TurnRate
 				tempQuat = quatNormalize(tempQuat)
-				orientation, error = hamiltonProduct(orientation, tempQuat)
+				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
 			end
 			if clientState[i].keys.up then
 				tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_yn)
@@ -128,7 +128,7 @@ function main()
 				tempQuat = quatNormalize(tempQuat)
 				tempQuat.w = TurnRate
 				tempQuat = quatNormalize(tempQuat)
-				orientation, error = hamiltonProduct(orientation, tempQuat)
+				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
 			end
 			if clientState[i].keys.down then
 				tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_yp)
@@ -136,7 +136,7 @@ function main()
 				tempQuat = quatNormalize(tempQuat)
 				tempQuat.w = TurnRate
 				tempQuat = quatNormalize(tempQuat)
-				orientation, error = hamiltonProduct(orientation, tempQuat)
+				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
 			end
 			
 			
