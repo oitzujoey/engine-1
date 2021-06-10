@@ -277,7 +277,7 @@ static int snetwork_disconnect(ENetEvent event, lua_State *luaState) {
 	return error;
 }
 
-static int snetwork_sendEntityList(void) {
+static int snetwork_sendEntityList(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	/*
@@ -296,11 +296,24 @@ static int snetwork_sendEntityList(void) {
 	
 	ENetPacket *packet;
 	size_t packetlength;
-	enet_uint8 *data;
+	// enet_uint8 *data;
 	ptrdiff_t data_index;
 	entityList_t *entityList;
 	uint32_t checksum;
-	size_t data_length;
+	// size_t data_length;
+	
+	
+	// Find the table.
+	error = lua_getglobal(luaState, NETWORK_LUA_SERVERSTATE_NAME);
+	if (error != LUA_TTABLE) {
+		// It should have been created by `cnetwork_init`.
+		critical_error("Lua file does not contain the table \"%s\".", NETWORK_LUA_SERVERSTATE_NAME);
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	/*
+	-1  serverState[]
+	*/
 	
 	for (int clientNumber = 0; clientNumber < MAX_CLIENTS; clientNumber++) {
 		if (!g_clients[clientNumber].inUse) {
@@ -326,42 +339,89 @@ static int snetwork_sendEntityList(void) {
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}
-		data = packet->data + sizeof(uint32_t); // packet->data + checksum
-		data_length = packetlength - sizeof(uint32_t);
+		// data = packet->data + sizeof(uint32_t); // packet->data + checksum
+		// data_length = packetlength - sizeof(uint32_t);
+		data_index += sizeof(uint32_t);
 		
-		error = network_packetAdd_uint32(data, &data_index, data_length, &packetID[clientNumber], 1);
+		error = network_packetAdd_uint32(packet->data, &data_index, packet->dataLength, &packetID[clientNumber], 1);
 		if (error) {
 			goto enet_cleanup_l;
 		}
 		packetID[clientNumber]++;
 		
-		entityList = (entityList_t *) &data[data_index];
-		error = network_packetAdd_entityList(data, &data_index, data_length, &g_entityList, 1);
+		entityList = (entityList_t *) &packet->data[data_index];
+		error = network_packetAdd_entityList(packet->data, &data_index, packet->dataLength, &g_entityList, 1);
 		if (error) {
 			goto enet_cleanup_l;
 		}
 		
-		entityList->entities = (entity_t *) (&data[data_index] - packet->data);
-		error = network_packetAdd_entity(data, &data_index, data_length, g_entityList.entities, g_entityList.entities_length, clientNumber);
+		entityList->entities = (entity_t *) (&packet->data[data_index] - packet->data);
+		error = network_packetAdd_entity(packet->data, &data_index, packet->dataLength, g_entityList.entities, g_entityList.entities_length, clientNumber);
 		if (error) {
 			goto enet_cleanup_l;
 		}
 		
-		entityList->deletedEntities = (ptrdiff_t *) (&data[data_index] - packet->data);
-		error = network_packetAdd_ptrdiff(data, &data_index, data_length, g_entityList.deletedEntities, g_entityList.deletedEntities_length);
+		entityList->deletedEntities = (ptrdiff_t *) (&packet->data[data_index] - packet->data);
+		error = network_packetAdd_ptrdiff(packet->data, &data_index, packet->dataLength, g_entityList.deletedEntities, g_entityList.deletedEntities_length);
 		if (error) {
 			goto enet_cleanup_l;
 		}
 		
 		for (int i = 0; i < g_entityList.entities_length; i++) {
 		
-			error = network_packetAdd_ptrdiff(data, &data_index, data_length, g_entityList.entities[i].children, g_entityList.entities[i].children_length);
+			error = network_packetAdd_ptrdiff(packet->data, &data_index, packet->dataLength, g_entityList.entities[i].children, g_entityList.entities[i].children_length);
 			if (error) {
 				goto enet_cleanup_l;
 			}	
 		}
 		
-		checksum = network_generateChecksum(data, data_length);
+		// Find the right index.
+		
+		// // It might be empty. That's fine. Don't send.
+		// if (g_clientStateArray == NULL || g_clientStateArray_length == 0) {
+		// 	if (g_clientStateArray != NULL && g_clientStateArray_length == 0) {
+		// 		// Or we could have a bad pointer.
+		// 		critical_error("Array has length of 0 but is not NULL.", "");
+		// 		error = ERR_CRITICAL;
+		// 	} else {
+		// 		error = ERR_OK;
+		// 	}
+		// 	goto cleanup_l;
+		// }
+		
+		// // Create the packet.
+		// packet = enet_packet_create(NULL, 0, 0);
+		// if (packet == NULL) {
+		// 	outOfMemory();
+		// 	error = ERR_OUTOFMEMORY;
+		// 	goto cleanup_l;
+		// }
+		
+		// Find this client's serverState.
+		lua_pushinteger(luaState, clientNumber + 1);
+		/*
+		-1  clientNumber (one-based)
+		-2  serverState[]
+		*/
+		lua_gettable(luaState, -2);
+		/*
+		-1  serverState[clientNumber]
+		-2  serverState[]
+		*/
+		
+		// Add the table to the packet. I think this should take care of the packet malloc just fine.
+		error = network_packetAdd_lua_object(luaState, NETWORK_LUA_SERVERSTATE_NAME, network_lua_type_string, packet, &data_index);
+		if (error) {
+			goto cleanup_l;
+		}
+		
+		lua_pop(luaState, 1);
+		/*
+		-1  serverState[]
+		*/
+		
+		
+		checksum = network_generateChecksum(packet->data + sizeof(uint32_t), packet->dataLength - sizeof(uint32_t));
 		// Put checksum at the start of the packet.
 		// network_packetAdd_uint32 is not used here because this variable is at the beginning, not the end of the packet.
 		memcpy(packet->data, &checksum, sizeof(uint32_t));
@@ -391,7 +451,7 @@ int snetwork_runEvents(lua_State *luaState) {
 	
 	ENetEvent event;
 	
-	error = snetwork_sendEntityList();
+	error = snetwork_sendEntityList(luaState);
 	if (error) {
 		goto cleanup_l;
 	}
