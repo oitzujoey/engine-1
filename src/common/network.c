@@ -7,6 +7,34 @@
 
 int g_connectionTimeout;
 
+
+void network_dumpBufferUint8(const uint8_t *buffer, size_t length) {
+
+	uint8_t nybble;
+
+	for (ptrdiff_t i = 0; i < length; i++) {
+		
+		nybble = (buffer[i] >> 4) & 0x0F;
+		if (nybble >= 0x0A) {
+			putc(nybble - 0x0A + 'A', stdout);
+		}
+		else {
+			putc(nybble + '0', stdout);
+		}
+		nybble = buffer[i] & 0x0F;
+		if (nybble >= 0x0A) {
+			putc(nybble - 0x0A + 'A', stdout);
+		}
+		else {
+			putc(nybble + '0', stdout);
+		}
+		
+		putc(' ', stdout);
+	}
+	putc('\n', stdout);
+}
+
+
 int network_packetAdd_uint32(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, const uint32_t *data, const ptrdiff_t data_length) {
 	int error = ERR_CRITICAL;
 	
@@ -643,7 +671,7 @@ int network_packetAdd_lua_object(lua_State *luaState, const void *name, network_
 	case network_lua_type_real:
 		tempLuaReal = lua_tonumber(luaState, -1);
 		for (unsigned int i = 0; i < sizeof(lua_Number); i++) {
-			packet->data[*index + structIndex++] = ((unsigned long long) tempLuaReal >> 8*i) & 0xFF;
+			packet->data[*index + structIndex++] = ( *((unsigned long long *) &tempLuaReal) >> 8*i) & 0xFF;
 		}
 		break;
 	case network_lua_type_boolean:

@@ -128,6 +128,8 @@ static int cnetwork_receiveEntities(ENetEvent event, lua_State *luaState) {
 	// 	goto cleanup_l;
 	// }
 	
+	// network_dumpBufferUint8(packet->data, packet->dataLength);
+	
 	memcpy(&checksum, packet->data, sizeof(uint32_t));
 	// data += sizeof(uint32_t);
 	// data_length = length - sizeof(uint32_t);

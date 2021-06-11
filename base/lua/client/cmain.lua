@@ -55,10 +55,24 @@ function startup()
 	Keys.left = false
 	Keys.right = false
 	
+	orientation = {w=1, x=0, y=0, z=0}
+	position = {x=0, y=0, z=0}
+	
 	info("startup", "Starting game")
 end
 
 function main()
+	if (serverState.position ~= nil) then
+		position.x = -serverState.position.x
+		position.y = -serverState.position.y
+		position.z = -serverState.position.z
+		orientation.w = serverState.orientation.w
+		orientation.x = -serverState.orientation.x
+		orientation.y = -serverState.orientation.y
+		orientation.z = -serverState.orientation.z
+		entity_setOrientation(worldEntity, orientation)
+		entity_setPosition(worldEntity, position)
+	end
 end
 
 function shutdown()

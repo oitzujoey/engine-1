@@ -209,7 +209,7 @@ static int snetwork_receive(ENetEvent event, lua_State *luaState) {
 	// for (int i = 1; i < top; i++)
 	// 	printf("%i : %s\n", -i, lua_typename(luaState, lua_type(luaState, -i)));
 	
-	lua_common_printTable(luaState);
+	// lua_common_printTable(luaState);
 	
 	lua_pop(luaState, 1);
 	

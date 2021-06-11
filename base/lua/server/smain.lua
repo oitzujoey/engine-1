@@ -158,6 +158,8 @@ function main()
 			
 			entity_setOrientation(cobra3Entity[i], serverState[i].orientation)
 			entity_setPosition(cobra3Entity[i], serverState[i].position)
+			
+			serverState[i].position.z = serverState[i].position.z
 		end
 	end
 end
