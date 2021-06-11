@@ -14,6 +14,7 @@ function clientConnect(clientNumber)
 	-- Spawn a spaceship.
 	serverState[clientNumber].position = {x=0, y=0, z=200}
 	serverState[clientNumber].orientation = {w=1.0, x=0.0, y=0.0, z=0.0}
+	serverState[clientNumber].speed = 1
 	cobra3Entity[clientNumber], error = entity_createEntity(type_model)
 	error = entity_linkChild(worldEntity, cobra3Entity[clientNumber])
 	error = entity_linkChild(cobra3Entity[clientNumber], cobra3Model)
@@ -60,8 +61,6 @@ function startup()
 	GunTexture = "oolite_cobra3_subents.png"
 	
 	info("startup", "Loading world tree")
-	
-	speed = 1
 	
 	cobra3Model, error = loadOoliteModel(modelPath .. "oolite_cobra3.dat")
 	-- if cobra3Model ~= -1 then
@@ -138,6 +137,15 @@ function main()
 				tempQuat = quatNormalize(tempQuat)
 				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
 			end
+			if clientState[i].keys.accelerate then
+				serverState[i].speed = serverState[i].speed + 0.1
+			end
+			if clientState[i].keys.decelerate then
+				serverState[i].speed = serverState[i].speed - 0.1
+				if serverState[i].speed < 0 then
+					serverState[i].speed = 0
+				end
+			end
 			
 			
 			entity_setVisible(worldEntity, i)
@@ -152,9 +160,9 @@ function main()
 			serverState[i].orientation, error = quatNormalize(serverState[i].orientation)
 			
 			rotatedVec3, error = vec3_rotate({x=0, y=0, z=1}, serverState[i].orientation)
-			serverState[i].position.x = serverState[i].position.x + speed * rotatedVec3.x
-			serverState[i].position.y = serverState[i].position.y + speed * rotatedVec3.y
-			serverState[i].position.z = serverState[i].position.z + speed * rotatedVec3.z
+			serverState[i].position.x = serverState[i].position.x + serverState[i].speed * rotatedVec3.x
+			serverState[i].position.y = serverState[i].position.y + serverState[i].speed * rotatedVec3.y
+			serverState[i].position.z = serverState[i].position.z + serverState[i].speed * rotatedVec3.z
 			
 			entity_setOrientation(cobra3Entity[i], serverState[i].orientation)
 			entity_setPosition(cobra3Entity[i], serverState[i].position)

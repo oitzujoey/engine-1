@@ -82,3 +82,35 @@ function key_down_u()
 		clientState.keys.up = true
 	end
 end
+
+function key_accelerate_d()
+	Keys.accelerate = true
+	if not clientState.keys.accelerate then
+		clientState.keys.accelerate = true
+		clientState.keys.decelerate = false
+	end
+end
+
+function key_accelerate_u()
+	Keys.accelerate = false
+	clientState.keys.accelerate = false
+	if Keys.decelerate then
+		clientState.keys.decelerate = true
+	end
+end
+
+function key_decelerate_d()
+	Keys.decelerate = true
+	if not clientState.keys.decelerate then
+		clientState.keys.decelerate = true
+		clientState.keys.accelerate = false
+	end
+end
+
+function key_decelerate_u()
+	Keys.decelerate = false
+	clientState.keys.decelerate = false
+	if Keys.accelerate then
+		clientState.keys.accelerate = true
+	end
+end

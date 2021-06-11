@@ -35,10 +35,12 @@ function startup()
 		info("startup", "Loaded " .. cobra3ModelName)
 	end
 	
-	keys_createFullBind("k_1073741903", "key_left",     "key_left_d",   "key_left_u")
-	keys_createFullBind("k_1073741904", "key_right",    "key_right_d",  "key_right_u")
-	keys_createFullBind("k_1073741906", "key_up",       "key_up_d",     "key_up_u")
-	keys_createFullBind("k_1073741905", "key_down",     "key_down_d",   "key_down_u")
+	keys_createFullBind("k_1073741903", "key_left",         "key_left_d",       "key_left_u")
+	keys_createFullBind("k_1073741904", "key_right",        "key_right_d",      "key_right_u")
+	keys_createFullBind("k_1073741906", "key_up",           "key_up_d",         "key_up_u")
+	keys_createFullBind("k_1073741905", "key_down",         "key_down_d",       "key_down_u")
+	keys_createFullBind("k_119",        "key_accelerate",   "key_accelerate_d", "key_accelerate_u")
+	keys_createFullBind("k_115",        "key_decelerate",   "key_decelerate_d", "key_decelerate_u")
 
 	cfg2_setVariable("bind k_113 quit")
 	-- cfg2_setVariable("specialBind")
@@ -49,6 +51,8 @@ function startup()
 	clientState.keys.down = false
 	clientState.keys.left = false
 	clientState.keys.right = false
+	clientState.keys.accelerate = false
+	clientState.keys.decelerate = false
 	
 	Keys.up = false
 	Keys.down = false
