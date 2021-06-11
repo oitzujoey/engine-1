@@ -424,6 +424,7 @@ static void cnetwork_disconnect(ENetEvent event) {
 
 int cnetwork_runEvents(lua_State *luaState) {
 	int error = ERR_CRITICAL;
+	int enetStatus = 0;
 	
 	ENetEvent event;
 	
@@ -489,9 +490,9 @@ int cnetwork_runEvents(lua_State *luaState) {
 	}
 	
 	do {
-		error = enet_host_service(g_clientHost, &event, 0);
+		enetStatus = enet_host_service(g_clientHost, &event, 0);
 		
-		if (error > 0) {
+		if (enetStatus > 0) {
 			switch (event.type) {
 			case ENET_EVENT_TYPE_CONNECT:
 				cnetwork_connect(event);
@@ -511,11 +512,12 @@ int cnetwork_runEvents(lua_State *luaState) {
 				goto cleanup_l;
 			}
 		}
-		if (error < 0) {
+		if (enetStatus < 0) {
+			error("enet_host_service encountered an error: %i", error);
 			error = ERR_GENERIC;
 			goto cleanup_l;
 		}
-	} while (error != 0);
+	} while (enetStatus != 0);
 	
 	error = ERR_OK;
 	cleanup_l:

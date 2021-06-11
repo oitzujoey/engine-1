@@ -369,7 +369,7 @@ static uint32_t main_callback_block(uint32_t interval, void *param) {
 int main (int argc, char *argv[]) {
 
 	int error = 0;
-	lua_State *luaState;
+	lua_State *luaState = NULL;
 	const char *luaFileName = "cmain.lua";
 	char *luaFilePath = NULL;
 	cfg2_var_t *v_luaMain;

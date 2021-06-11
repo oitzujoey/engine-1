@@ -15,7 +15,6 @@
 // int l_snetwork_send(const uint8_t *data, int length, IPaddress ipAddress);
 
 int snetwork_callback_setServerPort(cfg2_var_t *var, const char *command, lua_State *luaState);
-int snetwork_callback_enetMessage(cfg2_var_t *var, const char *command, lua_State *luaState);
 int snetwork_callback_maxClients(cfg2_var_t *var, const char *command, lua_State *luaState);
 
 int snetwork_runEvents(lua_State *luaState);

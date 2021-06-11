@@ -31,19 +31,6 @@ int snetwork_callback_setServerPort(cfg2_var_t *var, const char *command, lua_St
 	return ERR_OK;
 }
 
-int snetwork_callback_enetMessage(cfg2_var_t *var, const char *command, lua_State *luaState) {
-
-	if (strlen(var->string) == 0) {
-		goto cleanup_l; 
-	}
-	
-	ENetPacket *packet = enet_packet_create(var->string, strlen(var->string) + 1, ENET_PACKET_FLAG_RELIABLE);
-	enet_host_broadcast(g_server.host, ENET_CHANNEL1, packet);
-	
-	cleanup_l:
-	return ERR_OK;
-}
-
 int snetwork_callback_maxClients(cfg2_var_t *var, const char *command, lua_State *luaState) {
 
 	if (var->integer < 0) {
@@ -448,6 +435,7 @@ static int snetwork_sendEntityList(lua_State *luaState) {
 
 int snetwork_runEvents(lua_State *luaState) {
 	int error = ERR_CRITICAL;
+	int enetStatus = 0;
 	
 	ENetEvent event;
 	
@@ -457,32 +445,41 @@ int snetwork_runEvents(lua_State *luaState) {
 	}
 	
 	// Run event actions.
-	while (enet_host_service(g_server.host, &event, 0) > 0) {
-		switch (event.type) {
-		case ENET_EVENT_TYPE_CONNECT:
-			error = snetwork_connect(event, luaState);
-			if (error) {
+	do {
+		enetStatus = enet_host_service(g_server.host, &event, 0);
+		
+		if (enetStatus > 0) {
+			switch (event.type) {
+			case ENET_EVENT_TYPE_CONNECT:
+				error = snetwork_connect(event, luaState);
+				if (error) {
+					goto cleanup_l;
+				}
+				break;
+			case ENET_EVENT_TYPE_RECEIVE:
+				error = snetwork_receive(event, luaState);
+				if (error >= ERR_CRITICAL) {
+					goto cleanup_l;
+				}
+				break;
+			case ENET_EVENT_TYPE_DISCONNECT:
+				error = snetwork_disconnect(event, luaState);
+				if (error) {
+					goto cleanup_l;
+				}
+				break;
+			default:
+				critical_error("Can't happen.", "");
+				error = ERR_CRITICAL;
 				goto cleanup_l;
 			}
-			break;
-		case ENET_EVENT_TYPE_RECEIVE:
-			error = snetwork_receive(event, luaState);
-			if (error >= ERR_CRITICAL) {
-				goto cleanup_l;
-			}
-			break;
-		case ENET_EVENT_TYPE_DISCONNECT:
-			error = snetwork_disconnect(event, luaState);
-			if (error) {
-				goto cleanup_l;
-			}
-			break;
-		default:
-			critical_error("Can't happen.", "");
-			error = ERR_CRITICAL;
+		}
+		if (enetStatus < 0) {
+			error("enet_host_service encountered an error: %i", error);
+			error = ERR_GENERIC;
 			goto cleanup_l;
 		}
-	}
+	} while (enetStatus != 0);
 	
 	error = ERR_OK;
 	cleanup_l:
