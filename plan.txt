@@ -682,11 +682,11 @@ Files to rewrite when it is somewhat working:
 [*] (Server) Make an entity move based on input
 -----------------------------------------------
 [*] (All) Fix memory allocation problems.
-[ ] (Client) Attach camera to moving entity
-    [ ] (Server) Send Lua table to client
-    [ ] (Server) Send camera entity index to client
+[*] (Client) Attach camera to moving entity
+    [*] (Server) Send Lua table to client
+    [*] (Server) Send position and orientation to client
 =================================================
-* * engine-1 is now officially a game engine. ***
+*** engine-1 is now officially a game engine. ***
 =================================================
 [*] (Common) Implement proper VFS.
 [*] (Common) Redo config scripting system.
