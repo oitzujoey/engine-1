@@ -19,7 +19,9 @@
 #include "../common/entity.h"
 #include "../common/obj.h"
 #include "../common/vfs.h"
+#ifndef NOTERMINAL
 #include "../common/terminal.h"
+#endif
 #include "../common/lua_common.h"
 #include "../common/str2.h"
 
@@ -128,10 +130,12 @@ static void main_housekeeping(lua_State *luaState) {
 		goto cleanup_l;
 	}
 
+#ifndef NOTERMINAL
 	error = terminal_runTerminalCommand(luaState);
 	if (error) {
 		goto cleanup_l;
 	}
+#endif
 
 	error = cnetwork_runEvents(luaState);
 	if (error) {
@@ -325,6 +329,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	
+#ifndef NOTERMINAL
 	error = terminal_initConsole();
 	if (error) {
 		goto cleanup_l;
@@ -335,6 +340,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
+#endif
 	
 	error = 0;
 	cleanup_l:
@@ -346,8 +352,10 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 
 void main_quit(void) {
 
+#ifndef NOTERMINAL
 	terminal_quitConsole();
 	terminal_terminalQuit();
+#endif
 	
 	cnetwork_quit();
 	

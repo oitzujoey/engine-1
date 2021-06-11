@@ -21,7 +21,9 @@
 #include "../common/entity.h"
 #include "../common/network.h"
 #include "../common/vector.h"
+#ifndef NOTERMINAL
 #include "../common/terminal.h"
+#endif
 #include "../common/str2.h"
 
 int l_main_checkQuit(lua_State *luaState);
@@ -107,10 +109,14 @@ static void main_housekeeping(lua_State *luaState) {
 		goto cleanup_l;
 	}
 	
+#ifndef NOTERMINAL
 	/* Do terminal stuff */
 	
 	error = terminal_runTerminalCommand(luaState);
-	goto cleanup_l;
+	if (error) {
+		goto cleanup_l;
+	}
+#endif
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -165,10 +171,12 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 	
+#ifndef NOTERMINAL
 	error = terminal_initConsole();
 	if (error) {
 		goto cleanup_l;
 	}
+#endif
 
 	// Execute main autoexec.
 	
@@ -264,12 +272,14 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 		return ERR_CRITICAL;
 	}
 	
+#ifndef NOTERMINAL
 	error = terminal_terminalInit();
 	if (error) {
 		critical_error("Could not initialize the terminal", "");
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
+#endif
 	
 	error = ERR_OK;
 	cleanup_l:
@@ -281,7 +291,10 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 
 static void main_quit(void) {
 	
+#ifndef NOTERMINAL
 	terminal_quitConsole();
+	terminal_terminalQuit();
+#endif
 	
 	modelList_free();
 	entity_freeEntityList();
@@ -436,8 +449,6 @@ int main(int argc, char *argv[]) {
 	
 	// vfs_free(&g_vfs);
 	
-	terminal_quitConsole();
-	terminal_terminalQuit();
 	cfg2_free();
 	
 	insane_free(luaFilePath);
