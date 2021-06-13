@@ -12,7 +12,7 @@ function clientConnect(clientNumber)
 	end
 	
 	-- Spawn a spaceship.
-	serverState[clientNumber].position = {x=0, y=0, z=200}
+	serverState[clientNumber].position = {x=0, y=0, z=0}
 	serverState[clientNumber].orientation = {w=1.0, x=0.0, y=0.0, z=0.0}
 	serverState[clientNumber].speed = 1
 	cobra3Entity[clientNumber], error = entity_createEntity(type_model)
@@ -24,7 +24,7 @@ end
 
 function clientDisconnect(clientNumber)
 	connectedClients[clientNumber] = false
-	
+	error = entity_unlinkChild(worldEntity, cobra3Entity[clientNumber])
 	info("clientDisconnect", "Client " .. clientNumber .. " disconnected.")
 	
 	entity_deleteEntity(cobra3Entity[clientNumber])
@@ -63,6 +63,7 @@ function startup()
 	info("startup", "Loading world tree")
 	
 	cobra3Model, error = loadOoliteModel(modelPath .. "oolite_cobra3.dat")
+	cobra1Model, error = loadOoliteModel(modelPath .. "oolite_cobramk1.dat")
 	-- if cobra3Model ~= -1 then
 	-- 	-- l_entity_setOrientation(cobra3Entity, {w=1, x=0, y=0, z=0})
 		
@@ -95,6 +96,18 @@ function startup()
 	Vec3_yp = {x=0, y=1, z=0}
 	Vec3_zn = {x=0, y=0, z=-1}
 	Vec3_zp = {x=0, y=0, z=1}
+	
+	cobra1Entity = {}
+	cobra1Scale = 1000.0
+	cobra1Num = 500
+	
+	for i = 1,cobra1Num,1 do
+		cobra1Entity[i], error = entity_createEntity(type_model)
+		error = entity_linkChild(worldEntity, cobra1Entity[i])
+		error = entity_linkChild(cobra1Entity[i], cobra1Model)
+		entity_setPosition(cobra1Entity[i], {x=cobra1Scale*((i%8)/4 - 1), y=cobra1Scale*((i%64 - i%8)/32 - 1), z=cobra1Scale*((i%512 - i%64)/256 - 1)})
+		entity_setOrientation(cobra1Entity[i], {w=1, x=0, y=0, z=0})
+	end
 	
 	info("startup", "Starting game")
 end
@@ -155,6 +168,10 @@ function main()
 				if j ~= i then
 					entity_setVisible(cobra3Entity[i], j)
 				end
+			end
+			
+			for j = 1,cobra1Num,1 do
+				entity_setVisible(cobra1Entity[j], i)
 			end
 			
 			serverState[i].orientation, error = quatNormalize(serverState[i].orientation)

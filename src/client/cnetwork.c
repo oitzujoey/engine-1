@@ -248,6 +248,8 @@ static int cnetwork_receiveEntities(ENetEvent event, lua_State *luaState) {
 	// lua_common_printTable(luaState);
 	
 	lua_setglobal(luaState, NETWORK_LUA_SERVERSTATE_NAME);
+	// Pop string "serverState".
+	lua_pop(luaState, 1);
 	
 	/* Stack
 	-1  table (actual table)
@@ -364,6 +366,8 @@ static int cnetwork_sendState(lua_State *luaState) {
 	if (error) {
 		goto cleanup_l;
 	}
+	
+	lua_pop(luaState, 1);
 	
 	// Send to the server.
 	error = enet_peer_send(g_serverPeer, ENET_CHANNEL0, packet);

@@ -34,7 +34,8 @@ cmake ..
 make
 ```
 
-I recommend using MSYS2 and mingw to build for Windows. It was pretty painless compared to building on Ubuntu (WSL) and Arch Linux.
+I recommend using MSYS2 and mingw to build for Windows. It was pretty painless compared to building on Ubuntu (WSL) and Arch Linux.  
+If you want to run the client or server in the background, be sure to define the preprocessor constant NOTERMINAL before compiling.
 
 ### Configuration
 
@@ -70,6 +71,7 @@ Networking
 Rendering  
 Mod loader
 Scripting (for configuration)
+README.md
 
 ## Engine documentation
 

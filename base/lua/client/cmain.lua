@@ -22,6 +22,7 @@ function startup()
 	worldEntity = 0
 	
 	-- File paths
+	-- More info about ship resources can be found in https://github.com/OoliteProject/oolite/blob/master/Resources/Config/shipdata.plist
 	texturePath = "oolite-binary-resources/Textures/"
 	modelPath = "oolite-binary-resources/Models/"
 	HullTexture = "oolite_cobra3_diffuse.png"
@@ -34,6 +35,7 @@ function startup()
 	if cobra3Model ~= -1 then
 		info("startup", "Loaded " .. cobra3ModelName)
 	end
+	cobra1Model, error = loadOoliteModel(modelPath .. "oolite_cobramk1.dat")
 	
 	keys_createFullBind("k_1073741903", "key_left",         "key_left_d",       "key_left_u")
 	keys_createFullBind("k_1073741904", "key_right",        "key_right_d",      "key_right_u")

@@ -790,6 +790,15 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 	char *keyString = NULL;
 	network_lua_type_t dataType;
 	
+	// Make sure there is enough space on the stack.
+	// The maximum number of elements that we will need for this call should be 3.
+	error = lua_checkstack(luaState, 3);
+	if (!error) {
+		outOfMemory();
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	
 	// Header //
 	
 	// Read key type.

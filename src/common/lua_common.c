@@ -23,6 +23,7 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_entity_createEntity,     .name = "entity_createEntity"},
 	{.func = l_entity_deleteEntity,     .name = "entity_deleteEntity"},
 	{.func = l_entity_linkChild,        .name = "entity_linkChild"},
+	{.func = l_entity_unlinkChild,      .name = "entity_unlinkChild"},
 	{.func = l_entity_setPosition,      .name = "entity_setPosition"},
 	{.func = l_entity_setOrientation,   .name = "entity_setOrientation"},
 	{.func = l_vec3_crossProduct,       .name = "vec3_crossProduct"},

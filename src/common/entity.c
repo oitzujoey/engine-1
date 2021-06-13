@@ -177,6 +177,56 @@ int entity_linkChild(ptrdiff_t parentIndex, ptrdiff_t childIndex) {
 	return error;
 }
 
+/*
+Unlinking is faster when the parent has few children.
+*/
+int entity_unlinkChild(ptrdiff_t parentIndex, ptrdiff_t childIndex) {
+	int error = ERR_CRITICAL;
+	
+	entity_t *parent;
+	ptrdiff_t childIndex_index;
+	
+	parent = &g_entityList.entities[parentIndex];
+	
+	if (parent->children_length > 0) {
+		// Find child index.
+		for (ptrdiff_t i = 0; i < parent->children_length; i++) {
+			if (parent->children[i] == childIndex) {
+				childIndex_index = i;
+				break;
+			}
+		}
+		
+		// Unlink by shifting the end of the array over top of the link.
+		for (ptrdiff_t i = childIndex_index + 1; i < parent->children_length; i++) {
+			parent->children[i - 1] = parent->children[i];
+		}
+		
+		// Deallocate index.
+		--parent->children_length;
+		if (parent->children_length > 0) {
+			parent->children = realloc(parent->children, parent->children_length * sizeof(ptrdiff_t));
+			if (parent->children == NULL) {
+				outOfMemory();
+				error = ERR_OUTOFMEMORY;
+				goto cleanup_l;
+			}
+		}
+		else {
+			insane_free(parent->children);
+		}
+	}
+	else {
+		error("Cannot unlink child. Parent has no children.", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	return error;
+}
+
 /* entity_isValidEntityIndex
 index:i         The index of an entity.
 Globals:
@@ -330,6 +380,70 @@ int l_entity_linkChild(lua_State *luaState) {
 	return 1;
 }
 
+int l_entity_unlinkChild(lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	int parentIndex;
+	int childIndex;
+	// entity_childType_t parentType;
+	
+	if (!lua_isinteger(luaState, 1)) {
+		error("Argument 1 must be an integer.", "");
+		lua_error(luaState);
+	}
+	if (!lua_isinteger(luaState, 2)) {
+		error("Argument 2 must be an integer.", "");
+		lua_error(luaState);
+	}
+	
+	parentIndex = lua_tointeger(luaState, 1);
+	childIndex = lua_tointeger(luaState, 2);
+	
+	if (!entity_isValidEntityIndex(parentIndex)) {
+		error("Parent index (%i) references an invalid entity.", parentIndex);
+		lua_error(luaState);
+	}
+	
+	// // Might not be an entity.
+	// parentType = g_entityList.entities[parentIndex].childType;
+	// switch (parentType) {
+	// case entity_childType_entity:
+	// 	if (!entity_isValidEntityIndex(childIndex)) {
+	// 		error("Child index (%i) references an invalid entity.", childIndex);
+	// 		lua_error(luaState);
+	// 	}
+	// 	break;
+	// case entity_childType_model:
+	// 	if (!obj_isValidModelIndex(childIndex)) {
+	// 		error("Child index (%i) references an invalid entity.", childIndex);
+	// 		lua_error(luaState);
+	// 	}
+	// 	break;
+	// case entity_childType_none:
+	// 	error("Parent cannot have children because it is set to type \"none\"", childIndex);
+	// 	lua_error(luaState);
+	// default:
+	// 	error("Invalid entity type %i", parentType);
+	// 	lua_error(luaState);
+	// }
+	
+	error = entity_unlinkChild(parentIndex, childIndex);
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	if (error) {
+		lua_error(luaState);
+	}
+	
+	lua_pushinteger(luaState, error);
+	
+	return 1;
+}
+
 int l_entity_setPosition(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
@@ -395,7 +509,7 @@ int l_entity_setOrientation(lua_State *luaState) {
 	
 	lua_pushstring(luaState, "w");
 	if (lua_gettable(luaState, 2) != LUA_TNUMBER) {
-		error("Key x must be a number", "");
+		error("Key w must be a number. w has type \"%s\"", lua_typename(luaState, lua_type(luaState, -1)));
 		lua_error(luaState);
 	}
 	g_entityList.entities[index].orientation.s = lua_tonumber(luaState, 3);

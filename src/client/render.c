@@ -261,8 +261,8 @@ int render_initOpenGL(void) {
 		"  vertex = rotate(vp, orientation);\n"
 		"  vertex += position;\n"
 		"  vertex.x = vertex.x/vertex.z;\n"
-		"  vertex.y = vertex.y/vertex.z / screenHeight;\n"
-		"  vertex.z = vertex.z / 10000.0 - 1.0;\n"
+		"  vertex.y = vertex.y/vertex.z * screenHeight;\n"
+		"  vertex.z = (vertex.z - 10050.0) / 10000.0;\n"
 		"  gl_Position = vec4(vertex, 1.0);\n"
 		"  color = rotate(normal, orientation);\n"
 		"}\n";
@@ -388,17 +388,21 @@ int renderModels(entity_t entity, vec3_t position, quat_t orientation) {
 		int modelIndex = entity.children[j];
 		model_t model = g_modelList.models[modelIndex];
 		
+		// Make sure model is inside the frustum.
+		if (
+			((fabs(position[0]) - model.boundingSphere)/position[2] > 1.0f) ||
+			((fabs(position[1]) - model.boundingSphere)/position[2] > 16.0f/9.0f)
+		) {
+			continue;
+		}
+		
 		/* Render */
 		
-#ifdef CLIENT
 		glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
 		glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glVertices, GL_DYNAMIC_DRAW);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
 		glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glNormals, GL_DYNAMIC_DRAW);
-#else
-#error  Must be compiled with -DCLIENT
-#endif
 
 		glUniform4f(g_orientationUniform, 
 			orientation.v[0],
@@ -467,7 +471,7 @@ int render(entity_t entity) {
 	// For each entity in the tree...
 	
 	// Set FOV.
-	glUniform1f(g_screenHeightUniform, 9.0f/16.0f);
+	glUniform1f(g_screenHeightUniform, 16.0f/9.0f);
 	
 	// Render world entity.
 	error = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}});

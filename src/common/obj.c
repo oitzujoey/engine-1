@@ -116,6 +116,7 @@ void model_init(model_t *model) {
 #ifdef CLIENT
 	model->glVertices = NULL;
 	model->glNormals = NULL;
+	model->boundingSphere = 0.0;
 #endif
 }
 
@@ -130,6 +131,7 @@ void model_free(model_t *model) {
 #ifdef CLIENT
 	insane_free(model->glVertices);
 	insane_free(model->glNormals);
+	model->boundingSphere = 0;
 #endif
 	model->faces_length = 0;
 }
@@ -162,6 +164,9 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 	char *tempPointer1 = NULL;
 	int datProgress = 0;
 	char *newlinePointer = NULL;
+#ifdef CLIENT
+	vec_t tempVec = 0.0f;
+#endif
 	
 	enum {
 		mode_start,
@@ -463,6 +468,16 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 				for (int i = 0; i < 3; i++) {
 					model->vertices[tempModelElementIndex][i] = strtof(argv[i], NULL);
 				}
+#ifdef CLIENT
+				tempVec = sqrt(
+					model->vertices[tempModelElementIndex][0]*model->vertices[tempModelElementIndex][0] +
+					model->vertices[tempModelElementIndex][1]*model->vertices[tempModelElementIndex][1] +
+					model->vertices[tempModelElementIndex][2]*model->vertices[tempModelElementIndex][2]
+				);
+				if (model->boundingSphere < tempVec) {
+					model->boundingSphere = tempVec;
+				}
+#endif
 				tempModelElementIndex++;
 				
 				if (tempModelElementIndex == model->vertices_length) {

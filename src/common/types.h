@@ -44,6 +44,7 @@ typedef struct {
 	// Both arrays are 3 (*faces) * 3 (**faces) * facesLength.
 	vec_t *glVertices;
 	vec_t *glNormals;
+	vec_t boundingSphere;
 #endif
 } model_t;
 

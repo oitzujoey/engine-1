@@ -14,6 +14,7 @@ void entity_printEntity(int index);
 int l_entity_createEntity(lua_State *luaState);
 int l_entity_deleteEntity(lua_State *luaState);
 int l_entity_linkChild(lua_State *luaState);
+int l_entity_unlinkChild(lua_State *luaState);
 int l_entity_setPosition(lua_State *luaState);
 int l_entity_setOrientation(lua_State *luaState);
 #ifdef SERVER

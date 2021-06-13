@@ -296,7 +296,7 @@ static int snetwork_sendEntityList(lua_State *luaState) {
 		// It should have been created by `cnetwork_init`.
 		critical_error("Lua file does not contain the table \"%s\".", NETWORK_LUA_SERVERSTATE_NAME);
 		error = ERR_CRITICAL;
-		goto cleanup_l;
+		goto cleanupNoPop_l;
 	}
 	/*
 	-1  serverState[]
@@ -427,9 +427,13 @@ static int snetwork_sendEntityList(lua_State *luaState) {
 	goto cleanup_l;
 	
 	enet_cleanup_l:
+	lua_pop(luaState, 1);
 	enet_free(packet);
 	
 	cleanup_l:
+	lua_pop(luaState, 1);
+	
+	cleanupNoPop_l:
 	return error;
 }
 
