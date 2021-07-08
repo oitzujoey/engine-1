@@ -12,7 +12,7 @@ Here is what I do know:
 
 ### Dependencies
 
-Make sure you have these dependencies before building. GL and GLEW are required for the client only.
+Make sure you have these dependencies before building. GL and GLEW are required for the client only. Qt is only required for the runner.
 
 ```text
     SDL2
@@ -21,6 +21,7 @@ Make sure you have these dependencies before building. GL and GLEW are required 
     PhysicsFS
     GL
     GLEW
+    Qt6
 ```
 
 On linux, you will need these installed to run.  
@@ -31,7 +32,7 @@ On Windows, you will either need these installed, or you will need the DLLs in t
 ```bash
 mkdir build && cd build
 cmake ..
-make
+cmake --build . # or "make"
 ```
 
 I recommend using MSYS2 and mingw to build for Windows. It was pretty painless compared to building on Ubuntu (WSL) and Arch Linux.  

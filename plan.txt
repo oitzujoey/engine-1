@@ -604,7 +604,7 @@ Server:
     function shutdown
     function clientConnect(clientNumber)
     function clientDisconnect(clientNumber)
-    
+
 Client:
     table clientState
     table serverState
@@ -615,7 +615,24 @@ Client:
 
 The lag may have been caused by improperly running enet_host_service. At any rate, it seems to be gone now.
 
-Should I make instruments an upgrade? >:) Maybe start off with celestial navigation.
+Time to add textures.
+I think I will create a texture list, and entities will use textures from that list to avoid redundancy.
+A material list will be required as well. Materials can have textures and special attributes.
+
+materialList {
+    {
+        textureFile "", // Maybe.
+        textureObject int
+    },
+    ...
+}
+
+`textureObject`s are indices to OpenGL textures. The texture itself will not be retained in memory for now.
+Materials pointing to entities can result in dangling pointers. Entities pointing to materials will never result in a dangling pointer. Therefore we shall do the latter, though this means I have to modify the entity system.
+Communication of materials will be communicated from the server to the client through `serverState`.
+
+Runner should be able to run pretty much any mod. This provides a challenge for key binding since the keys can change between mods. A mod should provide a list of available key bindings. This should be in a file such as "keybinds.txt" or "runner.txt".
+This brings up another interesting point. Ideally, the runner will be able to save state between runs. There should be a config.txt file that saves this state. runner.txt files in mods will be able to overwrite certain (but definitely not all) settings. One of the settings that can be overwritten are available key bindings. The binds themselves cannot be overwritten by the mod.
 
 
 
@@ -700,6 +717,11 @@ Files to rewrite when it is somewhat working:
 ===========================
 * * Start work on game. ***
 ===========================
+[ ] (Client) Texture models.
+    [ ] (Client) Load images.
+    [ ] (Client) Create texture list.
+    [ ] (Server Client) Bind texture to entity.
+    [ ] (Client) Render texture.
 [ ] (Lua)    Load Asteroid model.
 [ ] (Lua)    Procedurally generate universe.
 [ ] (Client) Create 2D reference entities.

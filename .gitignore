@@ -1,6 +1,7 @@
 *.o
 sengine-1
 cengine-1
+engine-1-runner
 valgrind.log
 vgcore.*
 oolite-binary-resources
@@ -16,3 +17,4 @@ callgrind.out.*
 cachegrind.out.*
 *.dll
 build
+*_autogen
