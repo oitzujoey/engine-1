@@ -212,6 +212,37 @@ int vfs_getFileText(char **fileText, const char *path) {
 	return error;
 }
 
+int vfs_getFileContents_malloc(uint8_t **fileContents, PHYSFS_sint64 *fileContents_length, const char *path) {
+	int error = ERR_CRITICAL;
+	
+	PHYSFS_File *file = PHYSFS_openRead(path);
+	if (file == NULL) {
+		error("Could not open file \"%s\": %s", path, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	*fileContents_length = PHYSFS_fileLength(file);
+	
+	*fileContents = malloc(*fileContents_length * sizeof(uint8_t));
+	if (*fileContents == NULL) {
+		outOfMemory();
+		error = ERR_OUTOFMEMORY;
+		goto cleanupPhysfs_l;
+	}
+	
+	PHYSFS_sint64 realLength = PHYSFS_readBytes(file, *fileContents, *fileContents_length);
+	*fileContents_length = realLength;
+	
+	error = ERR_OK;
+	cleanupPhysfs_l:
+	
+	PHYSFS_close(file);
+	
+	cleanup_l:
+	return error;
+}
+
 // int vfs_execAutoexec() {
 	
 // 	/*  Here, we cheat.

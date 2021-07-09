@@ -15,6 +15,7 @@ SDL_DisplayMode g_displayMode;
 SDL_GLContext g_GLContext;
 GLuint g_VertexVbo;
 GLuint g_colorVbo;
+GLuint g_texCoordVbo;
 GLint g_orientationUniform;
 GLint g_positionUniform;
 GLint g_screenHeightUniform;
@@ -207,6 +208,10 @@ int render_initOpenGL(void) {
 	glGenBuffers(1, &g_colorVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
 	
+	g_texCoordVbo = 0;
+	glGenBuffers(1, &g_texCoordVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, g_texCoordVbo);
+	
 	
 	g_vao = 0;
 	glGenVertexArrays(1, &g_vao);
@@ -218,8 +223,12 @@ int render_initOpenGL(void) {
 	glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL);
 	
+	glBindBuffer(GL_ARRAY_BUFFER, g_texCoordVbo);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, NULL);
+	
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
 	
 	/* Shaders */
 	
@@ -227,10 +236,12 @@ int render_initOpenGL(void) {
 		"#version 400\n"
 		"layout(location = 0) in vec3 vp;\n"
 		"layout(location = 1) in vec3 normal;\n"
+		"layout(location = 2) in vec2 texCoord;\n"
 		"uniform vec4 orientation;\n"
 		"uniform vec3 position;\n"
 		"uniform float screenHeight;\n"
 		"out vec3 color;\n"
+		"out vec2 textureCoordinate;\n"
 		
 		"vec4 conjugate(vec4 a) {\n"
 		"  return vec4(\n"
@@ -265,17 +276,21 @@ int render_initOpenGL(void) {
 		"  vertex.z = (vertex.z - 10050.0) / 10000.0;\n"
 		"  gl_Position = vec4(vertex, 1.0);\n"
 		"  color = rotate(normal, orientation);\n"
+		"  textureCoordinate = texCoord;\n"
 		"}\n";
 	
 	const char* fragmentShaderSource0 =
 		"#version 400\n"
 		"out vec4 frag_colour;"
 		"in vec3 color;"
+		"in vec2 textureCoordinate;"
+		"uniform sampler2D ourTexture;"
 		"void main() {"
 		// "  float b = 2 * gl_FragCoord.z;"
 		// "  frag_colour = vec4(b, b, b, 1.0);"
 		"  float dot = dot(color, vec3(0.0, 0.0, 1.0));"
-		"  frag_colour = vec4(abs(dot), abs(dot), abs(dot), 1.0);"
+		"  frag_colour = texture(ourTexture, textureCoordinate) * vec4(abs(dot), abs(dot), abs(dot), 1.0);"
+		// "  frag_colour = vec4(abs(dot), abs(dot), abs(dot), 1.0);"
 		// "  frag_colour = vec4(length(color), length(color), length(color), 1.0);"
 		// "  frag_colour = vec4(color.x, color.y, color.z, 1.0);"
 		// "  frag_colour = vec4(abs(color.x * dot), abs(color.y * dot), abs(color.z * dot), 1.0);"
@@ -404,6 +419,9 @@ int renderModels(entity_t entity, vec3_t position, quat_t orientation) {
 		glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
 		glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glNormals, GL_DYNAMIC_DRAW);
 
+		glBindBuffer(GL_ARRAY_BUFFER, g_texCoordVbo);
+		glBufferData(GL_ARRAY_BUFFER, 2 * 3 * model.faces_length * sizeof(float), model.glTexCoords, GL_DYNAMIC_DRAW);
+
 		glUniform4f(g_orientationUniform, 
 			orientation.v[0],
 			orientation.v[1],
@@ -417,6 +435,9 @@ int renderModels(entity_t entity, vec3_t position, quat_t orientation) {
 		);
 		
 		glUseProgram(g_shaderProgram[0]);
+		glActiveTexture(GL_TEXTURE0);
+		// TODO: Change this from texture #1 to whatever texture is called for.
+		glBindTexture(GL_TEXTURE_2D, 1);
 		glBindVertexArray(g_vao);
 		glDrawArrays(GL_TRIANGLES, 0, 3 * model.faces_length);
 	}

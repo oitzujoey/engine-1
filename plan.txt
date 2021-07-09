@@ -633,6 +633,14 @@ Communication of materials will be communicated from the server to the client th
 
 Runner should be able to run pretty much any mod. This provides a challenge for key binding since the keys can change between mods. A mod should provide a list of available key bindings. This should be in a file such as "keybinds.txt" or "runner.txt".
 This brings up another interesting point. Ideally, the runner will be able to save state between runs. There should be a config.txt file that saves this state. runner.txt files in mods will be able to overwrite certain (but definitely not all) settings. One of the settings that can be overwritten are available key bindings. The binds themselves cannot be overwritten by the mod.
+I might use cfg2 for the runner's config file format.
+
+IMPORTANT NOTE: There is no texture list. OpenGL holds all the textures, so the only thing needed to use them is the index.
+
+One index per texture.
+One texture per material.
+`numBindableMaterials` materials per model.
+(* models) xor (* entities) per entity.
 
 
 

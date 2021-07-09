@@ -14,7 +14,11 @@
 #include "insane.h"
 #include "vector.h"
 #include "str2.h"
+#ifdef CLIENT
+#include "../client/material.h"
+#endif
 
+/* I should probably rewrite this. */
 
 /* Model list */
 /* ========== */
@@ -117,6 +121,12 @@ void model_init(model_t *model) {
 	model->glVertices = NULL;
 	model->glNormals = NULL;
 	model->boundingSphere = 0.0;
+	model->defaultMaterials = NULL;
+	model->defaultMaterials_index = 0;
+	model->texCoords = NULL;
+	model->texCoords_textures = NULL;
+	model->numBindableMaterials = 0;
+	model->glTexCoords = NULL;
 #endif
 }
 
@@ -132,9 +142,93 @@ void model_free(model_t *model) {
 	insane_free(model->glVertices);
 	insane_free(model->glNormals);
 	model->boundingSphere = 0;
+	insane_free(model->defaultMaterials);
+	model->defaultMaterials_index = 0;
+	for (ptrdiff_t i = 0; i < model->faces_length; i++) {
+		insane_free(model->texCoords[i]);
+	}
+	insane_free(model->texCoords);
+	insane_free(model->texCoords_textures);
+	insane_free(model->glTexCoords);
 #endif
 	model->faces_length = 0;
 }
+
+#ifdef CLIENT
+
+static inline int model_linkDefaultMaterial(ptrdiff_t parentIndex, ptrdiff_t materialIndex) {
+	int error = ERR_CRITICAL;
+	
+	if (g_modelList.models[parentIndex].defaultMaterials_index >= g_modelList.models[parentIndex].numBindableMaterials) {
+		warning("Model list full. Aborting operation.", "");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	g_modelList.models[parentIndex].defaultMaterials[g_modelList.models[parentIndex].defaultMaterials_index++] = materialIndex;
+	
+	error = ERR_OK;
+	cleanup_l:
+	return error;
+}
+
+int l_model_linkDefaultMaterial(lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	ptrdiff_t materialIndex = -1;
+	ptrdiff_t modelIndex = -1;
+	
+	if (lua_gettop(luaState) != 2) {
+		critical_error("Function requires 2 arguments.", "");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	if (!lua_isinteger(luaState, 1)) {
+		critical_error("Argument 1 should be an integer, not a %s.", lua_typename(luaState, lua_type(luaState, 1)));
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	if (!lua_isinteger(luaState, 2)) {
+		critical_error("Argument 2 should be an integer, not a %s.", lua_typename(luaState, lua_type(luaState, 2)));
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	modelIndex = lua_tointeger(luaState, 1);
+	if (!obj_isValidModelIndex(modelIndex)) {
+		error("Bad entity index %i.", modelIndex);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	materialIndex = lua_tointeger(luaState, 2);
+	if (!material_indexExists(g_materialList, materialIndex)) {
+		error("Bad material index %i.", materialIndex);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	error = model_linkDefaultMaterial(modelIndex, materialIndex);
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	if (error >= ERR_CRITICAL) {
+		lua_error(luaState);
+	}
+	
+	lua_pushinteger(luaState, error);
+	
+	return 1;
+}
+
+#endif
+
 
 /* Oolite DAT */
 /* ========== */
@@ -188,7 +282,8 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 	vec3_t tempVec3[2];
 	const int progressMask
 	    = (1<<mode_start)   | (1<<mode_nverts)  | (1<<mode_nfaces)
-	    | (1<<mode_vertex)  | (1<<mode_faces)   | (1<<mode_end);
+	    | (1<<mode_vertex)  | (1<<mode_faces)   | (1<<mode_end)
+	    | (1<<mode_textures);
 	
 	// model_init(model);
 	// Create a model.
@@ -326,14 +421,53 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 			model->faces_length = strtol(argv[1], NULL, 10);
 			// I should really be checking for INT_MAX and INT_MIN.
 			
+			// Allocate memory now that we know the number of faces there are.
 			if (model->faces_length != 0) {
 				model->faces = malloc(model->faces_length * sizeof(int *));
+				if (model->faces == NULL) {
+					outOfMemory();
+					error = ERR_OUTOFMEMORY;
+					goto cleanup_l;
+				}
 				for (int i = 0; i < model->faces_length; i++) {
 					model->faces[i] = malloc(3 * sizeof(int));
+					if (model->faces[i] == NULL) {
+						outOfMemory();
+						error = ERR_OUTOFMEMORY;
+						goto cleanup_l;
+					}
 				}
+				
+#				ifdef CLIENT
+				model->texCoords = malloc(model->faces_length * sizeof(vec2_t *));
+				if (model->texCoords == NULL) {
+					outOfMemory();
+					error = ERR_OUTOFMEMORY;
+					goto cleanup_l;
+				}
+				for (ptrdiff_t i = 0; i < model->faces_length; i++) {
+					model->texCoords[i] = malloc(3 * sizeof(vec2_t));
+					if (model->texCoords[i] == NULL) {
+						outOfMemory();
+						error = ERR_OUTOFMEMORY;
+						goto cleanup_l;
+					}
+				}
+				
+				model->texCoords_textures = malloc(model->faces_length * sizeof(vec2_t *));
+				if (model->texCoords_textures == NULL) {
+					outOfMemory();
+					error = ERR_OUTOFMEMORY;
+					goto cleanup_l;
+				}
+#				endif
 			}
 			else {
 				model->faces = NULL;
+#				ifdef CLIENT
+				model->texCoords = NULL;
+				model->texCoords_textures = NULL;
+#				endif
 			}
 			
 			// Does nothing special.
@@ -391,7 +525,11 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 				goto cleanup_l;
 			}
 			
-			// @TODO: Do something about the textures.
+			if (((1<<mode_nfaces) & datProgress) == 0) {
+				error("\"%s\":%i NFACES has not been declared", filePath, lineNumber);
+				error = ERR_GENERIC;
+				goto cleanup_l;
+			}
 			
 			tempModelElementIndex = 0;
 			
@@ -514,7 +652,54 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 				continue;
 			
 			case mode_textures:
+				
+				if (argc != 9) {
+					error("\"%s\":%i mode \"faces\" requires 9 arguments", filePath, lineNumber);
+					error = ERR_GENERIC;
+					goto cleanup_l;
+				}
+				
+				if (tempModelElementIndex >= model->faces_length) {
+					error("\"%s\":%i Texture list is longer than declared by NFACES(%i)", filePath, lineNumber, model->faces_length);
+					error = ERR_GENERIC;
+					goto cleanup_l;
+				}
+				
+				// for (int i = 0; i < 3; i++) {
+				// 	model->faces[tempModelElementIndex][i] = strtof(argv[i + 7], NULL);
+				// }
+#				ifdef CLIENT
+				model->texCoords_textures[tempModelElementIndex] = strtol(argv[0], NULL, 10);
+				// Bad coding. Do not attempt at home.
+				if (model->texCoords_textures[tempModelElementIndex] > model->numBindableMaterials) {
+					model->numBindableMaterials = model->texCoords_textures[tempModelElementIndex];
+				}
+				
+				for (int i = 0; i < 3; i++) {
+					for (int j = 0; j < 2; j++) {
+						model->texCoords[tempModelElementIndex][i][j] = strtof(argv[2*i + j + 3], NULL);
+					}
+				}
+#				endif
+				tempModelElementIndex++;
+				
+				if (tempModelElementIndex == model->faces_length) {
+					// Done.
+					datProgress |= 1<<mode_textures;
+#					ifdef CLIENT
+					model->numBindableMaterials++;
+					
+					model->defaultMaterials = malloc(model->numBindableMaterials * sizeof(ptrdiff_t));
+					if (model->defaultMaterials == NULL) {
+						outOfMemory();
+						error = ERR_OUTOFMEMORY;
+						goto cleanup_l;
+					}
+#					endif
+				}
+				
 				continue;
+			
 			case mode_names:
 				continue;
 			case mode_normals:
@@ -576,6 +761,13 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 		goto cleanup_l;
 	}
 	
+	model->glTexCoords = malloc(2 * 3 * model->faces_length * sizeof(vec_t));
+	if (model->glTexCoords == NULL) {
+		outOfMemory();
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	
 	// For each face...
 	for (int k = 0; k < model->faces_length; k++) {
 		// For each face vertex...
@@ -586,6 +778,10 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 				
 				// Each normal will be duplicated at least three times. :(
 				model->glNormals[3 * 3 * k + 3 * l + m] = model->surface_normals[k][m];
+			}
+			
+			for (ptrdiff_t m = 0; m < 2; m++) {
+				model->glTexCoords[2 * 3 * k + 2 * l + m] = model->texCoords[k][l][m];
 			}
 		}
 	}

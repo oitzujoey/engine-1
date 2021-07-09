@@ -62,6 +62,12 @@ function startup()
 	
 	info("startup", "Loading world tree")
 	
+	--[[
+	How it's setup right now, loading a model does nothing. The only useful
+	action this does is create a model for the client to link to. This will be
+	important in the future though when ray tracing (geometric, not graphical)
+	is added.
+	]]--
 	cobra3Model, error = loadOoliteModel(modelPath .. "oolite_cobra3.dat")
 	cobra1Model, error = loadOoliteModel(modelPath .. "oolite_cobramk1.dat")
 	-- if cobra3Model ~= -1 then

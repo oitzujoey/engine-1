@@ -8,6 +8,9 @@
 #include "insane.h"
 #include "obj.h"
 #include "vector.h"
+#ifdef CLIENT
+#include "../client/material.h"
+#endif
 
 entityList_t g_entityList;
 
@@ -29,11 +32,19 @@ static void entity_initEntity(entity_t *entity) {
 		entity->isVisible[i] = false;
 	}
 #endif
+#ifdef CLIENT
+	entity->materials = NULL;
+	entity->materials_length = 0;
+#endif
 }
 
 static void entity_freeEntity(entity_t *entity) {
 	insane_free(entity->children);
 	entity->children_length = 0;
+#	ifdef CLIENT
+	insane_free(entity->materials);
+	entity->materials_length = 0;
+#	endif
 }
 
 void entity_initEntityList(void) {
@@ -64,7 +75,7 @@ void entity_freeEntityList(void) {
 index:i     The index of an entity.
 Returns:    1 if index is valid, otherwise 0.
 */
-int entity_isValidEntityIndex(int index) {
+static int entity_isValidEntityIndex(ptrdiff_t index) {
 	
 	// Out of bounds.
 	if (index < 0) {
@@ -75,7 +86,7 @@ int entity_isValidEntityIndex(int index) {
 	}
 
 	// Freed.
-	for (int i = 0; i < g_entityList.deletedEntities_length; i++) {
+	for (ptrdiff_t i = 0; i < g_entityList.deletedEntities_length; i++) {
 		if (index == g_entityList.deletedEntities[i]) {
 			return 0;
 		}
@@ -271,6 +282,24 @@ void entity_printEntity(int index) {
 	}
 }
 
+
+#ifdef CLIENT
+static inline int entity_linkMaterial(ptrdiff_t parentIndex, ptrdiff_t materialIndex) {
+	int error = ERR_CRITICAL;
+
+	g_entityList.entities[parentIndex].materials_length++;
+	g_entityList.entities[parentIndex].materials = realloc(g_entityList.entities[parentIndex].materials, g_entityList.entities[parentIndex].materials_length * sizeof(ptrdiff_t));
+	if (g_entityList.entities[parentIndex].materials == NULL) {
+		outOfMemory();
+		error = ERR_OUTOFMEMORY;
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	return error;
+}
+#endif
 
 /* Lua calls */
 /* ========= */
@@ -593,6 +622,65 @@ int l_entity_setVisible(lua_State *luaState) {
 	
 	error = ERR_OK;
 
+	lua_pushinteger(luaState, error);
+	
+	return 1;
+}
+
+#endif
+
+#ifdef CLIENT
+
+int l_entity_linkMaterial(lua_State *luaState) {
+	int error = ERR_CRITICAL;
+	
+	ptrdiff_t materialIndex = -1;
+	ptrdiff_t entityIndex = -1;
+	
+	if (lua_gettop(luaState) != 2) {
+		critical_error("Function requires 2 arguments.", "");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	if (!lua_isinteger(luaState, 1)) {
+		critical_error("Argument 1 should be an integer, not a %s.", lua_typename(luaState, lua_type(luaState, 1)));
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	if (!lua_isinteger(luaState, 2)) {
+		critical_error("Argument 2 should be an integer, not a %s.", lua_typename(luaState, lua_type(luaState, 2)));
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+	
+	materialIndex = lua_tointeger(luaState, 1);
+	if (!material_indexExists(g_materialList, materialIndex)) {
+		error("Bad material index %i.", materialIndex);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	entityIndex = lua_tointeger(luaState, 2);
+	if (!entity_isValidEntityIndex(entityIndex)) {
+		error("Bad entity index %i.", entityIndex);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	
+	error = entity_linkMaterial(entityIndex, materialIndex);
+	if (error) {
+		goto cleanup_l;
+	}
+	
+	error = ERR_OK;
+	cleanup_l:
+	
+	if (error >= ERR_CRITICAL) {
+		lua_error(luaState);
+	}
+	
 	lua_pushinteger(luaState, error);
 	
 	return 1;

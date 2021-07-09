@@ -448,3 +448,29 @@ static int common_callback_maxFramerate(cfg2_var_t *var, const char *command, lu
 	
 	return ERR_OK;
 }
+
+void network_dumpBufferUint8(const uint8_t *buffer, size_t length) {
+
+	uint8_t nybble;
+
+	for (ptrdiff_t i = 0; i < length; i++) {
+		
+		nybble = (buffer[i] >> 4) & 0x0F;
+		if (nybble >= 0x0A) {
+			putc(nybble - 0x0A + 'A', stdout);
+		}
+		else {
+			putc(nybble + '0', stdout);
+		}
+		nybble = buffer[i] & 0x0F;
+		if (nybble >= 0x0A) {
+			putc(nybble - 0x0A + 'A', stdout);
+		}
+		else {
+			putc(nybble + '0', stdout);
+		}
+		
+		putc(' ', stdout);
+	}
+	putc('\n', stdout);
+}

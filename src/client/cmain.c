@@ -24,6 +24,7 @@
 #endif
 #include "../common/lua_common.h"
 #include "../common/str2.h"
+#include "material.h"
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
@@ -31,26 +32,18 @@ const int SCREEN_HEIGHT = 1080;
 extern SDL_Window *g_window;
 // extern SDL_Surface *g_screenSurface;
 
+extern material_list_t g_materialList;
+
 luaCFunc_t luaClientFunctions[] = {
 	// {.func = render,                .name = "render"},
 	// {.func = getInput,              .name = "getInput"},
 	// {.func = l_cnetwork_receive,    .name = "l_snetwork_receive"},
-	{.func = NULL,                  .name = NULL}
+	{.func = l_material_create,             .name = "material_create"},
+	{.func = l_material_linkTexture,        .name = "material_linkTexture"},
+	{.func = l_material_loadTexture,        .name = "material_loadTexture"},
+	{.func = l_model_linkDefaultMaterial,   .name = "model_linkDefaultMaterial"},
+	{.func = NULL,                          .name = NULL}
 };
-
-// const cfg_var_init_t initialConfigVars[] = {
-// 	{.name = "client",                  .vector = 0,    .integer = 0,                               .string = NULL,                         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE},
-// 	{.name = "lua_main",                .vector = 0,    .integer = 0,                               .string = "",                           .type = string,     .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = "workspace",               .vector = 0,    .integer = 0,                               .string = "",                           .type = string,     .handle = vfs_handle_setWorkspace,                  .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = CFG_PORT,                  .vector = 0,    .integer = CFG_PORT_DEFAULT,                .string = "",                           .type = integer,    .handle = cnetwork_handle_setServerPort,            .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = CFG_CONNECTION_TIMEOUT,    .vector = 0,    .integer = CFG_CONNECTION_TIMEOUT_DEFAULT,  .string = "",                           .type = integer,    .handle = network_handle_connectionTimeout,         .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = CFG_IP_ADDRESS,            .vector = 0,    .integer = 0,                               .string = "localhost",                  .type = string,     .handle = cnetwork_handle_setIpAddress,             .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = CFG_MAX_RECURSION,         .vector = 0,    .integer = CFG_MAX_RECURSION_DEFAULT,       .string = "",                           .type = integer,    .handle = cfg_handle_maxRecursion,                  .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = CFG_RUN_QUIET,             .vector = 0,    .integer = false,                           .string = "",                           .type = integer,    .handle = NULL,                                     .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
-// 	{.name = CFG_HISTORY_LENGTH,        .vector = 0,    .integer = CFG_HISTORY_LENGTH_DEFAULT,      .string = "",                           .type = integer,    .handle = cfg_handle_updateCommandHistoryLength,    .permissions = CFG_VAR_FLAG_READ | CFG_VAR_FLAG_WRITE},
-// 	{.name = CFG_OPENGL_LOG_FILE,       .vector = 0,    .integer = 0,                               .string = CFG_OPENGL_LOG_FILE_DEFAULT,  .type = string,     .handle = render_handle_updateLogFileName,          .permissions = CFG_VAR_FLAG_READ},
-// 	{.name = NULL,                      .vector = 0,    .integer = 0,                               .string = NULL,                         .type = none,       .handle = NULL,                                     .permissions = CFG_VAR_FLAG_NONE}
-// };
 
 const cfg2_var_init_t g_clientVarInit[] = {
 	// Commands
@@ -193,6 +186,8 @@ int windowInit(void) {
 		goto cleanup_l;
 	}
 	
+	material_initList(&g_materialList);
+	
 	error = ERR_OK;
 	cleanup_l:
 	return error;
@@ -200,6 +195,8 @@ int windowInit(void) {
 
 static void windowQuit(void) {
 
+	material_freeList(&g_materialList);
+	
 	SDL_DestroyWindow(g_window);
 	g_window = NULL;
 	

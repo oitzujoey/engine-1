@@ -8,33 +8,6 @@
 int g_connectionTimeout;
 
 
-void network_dumpBufferUint8(const uint8_t *buffer, size_t length) {
-
-	uint8_t nybble;
-
-	for (ptrdiff_t i = 0; i < length; i++) {
-		
-		nybble = (buffer[i] >> 4) & 0x0F;
-		if (nybble >= 0x0A) {
-			putc(nybble - 0x0A + 'A', stdout);
-		}
-		else {
-			putc(nybble + '0', stdout);
-		}
-		nybble = buffer[i] & 0x0F;
-		if (nybble >= 0x0A) {
-			putc(nybble - 0x0A + 'A', stdout);
-		}
-		else {
-			putc(nybble + '0', stdout);
-		}
-		
-		putc(' ', stdout);
-	}
-	putc('\n', stdout);
-}
-
-
 int network_packetAdd_uint32(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, const uint32_t *data, const ptrdiff_t data_length) {
 	int error = ERR_CRITICAL;
 	
@@ -422,6 +395,13 @@ int network_packetRead_entity(entity_t *data, const ptrdiff_t data_length, const
 		// printf("children_length %lu\n", (unsigned long) data[i].children_length);
 		// printf("childType %lu\n", (unsigned long) data[i].childType);
 		// printf("inUse %lu\n", (unsigned long) data[i].inUse);
+		
+#ifdef CLIENT
+		if (!data[i].inUse) {
+			insane_free(data[i].materials);
+			data[i].materials_length = 0;
+		}
+#endif
 	}
 	
 	// Increase the packet byte index.

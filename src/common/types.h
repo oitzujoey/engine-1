@@ -7,6 +7,10 @@
 #include <SDL2/SDL.h>
 #include <lua.h>
 #include <enet/enet.h>
+#ifdef CLIENT
+#include <GL/glew.h>
+#endif
+#include <physfs.h>
 
 #define MAX_CLIENTS         2
 
@@ -45,6 +49,12 @@ typedef struct {
 	vec_t *glVertices;
 	vec_t *glNormals;
 	vec_t boundingSphere;
+	ptrdiff_t *defaultMaterials;
+	ptrdiff_t defaultMaterials_index;
+	vec2_t **texCoords;
+	int *texCoords_textures;
+	size_t numBindableMaterials;
+	vec_t *glTexCoords;
 #endif
 } model_t;
 
@@ -216,6 +226,10 @@ typedef struct {
 #ifdef SERVER
 	bool isVisible[MAX_CLIENTS];
 #endif
+#ifdef CLIENT
+	ptrdiff_t *materials;
+	ptrdiff_t materials_length;
+#endif
 } entity_t;
 
 typedef struct {
@@ -268,5 +282,22 @@ typedef enum {
 	network_lua_type_string,
 	network_lua_type_table
 } network_lua_type_t;
+
+/* material.h */
+/* ========= */
+
+typedef struct {
+#ifdef CLIENT
+	GLuint texture;
+#else
+	// Make the compiler happy.
+	bool dummy;
+#endif
+} material_t;
+
+typedef struct {
+	material_t *materials;
+	size_t materials_length;
+} material_list_t;
 
 #endif

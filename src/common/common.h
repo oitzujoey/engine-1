@@ -81,4 +81,6 @@ int l_common_puts(lua_State*);
 
 int MSB(int n);
 
+void network_dumpBufferUint8(const uint8_t *buffer, size_t length);
+
 #endif

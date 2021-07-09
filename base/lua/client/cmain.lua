@@ -25,17 +25,36 @@ function startup()
 	-- More info about ship resources can be found in https://github.com/OoliteProject/oolite/blob/master/Resources/Config/shipdata.plist
 	texturePath = "oolite-binary-resources/Textures/"
 	modelPath = "oolite-binary-resources/Models/"
-	HullTexture = "oolite_cobra3_diffuse.png"
-	GunTexture = "oolite_cobra3_subents.png"
+	
+	cobra3ModelFileName = "oolite_cobra3.dat"
+	cobra3HullTextureFileName = "oolite_cobra3_diffuse.png"
+	cobra3GunTextureFileName = "oolite_cobra3_subents.png"
+	
+	cobra1ModelFileName = "oolite_cobramk1.dat"
+	cobra1TextureFileName = "oolite_cobramk1_diffuse.png"
+	-- cobra1TextureFileName = "bottom_metal.png"
 	
 	info("startup", "Loading models")
 	
-	cobra3ModelName = "oolite_cobra3.dat"
-	cobra3Model, error = loadOoliteModel(modelPath .. cobra3ModelName)
+	--[[
+	How it's setup right now, creating an entity does nothing. The only useful
+	action this does is load the model for the server to link to. All these
+	entities will be overridden after the client receives the server's entities.
+	]]--
+	cobra3ModelFileName = cobra3ModelFileName
+	cobra3Model, error = loadOoliteModel(modelPath .. cobra3ModelFileName)
 	if cobra3Model ~= -1 then
-		info("startup", "Loaded " .. cobra3ModelName)
+		info("startup", "Loaded " .. cobra3ModelFileName)
 	end
-	cobra1Model, error = loadOoliteModel(modelPath .. "oolite_cobramk1.dat")
+	cobra1Model, error = loadOoliteModel(modelPath .. cobra1ModelFileName)
+	
+	-- Prepare the textures.
+	cobra1Material, error = material_create()
+	cobra1Texture, error = material_loadTexture(texturePath .. cobra1TextureFileName)
+	error = material_linkTexture(cobra1Material, cobra1Texture)
+	
+	-- Set the default materials for each model.
+	error = model_linkDefaultMaterial(cobra1Model, cobra1Material)
 	
 	keys_createFullBind("k_1073741903", "key_left",         "key_left_d",       "key_left_u")
 	keys_createFullBind("k_1073741904", "key_right",        "key_right_d",      "key_right_u")
