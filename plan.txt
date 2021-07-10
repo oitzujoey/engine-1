@@ -642,6 +642,17 @@ One texture per material.
 `numBindableMaterials` materials per model.
 (* models) xor (* entities) per entity.
 
+Bug:
+    Start server.
+    Connect client 1.
+    Connect client 2.
+    Disconnect client 1.
+    Disconnect client 2.
+    Connect client 1.
+    Connect client 2.
+    Disconnect client 1.
+    Segmentation fault client 2.
+
 
 
 Graphics stuff I dream of adding:

@@ -10,6 +10,8 @@
 #include "../common/obj.h"
 #include "../common/vector.h"
 
+extern material_list_t g_materialList;
+
 SDL_Window* g_window;
 SDL_DisplayMode g_displayMode;
 SDL_GLContext g_GLContext;
@@ -437,7 +439,7 @@ int renderModels(entity_t entity, vec3_t position, quat_t orientation) {
 		glUseProgram(g_shaderProgram[0]);
 		glActiveTexture(GL_TEXTURE0);
 		// TODO: Change this from texture #1 to whatever texture is called for.
-		glBindTexture(GL_TEXTURE_2D, 1);
+		glBindTexture(GL_TEXTURE_2D, g_materialList.materials[model.defaultMaterials[0]].texture);
 		glBindVertexArray(g_vao);
 		glDrawArrays(GL_TRIANGLES, 0, 3 * model.faces_length);
 	}

@@ -53,8 +53,13 @@ function startup()
 	cobra1Texture, error = material_loadTexture(texturePath .. cobra1TextureFileName)
 	error = material_linkTexture(cobra1Material, cobra1Texture)
 	
+	cobra3Material, error = material_create()
+	cobra3Texture, error = material_loadTexture(texturePath .. cobra3HullTextureFileName)
+	error = material_linkTexture(cobra3Material, cobra3Texture)
+	
 	-- Set the default materials for each model.
 	error = model_linkDefaultMaterial(cobra1Model, cobra1Material)
+	error = model_linkDefaultMaterial(cobra3Model, cobra3Material)
 	
 	keys_createFullBind("k_1073741903", "key_left",         "key_left_d",       "key_left_u")
 	keys_createFullBind("k_1073741904", "key_right",        "key_right_d",      "key_right_u")
