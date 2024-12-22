@@ -666,6 +666,12 @@ Graphics stuff I dream of adding:
     Parallax mapping
     Portals
 
+Other improvements:
+    Use hash table for cvars.
+    Replace scripting language with something like Lua or DuckLisp.
+    Do delag and prediction.
+    Be more restrictive with system resources.
+
 Files to rewrite when it is somewhat working:
     obj
 
