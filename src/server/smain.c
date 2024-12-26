@@ -424,7 +424,9 @@ int main(int argc, char *argv[]) {
 			goto cleanup_l;
 		}
 		
-        while (!proceed) {}
+        while (!proceed) {
+	        SDL_Delay(1);
+        }
 		SDL_RemoveTimer(timerId);
 	}
 	
