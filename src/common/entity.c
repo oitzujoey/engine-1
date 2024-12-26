@@ -144,6 +144,7 @@ int entity_deleteEntity(int index) {
 		g_entityList.deletedEntities_length++;
 		g_entityList.deletedEntities = realloc(g_entityList.deletedEntities, g_entityList.deletedEntities_length_allocated * sizeof(ptrdiff_t));
 		if (g_entityList.deletedEntities == NULL) {
+			outOfMemory();
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}

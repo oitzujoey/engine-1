@@ -174,6 +174,7 @@ static int cnetwork_receiveEntities(ENetEvent event, lua_State *luaState) {
 	}
 	else {
 		entityList.deletedEntities = g_entityList.deletedEntities;
+		entityList.deletedEntities_length_allocated = g_entityList.deletedEntities_length_allocated;
 	}
 	
 	g_entityList = entityList;
