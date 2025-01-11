@@ -312,12 +312,6 @@ static int snetwork_sendEntityList(lua_State *luaState) {
 	
 		packetlength += sizeof(uint32_t);   // Checksum
 		packetlength += sizeof(uint32_t);   // Packet counter
-		packetlength += sizeof(entityList_t);
-		packetlength += g_entityList.entities_length * sizeof(entity_t);
-		packetlength += g_entityList.deletedEntities_length * sizeof(ptrdiff_t);
-		for (int i = 0; i < g_entityList.entities_length; i++) {
-			packetlength += g_entityList.entities[i].children_length * sizeof(ptrdiff_t);
-		}
 		
 		// Create unreliable packet.
 		packet = enet_packet_create(NULL, packetlength, 0);
@@ -326,63 +320,16 @@ static int snetwork_sendEntityList(lua_State *luaState) {
 			error = ERR_OUTOFMEMORY;
 			goto cleanup_l;
 		}
-		// data = packet->data + sizeof(uint32_t); // packet->data + checksum
-		// data_length = packetlength - sizeof(uint32_t);
+
+		// Checksum
 		data_index += sizeof(uint32_t);
-		
+
+		// Packet number
 		error = network_packetAdd_uint32(packet->data, &data_index, packet->dataLength, &packetID[clientNumber], 1);
 		if (error) {
 			goto enet_cleanup_l;
 		}
 		packetID[clientNumber]++;
-		
-		entityList = (entityList_t *) &packet->data[data_index];
-		error = network_packetAdd_entityList(packet->data, &data_index, packet->dataLength, &g_entityList, 1);
-		if (error) {
-			goto enet_cleanup_l;
-		}
-		
-		entityList->entities = (entity_t *) (&packet->data[data_index] - packet->data);
-		error = network_packetAdd_entity(packet->data, &data_index, packet->dataLength, g_entityList.entities, g_entityList.entities_length, clientNumber);
-		if (error) {
-			goto enet_cleanup_l;
-		}
-		
-		entityList->deletedEntities = (ptrdiff_t *) (&packet->data[data_index] - packet->data);
-		error = network_packetAdd_ptrdiff(packet->data, &data_index, packet->dataLength, g_entityList.deletedEntities, g_entityList.deletedEntities_length);
-		if (error) {
-			goto enet_cleanup_l;
-		}
-		
-		for (int i = 0; i < g_entityList.entities_length; i++) {
-		
-			error = network_packetAdd_ptrdiff(packet->data, &data_index, packet->dataLength, g_entityList.entities[i].children, g_entityList.entities[i].children_length);
-			if (error) {
-				goto enet_cleanup_l;
-			}	
-		}
-		
-		// Find the right index.
-		
-		// // It might be empty. That's fine. Don't send.
-		// if (g_clientStateArray == NULL || g_clientStateArray_length == 0) {
-		// 	if (g_clientStateArray != NULL && g_clientStateArray_length == 0) {
-		// 		// Or we could have a bad pointer.
-		// 		critical_error("Array has length of 0 but is not NULL.", "");
-		// 		error = ERR_CRITICAL;
-		// 	} else {
-		// 		error = ERR_OK;
-		// 	}
-		// 	goto cleanup_l;
-		// }
-		
-		// // Create the packet.
-		// packet = enet_packet_create(NULL, 0, 0);
-		// if (packet == NULL) {
-		// 	outOfMemory();
-		// 	error = ERR_OUTOFMEMORY;
-		// 	goto cleanup_l;
-		// }
 		
 		// Find this client's serverState.
 		lua_pushinteger(luaState, clientNumber + 1);

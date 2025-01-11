@@ -29,7 +29,6 @@
 int l_main_checkQuit(lua_State *luaState);
 
 luaCFunc_t luaServerFunctions[] = {
-	{.func = l_entity_setVisible,   .name = "entity_setVisible"},
 	{.func = NULL,                  .name = NULL}
 };
 

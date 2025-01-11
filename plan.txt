@@ -642,6 +642,7 @@ One texture per material.
 `numBindableMaterials` materials per model.
 (* models) xor (* entities) per entity.
 
+
 Bug:
     Start server.
     Connect client 1.
@@ -654,15 +655,74 @@ Bug:
     Segmentation fault client 2.
 
 
+A lot of entities are sent to the client. I don't believe there's a need for this. I should be able to send all the entities to the client once, and then only send updates for a subset of them.
+
+Use something like message passing instead of what we currently have. Maybe have a `send_to_client` function or have an "incoming objects" queue.
+
+We want to send server entities to the client.
+We want to send Lua server objects to the client.
+We want to send Lua client objects to the server.
+
+Maybe I should just start with Lua objects.
+
+sendObjectToClient(clientIndex, object)
+sendObjectToServer(object)
+
+serverState is owned by the server and sent to the client.
+clientState is owned by the client and sent to the server.
+clientState is an object on the client and an array of objects on the server.
+serverState is an object.
+
+So currently, the only change would be to not send the entity list to the client. Do I just clear visibility for that entity to do that? No. It sends all the entities across the network anyway.
+
+Both client and server Lua with have a `loadWorld` function defined in a common file that will load all static world entities, making the client and server synchronized on boot. None of it needs to travel over the network.
+
+serverIn
+serverOut
+
+clientIn
+clientOut
+
+Or just copy clientState and serverState to another Lua variable, set the originals to nil, then build the state to return to the client or server. This keeps the number of magic variable names few, should be efficient, and should be almost as easy to manage as a truly functional version (serverIn/serverOut).
+
+The server should not send any of its entities to the client. The client should be able to create all its entities itself.
+
+
+The client of course has entities that can be rendered. I think the server will not have the rendering mesh. Instead it will only have the collision mesh. This is determined by Lua. The client Lua loads rmsh files and the server loads cmsh files. I don't think there's any reason for the server to have the high resolution models unless it's doing collision handling with them.
+
+On the client, entities are used for rendering and collision detection.
+On the server, entities are used only for collision detection.
+Entities are only for acceleration of slow or otherwise impossible tasks.
+
+
+Perhaps I should make all servers have a password that is used for encryption and authentication. Clients could also have user names to allow for user whitelists. This would be done in C so that authentication can be handled before the connection is fully established. Encryption would be enabled before the first Lua object is sent.
+
+
+Is there any reason to send an entity over the network when it could be emulated with Lua?
+
+
+
+Stuff I need to document:
+    Rmsh & script
+    Cmsh & script
+    Lua's `include`, especially its relative path behavior.
+
+Stuff I need to add:
+    Textures
+    Collision detection
+    Dynamic lighting
+    Light maps
+    Improved Lua error reporting
+    Compression
+    Encryption
+    Authentication
 
 Graphics stuff I dream of adding:
-    Light map?
+    Light map
     Dynamic lighting
-    Textures
     Curves
     Bump mapping
     HDR or similar
-    Ray tracing or similar
     Parallax mapping
     Portals
 
@@ -671,9 +731,6 @@ Other improvements:
     Replace scripting language with something like Lua or DuckLisp.
     Do delag and prediction.
     Be more restrictive with system resources.
-
-Files to rewrite when it is somewhat working:
-    obj
 
 [*] (Client) Get something on the screen using SDL
 --------------------------------------------------
@@ -693,7 +750,7 @@ Files to rewrite when it is somewhat working:
 [/] (Server) Send entity tree over the network
     [*] (All) Decide on network protocol
     [*] (Client Server) Send and receive packet over the network.
-    [/] (Client Server) Sand and receive packets reliably over the network.
+    [/] (Client Server) Send and receive packets reliably over the network.
     [*] (Server) Send entity tree over the network.
 [*] (Client) Receive entity tree from the network
 [*] (All)    Get on those TODOs (ugly ones)
@@ -706,11 +763,11 @@ Files to rewrite when it is somewhat working:
 [*] (Client) Render tree every time it is received
 [*] (Client) Optimize rendering
 -------------------------------
-[/] (All) Get modding working.
+[*] (All) Get modding working.
     [*] (All) Load base game.
     [*] (All) Load multiple mods.
-    [ ] (All) Merge source code from multiple mods.
-    [ ] (All) Execute cached/merged files instead of latest files.
+!    [ ] (All) Merge source code from multiple mods.
+!    [ ] (All) Execute cached/merged files instead of latest files.
 ------------------------------------------------------------------
 [*] (Client) Get keyboard input
     [*] Get keys from SDL2.
@@ -752,6 +809,8 @@ Files to rewrite when it is somewhat working:
 [ ] (Client) Create 2D reference entities.
 [ ] (Client) Create 3D reference entities.
 [ ] (Lua)    Implement radar.
+[ ] (All)    Add collision handling.
+[ ] (Client) Add more correct looking lighting.
 
 Expected leaks:
     220B    SDL_Init()
@@ -764,5 +823,4 @@ Exec files using a path relative to the current file's directory.
 Hotplugging joysticks and controllers gives wrong ID.
 Note: SDL_IsGameController seems to cause lag when run in the main game loop.
 Note: Networking code is hard. Don't change types last minute. You will get bugs.
-Two clients connected:
-    Second cengine sometimes randomly segfaults. This might have been due to a Lua stack leak.
+Note: Use consistent bit widths for integers. Don't rely on things like `unsigned int`. Instead use `uint64_t`.

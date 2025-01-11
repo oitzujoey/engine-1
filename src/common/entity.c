@@ -27,11 +27,6 @@ static void entity_initEntity(entity_t *entity) {
 	entity->orientation.s = 1;
 	entity->inUse = true;
 	entity->shown = true;
-#if SERVER
-	for (ptrdiff_t i = 0; i < MAX_CLIENTS; i++) {
-		entity->isVisible[i] = false;
-	}
-#endif
 #ifdef CLIENT
 	entity->materials = NULL;
 	entity->materials_length = 0;
@@ -582,53 +577,6 @@ int l_entity_setOrientation(lua_State *luaState) {
 	return 1;
 }
 
-#ifdef SERVER
-
-/*
-int error = entity_setVisible(int entityIndex, int clientNumber)
-*/
-int l_entity_setVisible(lua_State *luaState) {
-	int error = ERR_CRITICAL;
-	
-	int index;
-	int clientNumber;
-	
-	// Entity
-	
-	if (!lua_isinteger(luaState, 1)) {
-		error("Argument 1 must be an integer.", "");
-		lua_error(luaState);
-	}
-	
-	index = lua_tointeger(luaState, 1);
-	if (!entity_isValidEntityIndex(index)) {
-		error("Index (%i) references an invalid entity.", index);
-		lua_error(luaState);
-	}
-	
-	// Client
-	
-	if (!lua_isinteger(luaState, 2)) {
-		error("Argument 2 must be an integer.", "");
-		lua_error(luaState);
-	}
-	
-	clientNumber = lua_tointeger(luaState, 2) - 1;
-	if ((clientNumber < 0) || (clientNumber >= MAX_CLIENTS)) {
-		error("Client %i is not connected.", clientNumber);
-		lua_error(luaState);
-	}
-	
-	g_entityList.entities[index].isVisible[clientNumber] = true;
-	
-	error = ERR_OK;
-
-	lua_pushinteger(luaState, error);
-	
-	return 1;
-}
-
-#endif
 
 #ifdef CLIENT
 

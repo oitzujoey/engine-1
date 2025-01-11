@@ -1,0 +1,10 @@
+Features I will need:
+* Lightmaps or direct lighting.
+* Collision detection.
+
+There are buildings. There are items. There are NPCs. There are long roads.
+
+Buildings can be meshes.
+Items can be small meshes.
+NPCs are meshes too, but they might need pathfinding. Maybe use waypoints?
+The long roads across large spaces of terrain might be a mesh. I could use a heightmap to generate the mesh ahead of time. I could also use procedural generation, but I'd rather not do that at runtime.

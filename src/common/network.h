@@ -27,8 +27,6 @@
 extern int g_connectionTimeout;
 
 int network_packetAdd_uint32(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, const uint32_t *data, const ptrdiff_t data_length);
-int network_packetAdd_entityList(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, const entityList_t *data, const ptrdiff_t data_length);
-int network_packetAdd_entity(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, entity_t *data, const ptrdiff_t data_length, unsigned int clientNumber);
 int network_packetAdd_ptrdiff(enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length, const ptrdiff_t *data, const ptrdiff_t data_length);
 
 int network_packetRead_uint32(uint32_t *data, const ptrdiff_t data_length, const enet_uint8 *packet, ptrdiff_t *index, const ptrdiff_t packet_length);

@@ -110,10 +110,6 @@ static int cnetwork_receiveEntities(ENetEvent event, lua_State *luaState) {
 	// int length;
 	// const enet_uint8 *data;
 	ptrdiff_t data_index = 0;
-	// size_t data_length;
-	// entityList and entities in the packet must be preserved for checksum calculation, so we use these copies instead.
-	entityList_t entityList;
-	entity_t *entities;
 	uint32_t checksum, calculatedChecksum;
 	static uint32_t lastPacketID = 0;
 	uint32_t packetID;
@@ -138,89 +134,6 @@ static int cnetwork_receiveEntities(ENetEvent event, lua_State *luaState) {
 	error = network_packetRead_uint32(&packetID, 1, packet->data, &data_index, packet->dataLength);
 	if (error) {
 		goto cleanup_l;
-	}
-	
-	error = network_packetRead_entityList(&entityList, 1, packet->data, &data_index, packet->dataLength);
-	if (error) {
-		goto cleanup_l;
-	}
-	
-	// Allocate more space for entities if needed.
-	if (entityList.entities_length > g_entityList.entities_length) {
-		entityList.entities = realloc(g_entityList.entities, entityList.entities_length * sizeof(entity_t));
-		if (entityList.entities == NULL) {
-			outOfMemory();
-			error = ERR_OUTOFMEMORY;
-			goto cleanup_l;
-		}
-		
-		// Initialize new entities to zero.
-		memset((entityList.entities + g_entityList.entities_length), 0, (entityList.entities_length - g_entityList.entities_length) * sizeof(entity_t));
-	}
-	else {
-		entityList.entities = g_entityList.entities;
-	}
-	
-	// Allocate more space for deleted entity indices of needed.
-	if (entityList.deletedEntities_length > g_entityList.deletedEntities_length_allocated) {
-		entityList.deletedEntities = realloc(g_entityList.deletedEntities, entityList.deletedEntities_length * sizeof(ptrdiff_t));
-		if (entityList.deletedEntities == NULL) {
-			outOfMemory();
-			error = ERR_OUTOFMEMORY;
-			goto cleanup_l;
-		}
-		entityList.deletedEntities_length_allocated = entityList.deletedEntities_length;
-		
-	}
-	else {
-		entityList.deletedEntities = g_entityList.deletedEntities;
-		entityList.deletedEntities_length_allocated = g_entityList.deletedEntities_length_allocated;
-	}
-	
-	g_entityList = entityList;
-	
-	
-	entities = calloc(g_entityList.entities_length, sizeof(entity_t));
-	if (entities == NULL) {
-		outOfMemory();
-		error = ERR_OUTOFMEMORY;
-		goto cleanup_l;
-	}
-	error = network_packetRead_entity(entities, g_entityList.entities_length, packet->data, &data_index, packet->dataLength);
-	if (error) {
-		goto cleanup_l;
-	}
-	
-	// Allocate more space for entities if needed.
-	for (int i = 0; i < g_entityList.entities_length; i++) {
-		if (entities[i].children_length > g_entityList.entities[i].children_length) {
-			entities[i].children = realloc(g_entityList.entities[i].children, entities[i].children_length * sizeof(ptrdiff_t));
-			if (entities[i].children == NULL) {
-				outOfMemory();
-				error = ERR_OUTOFMEMORY;
-				goto cleanup_l;
-			}
-		}
-		else {
-			entities[i].children = g_entityList.entities[i].children;
-		}
-	}
-	
-	// Copy entities into main entity list.
-	memcpy(g_entityList.entities, entities, g_entityList.entities_length * sizeof(entity_t));
-	free(entities);
-	
-	
-	error = network_packetRead_ptrdiff(g_entityList.deletedEntities, g_entityList.deletedEntities_length, packet->data, &data_index, packet->dataLength);
-	if (error) {
-		goto cleanup_l;
-	}
-	
-	for (int i = 0; i < g_entityList.entities_length; i++) {
-		error = network_packetRead_ptrdiff(g_entityList.entities[i].children, g_entityList.entities[i].children_length, packet->data, &data_index, packet->dataLength);
-		if (error) {
-			goto cleanup_l;
-		}
 	}
 	
 	// Server state
