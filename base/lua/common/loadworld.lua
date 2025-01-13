@@ -22,7 +22,7 @@ cobra1ModelFileName = "oolite_cobramk1.dat"
 cobra1TextureFileName = "oolite_cobramk1_diffuse.png"
 -- cobra1TextureFileName = "bottom_metal.png"
 
-cobra1Num = 500
+cobra1Num = 2000
 cobra1Spacing = 1000.0
 
 TurnRate = 100
