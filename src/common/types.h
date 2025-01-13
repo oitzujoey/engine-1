@@ -32,6 +32,20 @@ typedef struct {
 } quat_t;
 
 
+
+/* CMSH file structure */
+typedef struct {
+	// Magic number should always be CMSH
+	uint8_t magic[4];
+	uint32_t version;
+
+	vec3_t mins;
+	vec3_t maxs;
+	vec_t *vertices;  // Length: 3*vertices_length
+	uint32_t vertices_length;
+} file_cmsh_t;
+
+
 /* Internal model structure */
 /* ======================== */
 
