@@ -18,3 +18,9 @@ cachegrind.out.*
 *.dll
 build
 *_autogen
+*~
+*.pyc
+*.cmsh
+*.blend1
+*.out
+.*
