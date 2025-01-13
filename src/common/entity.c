@@ -26,8 +26,8 @@ static void entity_initEntity(entity_t *entity) {
 	}
 	entity->orientation.s = 1;
 	entity->inUse = true;
-	entity->shown = true;
 #ifdef CLIENT
+	entity->shown = true;
 	entity->materials = NULL;
 	entity->materials_length = 0;
 #endif

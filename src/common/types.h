@@ -227,6 +227,7 @@ typedef struct {
 	bool isVisible[MAX_CLIENTS];
 #endif
 #ifdef CLIENT
+	bool shown;
 	ptrdiff_t *materials;
 	ptrdiff_t materials_length;
 #endif

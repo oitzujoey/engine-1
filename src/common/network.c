@@ -217,17 +217,18 @@ int network_packetRead_entity(entity_t *data, const ptrdiff_t data_length, const
 			data[i].inUse = (bool) ((unsigned long long int) data[i].inUse | ((unsigned long long int) packet[*index + structIndex++] << 8*j));
 		}
 		// shown
-		data[i].shown = 0;
-		for (unsigned int j = 0; j < sizeof(bool); j++) {
-			data[i].shown = (bool) ((unsigned long long int) data[i].shown | ((unsigned long long int) packet[*index + structIndex++] << 8*j));
-		}
-	
+
 		// printf("children %lu\n", (unsigned long) data[i].children);
 		// printf("children_length %lu\n", (unsigned long) data[i].children_length);
 		// printf("childType %lu\n", (unsigned long) data[i].childType);
 		// printf("inUse %lu\n", (unsigned long) data[i].inUse);
 		
 #ifdef CLIENT
+		data[i].shown = 0;
+		for (unsigned int j = 0; j < sizeof(bool); j++) {
+			data[i].shown = (bool) ((unsigned long long int) data[i].shown | ((unsigned long long int) packet[*index + structIndex++] << 8*j));
+		}
+
 		if (!data[i].inUse) {
 			insane_free(data[i].materials);
 			data[i].materials_length = 0;
