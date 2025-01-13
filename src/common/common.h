@@ -9,6 +9,7 @@
 #define ERR_GENERIC     1
 #define ERR_CRITICAL    2
 #define ERR_OUTOFMEMORY 3
+#define ERR_NULLPOINTER 4
 
 // @TODO: Might want to change this to an actual variable.
 #define ERR ((char*[15]) { \
