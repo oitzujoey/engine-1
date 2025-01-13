@@ -344,3 +344,81 @@ void file_resolveRelativePaths(char *path) {
 	
 // 	return result;
 // }
+
+
+// @TODO @PLATFORM_DEPENDENT: Make work on both big and little endian. All files that we read should be little endian. Not so
+// for the CPU architectures.
+
+int file_parse_uint8(uint8_t *v, uint8_t *bytes, size_t *index, size_t length) {
+	if (!v || !bytes || !index) return ERR_NULLPOINTER;
+	if (*index + sizeof(uint8_t) >= length) return ERR_GENERIC;
+	*v = bytes[(*index)++];
+	return ERR_OK;
+}
+
+int file_parse_uint32(uint32_t *v, uint8_t *bytes, size_t *index, size_t length) {
+	if (!v || !bytes || !index) return ERR_NULLPOINTER;
+	if (*index + sizeof(uint32_t) >= length) return ERR_GENERIC;
+	*v = bytes[(*index)++];
+	for (size_t i = 1; i < sizeof(uint32_t); i++) {
+		*v |= bytes[(*index)++] << i;
+	}
+	return ERR_OK;
+}
+
+int file_parse_float(float *v, uint8_t *bytes, size_t *index, size_t length) {
+	if (!v || !bytes || !index) return ERR_NULLPOINTER;
+	struct {
+		float f;
+		uint32_t u;
+	} temporary;
+	if (*index + sizeof(float) >= length) return ERR_GENERIC;
+	temporary.u = bytes[(*index)++];
+	for (size_t i = 1; i < sizeof(float); i++) {
+		temporary.u |= bytes[(*index)++] << i;
+	}
+	*v = temporary.f;
+	return ERR_OK;
+}
+
+int file_parse_double(double *v, uint8_t *bytes, size_t *index, size_t length) {
+	if (!v || !bytes || !index) return ERR_NULLPOINTER;
+	struct {
+		double d;
+		uint64_t u;
+	} temporary;
+	if (*index + sizeof(double) >= length) return ERR_GENERIC;
+	temporary.u = bytes[(*index)++];
+	for (size_t i = 1; i < sizeof(double); i++) {
+		temporary.u |= bytes[(*index)++] << i;
+	}
+	*v = temporary.d;
+	return ERR_OK;
+}
+
+int file_parse_vec(vec_t *v, uint8_t *bytes, size_t *index, size_t length) {
+#ifdef DOUBLE_VEC
+	return file_parse_double(v, bytes, index, length);
+#else
+	return file_parse_float(v, bytes, index, length);
+#endif
+}
+
+int file_parse_vecArray(vec_t *v, size_t v_length, uint8_t *bytes, size_t *index, size_t length) {
+	int e = ERR_OK;
+	for (size_t i = 0; i < v_length; i++) {
+		e = file_parse_vec(v, bytes, index, length);
+		if (e) return e;
+	}
+	return ERR_OK;
+}
+
+int file_parse_vec3(vec3_t v, uint8_t *bytes, size_t *index, size_t length) {
+	if (!v || !bytes || !index) return ERR_NULLPOINTER;
+	int e = ERR_OK;
+	for (size_t i = 0; i < sizeof(vec3_t)/sizeof(vec_t); i++) {
+		e = file_parse_vec(&v[i], bytes, index, length);
+		if (e) return e;
+	}
+	return e;
+}
