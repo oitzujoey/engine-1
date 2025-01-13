@@ -9,6 +9,8 @@
 #include "cfg2.h"
 #include "str2.h"
 
+
+// @TODO: See how `g_mods` contains an array of mods? This was misguided and it should only have one mod.
 char *g_workspace = NULL;
 vfs_mods_t g_mods = {
 	.mods = NULL,
@@ -242,13 +244,3 @@ int vfs_getFileContents_malloc(uint8_t **fileContents, PHYSFS_sint64 *fileConten
 	cleanup_l:
 	return error;
 }
-
-// int vfs_execAutoexec() {
-	
-// 	/*  Here, we cheat.
-// 		Instead of doing a fancy merge, we just run one autoexec file after
-// 		the other and hope for the best.
-// 	*/
-	
-	
-// }
