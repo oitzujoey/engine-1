@@ -1,7 +1,6 @@
 g_entity_type_none = 0
 g_entity_type_entity = 1
-g_entity_type_renderModel = 2
-g_entity_type_collisionModel = 3
+g_entity_type_model = 2
 
 g_worldEntity = 0
 
@@ -19,6 +18,12 @@ end
 -- Load player, box, and map collision models.
 function common_loadCollisionModels()
 	-- common_loadModel("player")
-	common_loadModel("box")
-	-- common_loadModel("map")
+	boxModel, error = cmsh_load("untitled.cmsh")
+	-- Load untitled.cmsh and untitled.rmsh.
+	-- boxModel, error = model_load("untitled")
+	puts("error: "..error)
+	puts("model: "..boxModel)
+	terrainModel, error = cmsh_load("blender/terrain10.cmsh")
+	puts("error: "..error)
+	puts("model: "..terrainModel)
 end
