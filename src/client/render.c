@@ -425,13 +425,13 @@ int renderModels(entity_t entity, vec3_t position, quat_t orientation, vec_t sca
 		/* Render */
 		
 		glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
-		glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glVertices, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, model.glVertices_length * sizeof(float), model.glVertices, GL_DYNAMIC_DRAW);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
-		glBufferData(GL_ARRAY_BUFFER, 3 * 3 * model.faces_length * sizeof(float), model.glNormals, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, model.glNormals_length * sizeof(float), model.glNormals, GL_DYNAMIC_DRAW);
 
 		glBindBuffer(GL_ARRAY_BUFFER, g_texCoordVbo);
-		glBufferData(GL_ARRAY_BUFFER, 2 * 3 * model.faces_length * sizeof(float), model.glTexCoords, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, model.glTexCoords_length * sizeof(float), model.glTexCoords, GL_DYNAMIC_DRAW);
 
 		glUniform4f(g_orientationUniform, 
 			orientation.v[0],
@@ -451,7 +451,8 @@ int renderModels(entity_t entity, vec3_t position, quat_t orientation, vec_t sca
 		// TODO: Change this from texture #1 to whatever texture is called for.
 		glBindTexture(GL_TEXTURE_2D, g_materialList.materials[model.defaultMaterials[0]].texture);
 		glBindVertexArray(g_vao);
-		glDrawArrays(GL_TRIANGLES, 0, 3 * model.faces_length);
+		// glVertices_length is always a multiple of three.
+		glDrawArrays(GL_TRIANGLES, 0, model.glVertices_length / 3);
 	}
 	
 	error = ERR_OK;

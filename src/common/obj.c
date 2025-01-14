@@ -29,7 +29,7 @@ modelList_t g_modelList;
 index:i     The index of a model.
 Returns:    1 if index is valid, otherwise 0.
 */
-int obj_isValidModelIndex(int index) {
+int obj_isValidModelIndex(size_t index) {
 	
 	// Out of bounds.
 	if (index < 0) {
@@ -50,7 +50,7 @@ Returns:        error
 Globals:        g_modelList
 Description:    Creates a model and returns the address and index in the list.
 */
-int modelList_createModel(model_t **model, int *index) {
+int modelList_createModel(model_t **model, size_t *index) {
 	int error = ERR_OK;
 
 	if (g_modelList.models_length < g_modelList.models_length_actual) {
@@ -158,7 +158,7 @@ void model_free(model_t *model) {
 
 static inline int model_linkDefaultMaterial(ptrdiff_t parentIndex, ptrdiff_t materialIndex) {
 	int error = ERR_CRITICAL;
-	
+
 	if (g_modelList.models[parentIndex].defaultMaterials_index >= g_modelList.models[parentIndex].numBindableMaterials) {
 		warning("Model list full. Aborting operation.", "");
 		error = ERR_GENERIC;
@@ -247,7 +247,7 @@ Globals:        g_modelList
 Description:    Load an Oolite model from a .dat file and add it into the model
 	list. "index" is set to the index of the model in the model list.
 */
-int obj_loadOoliteDAT(const char *filePath, int *index) {
+int obj_loadOoliteDAT(const char *filePath, size_t *index) {
 	int error = ERR_OK;
 
 	char *fileText = NULL;
@@ -777,6 +777,7 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 				model->glVertices[3 * 3 * k + 3 * l + m] = model->vertices[model->faces[k][l]][m];// * screen[m];
 				
 				// Each normal will be duplicated at least three times. :(
+				// 2024-01-13: THANK YOU. Now I don't have to merge three .obj vertex normals into a single face normal.
 				model->glNormals[3 * 3 * k + 3 * l + m] = model->surface_normals[k][m];
 			}
 			
@@ -785,6 +786,9 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 			}
 		}
 	}
+	model->glVertices_length = model->faces_length * 3 * 3;
+	model->glNormals_length = model->faces_length * 3 * 3;
+	model->glTexCoords_length = model->faces_length * 3 * 2;
 #endif
 	
 	error = ERR_OK;
@@ -808,7 +812,7 @@ int obj_loadOoliteDAT(const char *filePath, int *index) {
 int l_obj_loadOoliteDAT(lua_State *luaState) {
 	int error = 0;
 	
-	int index = -1;
+	size_t index;
 	char *filePath = NULL;
 	
 	if (!lua_isstring(luaState, 1)) {

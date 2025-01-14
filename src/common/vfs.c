@@ -214,10 +214,12 @@ int vfs_getFileText(char **fileText, const char *path) {
 	return error;
 }
 
-int vfs_getFileContents_malloc(uint8_t **fileContents, PHYSFS_sint64 *fileContents_length, const char *path) {
+int vfs_getFileContents_malloc(uint8_t **fileContents, PHYSFS_sint64 *fileContents_length, const uint8_t *path) {
 	int error = ERR_CRITICAL;
-	
-	PHYSFS_File *file = PHYSFS_openRead(path);
+
+	// PhysFS uses UTF-8;
+	const char *physPath = (const char *) path;
+	PHYSFS_File *file = PHYSFS_openRead(physPath);
 	if (file == NULL) {
 		error("Could not open file \"%s\": %s", path, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		error = ERR_GENERIC;

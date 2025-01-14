@@ -113,8 +113,18 @@ static int material_loadTexture(GLuint *textureIndex, const char* const filePath
 	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+
+	if (channels == 3) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+	}
+	else if (channels == 4) {
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	}
+	else {
+		error("Unsupported number of channels: %i", channels);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
 	// glGenerateMipmap(GL_TEXTURE_2D);
 	
 	g_textures_length++;

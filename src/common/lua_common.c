@@ -9,6 +9,7 @@
 #include "cfg2.h"
 #include "lua_sandbox.h"
 #include "str2.h"
+#include "parse_mesh.h"
 
 luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_puts,             .name = "puts"},
@@ -19,6 +20,8 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_log_critical_error,      .name = "critical_error"},
 	// {.func = l_vfs_getFileText,         .name = "vfs_getFileText"},
 	{.func = l_obj_loadOoliteDAT,       .name = "loadOoliteModel"},
+	{.func = l_cmsh_load,               .name = "cmsh_load"},
+	{.func = l_rmsh_load,               .name = "rmsh_load"},
 	{.func = l_common_toString,         .name = "toString"},
 	{.func = l_entity_createEntity,     .name = "entity_createEntity"},
 	{.func = l_entity_deleteEntity,     .name = "entity_deleteEntity"},

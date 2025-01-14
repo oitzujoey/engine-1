@@ -6,8 +6,9 @@
 
 extern modelList_t g_modelList;
 
-int obj_isValidModelIndex(int index);
-int modelList_createModel(model_t **model, int *index);
+int obj_isValidModelIndex(size_t index);
+// Passes back a pointer to a new model on the model list. Fill up the members and you're set.
+int modelList_createModel(model_t **model, size_t *index);
 void modelList_init(void);
 void modelList_free(void);
 

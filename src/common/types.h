@@ -14,6 +14,7 @@
 
 #define MAX_CLIENTS         2
 
+
 /* Vector math structures */
 /* ====================== */
 
@@ -32,6 +33,21 @@ typedef struct {
 } quat_t;
 
 
+/* RMSH file structure */
+typedef struct {
+	// Should always be RMSH
+	uint8_t magic[4];
+	uint32_t version;
+
+	vec3_t mins;
+	vec3_t maxs;
+	vec_t *vertices;  // Length: vertices_length
+	vec_t *vertexNormals;  // Length: vertexNormals_length
+	vec_t *vertexTextureCoords;  // Length: vertexTextureCoords_length
+	uint32_t vertices_length;
+	uint32_t vertexNormals_length;
+	uint32_t vertexTextureCoords_length;
+} file_rmsh_t;
 
 /* CMSH file structure */
 typedef struct {
@@ -41,7 +57,7 @@ typedef struct {
 
 	vec3_t mins;
 	vec3_t maxs;
-	vec_t *vertices;  // Length: 3*vertices_length
+	vec_t *vertices;  // Length: vertices_length
 	uint32_t vertices_length;
 } file_cmsh_t;
 
@@ -52,16 +68,28 @@ typedef struct {
 /* DO NOT send this over the network. */
 typedef struct {
     // string_t name;
-    vec3_t *vertices;
-    int vertices_length;
-    int **faces;
-    int faces_length;
-    vec3_t *surface_normals;    // Same length as faces.
+	vec3_t *vertices;  // Probably not needed.
+	int vertices_length;  // Probably not needed.
+	int **faces;  // Probably not needed.
+	int faces_length;  // Probably not needed.
+    vec3_t *surface_normals;    // Same length as faces.  // Probably not needed.
+
+	// Collisions:
+	vec3_t bb_mins;
+	vec3_t bb_maxs;
+	vec3_t aabb_mins;
+	vec3_t aabb_maxs;
+	vec_t *collision_vertices;
+	size_t collision_vertices_length;
+
+	// Rendering:
 #ifdef CLIENT
 	// Add pure array of vertices and normals to save rendering time. The server should never need this.
 	// Both arrays are 3 (*faces) * 3 (**faces) * facesLength.
 	vec_t *glVertices;
+	size_t glVertices_length;
 	vec_t *glNormals;
+	size_t glNormals_length;
 	vec_t boundingSphere;
 	ptrdiff_t *defaultMaterials;
 	ptrdiff_t defaultMaterials_index;
@@ -69,6 +97,7 @@ typedef struct {
 	int *texCoords_textures;
 	size_t numBindableMaterials;
 	vec_t *glTexCoords;
+	size_t glTexCoords_length;
 #endif
 } model_t;
 
@@ -229,20 +258,28 @@ typedef enum entity_childType_e {
 } entity_childType_t;
 
 typedef struct {
-	// Children are specified by index and type.
+	// Hierarchy:
+	// Children are specified by index and type. They will all point to only models or only entities.
 	ptrdiff_t *children;
 	size_t children_length;
+
+	// Type:
 	entity_childType_t childType;
 
 	// Physical state:
 	vec_t scale;
 	vec3_t position;
 	quat_t orientation;
+
+	// Collision detection:
+	vec3_t mins;
+	vec3_t maxs;
+	bool disableCollisions;  // Disable collision checking for all entities and models below.
+
+	// Memory management:
 	bool inUse;
-	bool shown;
-#ifdef SERVER
-	bool isVisible[MAX_CLIENTS];
-#endif
+
+	// Rendering:
 #ifdef CLIENT
 	bool shown;
 	ptrdiff_t *materials;
