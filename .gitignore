@@ -21,6 +21,7 @@ build
 *~
 *.pyc
 *.cmsh
+*.rmsh
 *.blend1
 *.out
 .*
