@@ -1,5 +1,9 @@
-
 @TODO: Lines marked with an exlamation point in the first column are out-of-date.
+
+
+@TODO: Lines like this need to be fixed eventually.
+@PLATFORM_DEPENDENT: Lines marked like this need to be rewritten to be platform independent.
+
 
 Engine is the main game. It runs a secure VM and provides acceleration for slow operations and I/O.
 Mod loader finds and selects resources and resolves conflicts. The final mod is placed in the main game directory.
@@ -701,6 +705,42 @@ Perhaps I should make all servers have a password that is used for encryption an
 Is there any reason to send an entity over the network when it could be emulated with Lua?
 
 
+Any model is permitted to have a collision mesh. Collisions may be disabled in entities.
+
+
+There's many methods of collision detection:
+BSP
+BVH
+Octree
+
+BSP works great for buildings, but requires a lot of work to implement.
+BVH is easier, but seems like it works best with lots of sparse entities. It doesn't seem to be as good to me at splitting up models into smaller pieces.
+Octree (a BVH with splits?) seems like it works well for any situation, but I'd have to implement it separately for the world of entities and for individual models.
+
+Perhaps I can use BVH to select the model and Octree to select the region of polygons to act on?
+An Elite-like or a bunch of cubes would work well with BVH. A Quake-like would be better with Octree.
+
+One way to do this is to prototype it in Lua and see how slow it is. I would need a way to profile Lua though, so I should add a `clock` Lua function.
+Actually, I probably shouldn't prototype it in Lua since I don't want Lua to need to know about the collision mesh faces. So let's start with naive engine-supported collision. If it's too slow, then try BVH.
+
+That said, the actual first thing I need to do is figure out how to import a collision mesh into the engine.
+
+There should be a cvar that renders collision meshes in a color that stands out.
+
+Mesh collides with mesh. So it's O(M*N). That's why octrees and BVH is of interest.
+
+
+CMSH and RMSH files are stored little endian.
+
+
+
+
+Stuff I need to add before public release:
+    RMSH & CMSH pipelines
+    Textures
+    Collision detection
+    Authentication
+    Lighting?
 
 Stuff I need to document:
     Rmsh & script

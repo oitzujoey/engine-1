@@ -20,6 +20,7 @@ static void entity_initEntity(entity_t *entity) {
 	entity->children = NULL;
 	entity->children_length = 0;
 	entity->childType = entity_childType_none;
+	entity->scale = 1.0;
 	for (int i = 0; i < sizeof(vec3_t)/sizeof(vec_t); i++) {
 		entity->position[i] = 0;
 		entity->orientation.v[i] = 0;
@@ -569,6 +570,39 @@ int l_entity_setOrientation(lua_State *luaState) {
 		goto cleanup_l;
 	}
 	
+	error = ERR_OK;
+	cleanup_l:
+
+	lua_pushinteger(luaState, error);
+
+	return 1;
+}
+
+int l_entity_setScale(lua_State *luaState) {
+	int error = ERR_CRITICAL;
+
+	int index;
+
+	if (!lua_isinteger(luaState, 1)) {
+		error("Argument 1 must be an integer.", "");
+		lua_error(luaState);
+	}
+
+	index = lua_tointeger(luaState, 1);
+	if (!entity_isValidEntityIndex(index)) {
+		error("Index (%i) references an invalid entity.", index);
+		lua_error(luaState);
+	}
+
+	if (!lua_isnumber(luaState, 2)) {
+		error("Argument 2 must be a float.", "");
+		lua_error(luaState);
+	}
+
+	// `lua_tonumber` returns a `double`, so this may be a conversion from a `double` to a `float`.
+	vec_t v = lua_tonumber(luaState, 2);
+	g_entityList.entities[index].scale = v;
+
 	error = ERR_OK;
 	cleanup_l:
 

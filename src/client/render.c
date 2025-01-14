@@ -21,6 +21,7 @@ GLuint g_texCoordVbo;
 GLint g_orientationUniform;
 GLint g_positionUniform;
 GLint g_screenHeightUniform;
+GLint g_scaleUniform;
 GLuint g_vao;
 GLuint g_shaderProgram[2];
 char *g_openglLogFileName;
@@ -242,6 +243,7 @@ int render_initOpenGL(void) {
 		"uniform vec4 orientation;\n"
 		"uniform vec3 position;\n"
 		"uniform float screenHeight;\n"
+		"uniform float scale;\n"
 		"out vec3 color;\n"
 		"out vec2 textureCoordinate;\n"
 		
@@ -271,7 +273,7 @@ int render_initOpenGL(void) {
 		
 		"void main() {\n"
 		"  vec3 vertex;\n"
-		"  vertex = rotate(vp, orientation);\n"
+		"  vertex = rotate(scale * vp, orientation);\n"
 		"  vertex += position;\n"
 		"  vertex.x = vertex.x/vertex.z;\n"
 		"  vertex.y = vertex.y/vertex.z * screenHeight;\n"
@@ -386,7 +388,14 @@ int render_initOpenGL(void) {
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
-	
+
+	g_scaleUniform = glGetUniformLocation(g_shaderProgram[0], "scale");
+	if (g_scaleUniform < 0) {
+		critical_error("Could not get uniform from program.", "");
+		error = ERR_CRITICAL;
+		goto cleanup_l;
+	}
+
 	/* Set background color. */
 	
 	glClearColor(0.1, 0.1, 0.1, 1.0);
@@ -396,7 +405,7 @@ int render_initOpenGL(void) {
 	return error;
 }
 
-int renderModels(entity_t entity, vec3_t position, quat_t orientation) {
+int renderModels(entity_t entity, vec3_t position, quat_t orientation, vec_t scale) {
 	int error = ERR_CRITICAL;
 	
 	// For each model...
@@ -435,6 +444,7 @@ int renderModels(entity_t entity, vec3_t position, quat_t orientation) {
 			position[1],
 			position[2]
 		);
+		glUniform1f(g_scaleUniform, scale);
 		
 		glUseProgram(g_shaderProgram[0]);
 		glActiveTexture(GL_TEXTURE0);
@@ -448,11 +458,12 @@ int renderModels(entity_t entity, vec3_t position, quat_t orientation) {
 	return error;
 }
 
-int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation) {
+int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation, vec_t scale) {
 	int error = ERR_CRITICAL;
 
 	vec3_t localPosition;
 	quat_t localOrientation;
+	vec_t localScale;
 	
 	if (!entity.inUse) {
 		// Don't draw deleted entities.
@@ -470,13 +481,14 @@ int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation) {
 	vec3_add(&localPosition, position, &entity.position);
 	vec3_rotate(&localPosition, orientation);
 	quat_hamilton(&localOrientation, orientation, &entity.orientation);
+	localScale = scale * entity.scale;
 	
 	if (entity.childType == entity_childType_model) {
-		error = renderModels(entity, localPosition, localOrientation);
+		error = renderModels(entity, localPosition, localOrientation, localScale);
 	}
 	else if (entity.childType == entity_childType_entity) {
 		for (int i = 0; i < entity.children_length; i++) {
-			error = renderEntity(g_entityList.entities[entity.children[i]], &localPosition, &localOrientation);
+			error = renderEntity(g_entityList.entities[entity.children[i]], &localPosition, &localOrientation, localScale);
 		}
 	}
 	
@@ -497,7 +509,7 @@ int render(entity_t entity) {
 	glUniform1f(g_screenHeightUniform, 16.0f/9.0f);
 	
 	// Render world entity.
-	error = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}});
+	error = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}}, 1.0);
 	
 	/* Show */
 	

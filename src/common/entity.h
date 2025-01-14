@@ -17,5 +17,6 @@ int l_entity_linkChild(lua_State *luaState);
 int l_entity_unlinkChild(lua_State *luaState);
 int l_entity_setPosition(lua_State *luaState);
 int l_entity_setOrientation(lua_State *luaState);
+int l_entity_setScale(lua_State *luaState);
 
 #endif

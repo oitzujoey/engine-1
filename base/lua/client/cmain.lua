@@ -22,17 +22,11 @@ function startup()
 
 	loadWorld()
 
-	--[[
-	How it's setup right now, creating an entity does nothing. The only useful
-	action this does is load the model for the server to link to. All these
-	entities will be overridden after the client receives the server's entities.
-	]]--
 	cobra3ModelFileName = cobra3ModelFileName
 	cobra3Model, error = loadOoliteModel(modelPath .. cobra3ModelFileName)
 	if cobra3Model ~= -1 then
 		info("startup", "Loaded " .. cobra3ModelFileName)
 	end
-	cobra1Model, error = loadOoliteModel(modelPath .. cobra1ModelFileName)
 
 	-- Prepare the textures.
 	cobra1Material, error = material_create()

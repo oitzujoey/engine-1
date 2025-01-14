@@ -35,6 +35,7 @@ function loadWorld()
 		cobra1Entity[i], error = entity_createEntity(type_model)
 		error = entity_linkChild(worldEntity, cobra1Entity[i])
 		error = entity_linkChild(cobra1Entity[i], cobra1Model)
+		entity_setScale(cobra1Entity[i], 1.0)
 		entity_setPosition(cobra1Entity[i], {x=cobra1Spacing*((i%8)/4 - 1), y=cobra1Spacing*((i%64 - i%8)/32 - 1), z=cobra1Spacing*((i - i%64)/256 - 1)})
 		entity_setOrientation(cobra1Entity[i], {w=1, x=0, y=0, z=0})
 	end

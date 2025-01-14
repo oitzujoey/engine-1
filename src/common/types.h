@@ -233,6 +233,9 @@ typedef struct {
 	ptrdiff_t *children;
 	size_t children_length;
 	entity_childType_t childType;
+
+	// Physical state:
+	vec_t scale;
 	vec3_t position;
 	quat_t orientation;
 	bool inUse;
