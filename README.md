@@ -2,6 +2,8 @@
 
 ![Screenshot of a bunch of space ships.](/readme-assets/lots-o-ships.jpg)
 
+![Screenshot of a terrain-like mesh.](/readme-assets/terrain-mesh.png)
+
 Honestly, I have no idea what this is going to be yet. At this point, it's just a tech demo.
 Here is what I do know:
 
