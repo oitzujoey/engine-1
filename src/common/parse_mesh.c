@@ -264,7 +264,6 @@ int l_cmsh_load(lua_State *luaState) {
 		e = ERR_GENERIC;
 		goto cleanup;
 	}
-	// TODO: Remove type cast.
 	e = str3_copyMalloc(&filePath, lua_tostring(luaState, 1));
 	if (e) goto cleanup;
 
@@ -296,7 +295,6 @@ int l_rmsh_load(lua_State *luaState) {
 		e = ERR_GENERIC;
 		goto cleanup;
 	}
-	// TODO: Remove type cast.
 	e = str3_copyMalloc(&filePath, lua_tostring(luaState, 1));
 	if (e) goto cleanup;
 
