@@ -11,7 +11,12 @@ bool str3_eq(const uint8_t *l, size_t l_length, const uint8_t *r, size_t r_lengt
 
 // Note to future self: If you are going to realloc a function argument, make sure you have its address.
 int str3_realloc(uint8_t **string, size_t length) {
-	*string = realloc(*string, (length + 1) * sizeof(uint8_t));
+	if (*string) {
+		*string = realloc(*string, (length + 1) * sizeof(uint8_t));
+	}
+	else {
+		*string = malloc((length + 1) * sizeof(uint8_t));
+	}
 	if (*string == NULL) {
 		outOfMemory();
 		return ERR_OUTOFMEMORY;
