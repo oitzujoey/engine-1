@@ -38,13 +38,18 @@ void log_info(const char *function, const char *fmt, ...) {
 	}
 	
 	const char *infomessage = COLOR_GREEN"Info: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
-	char *buf = malloc((strlen(infomessage) + strlen(function) + strlen(fmt) - 4 + 1) * sizeof(char));
+	size_t buf_length = strlen(infomessage) + strlen(function) + strlen(fmt) - 4 + 1;
+	char *buf = malloc(buf_length * sizeof(char));
+	if (!buf && buf_length) {
+		log_outOfMemory("log_info");
+		return;
+	}
 	sprintf(buf, infomessage, function, fmt);
 	
 	va_start(va, fmt);
 	vprintf(buf, va);
 	va_end(va);
-	
+
 	free(buf);
 }
 
@@ -56,7 +61,12 @@ void log_warning(const char *function, const char *fmt, ...) {
 	}
 	
 	const char *infomessage = COLOR_MAGENTA"Warning: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
-	char *buf = malloc((strlen(infomessage) + strlen(function) + strlen(fmt) - 4 + 1) * sizeof(char));
+	size_t buf_length = strlen(infomessage) + strlen(function) + strlen(fmt) - 4 + 1;
+	char *buf = malloc(buf_length * sizeof(char));
+	if (!buf && buf_length) {
+		log_outOfMemory("log_warning");
+		return;
+	}
 	sprintf(buf, infomessage, function, fmt);
 	
 	va_start(va, fmt);
@@ -74,7 +84,12 @@ void log_error(const char *function, const char *fmt, ...) {
 	}
 	
 	const char *infomessage = COLOR_YELLOW"Error: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
-	char *buf = malloc((strlen(infomessage) + strlen(function) + strlen(fmt) - 4 + 1) * sizeof(char));
+	size_t buf_length = strlen(infomessage) + strlen(function) + strlen(fmt) - 4 + 1;
+	char *buf = malloc(buf_length * sizeof(char));
+	if (!buf && buf_length) {
+		log_outOfMemory("log_error");
+		return;
+	}
 	sprintf(buf, infomessage, function, fmt);
 	
 	va_start(va, fmt);
@@ -92,7 +107,12 @@ void log_critical_error(const char *function, const char *fmt, ...) {
 	}
 	
 	const char *infomessage = COLOR_RED"Critical error: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
-	char *buf = malloc((strlen(infomessage) + strlen(function) + strlen(fmt) - 4 + 1) * sizeof(char));
+	size_t buf_length = strlen(infomessage) + strlen(function) + strlen(fmt) - 4 + 1;
+	char *buf = malloc(buf_length * sizeof(char));
+	if (!buf && buf_length) {
+		log_outOfMemory("log_critical_error");
+		return;
+	}
 	sprintf(buf, infomessage, function, fmt);
 	
 	va_start(va, fmt);
@@ -125,7 +145,7 @@ void log_outOfMemory(const char *function) {
 }
 
 int l_log_info(lua_State *l) {
-	int error = ERR_CRITICAL;
+	int e = ERR_OK;
 
 	const char *function = NULL;
 	const char *message = NULL;
@@ -133,72 +153,99 @@ int l_log_info(lua_State *l) {
 	
 	if (!lua_isstring(l, 1) || !lua_isstring(l, 2)) {
 		error("Arguments must be strings", "");
-		error = ERR_GENERIC;
-		goto cleanup_l;
+		e = ERR_GENERIC;
+		goto cleanup;
 	}
 	
 	function = lua_tostring(l, 1);
 	message = lua_tostring(l, 2);
 
 	const char *infomessage = COLOR_CYAN"Lua "COLOR_GREEN"Info: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
-	buf = malloc((strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1) * sizeof(char));
+	size_t buf_length = strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1;
+	buf = malloc(buf_length * sizeof(char));
+	if (!buf && buf_length) {
+		log_outOfMemory("l_log_info");
+		e = ERR_OUTOFMEMORY;
+		goto cleanup;
+	}
 	sprintf(buf, infomessage, function, message);
 	
 	printf(buf);
-	
-	error = ERR_OK;
-	cleanup_l:
-	
-	memory_free(buf);
-	
-	if (error) {
-		lua_error(l);
-	}
-	
+
+	free(buf);
+ cleanup:
+	if (e) lua_error(l);
 	return 0;
 }
 
 int l_log_warning(lua_State *l) {
+	int e = ERR_OK;
+
 	const char *function = lua_tostring(l, 1);
 	const char *message = lua_tostring(l, 2);
 
 	const char *infomessage = COLOR_CYAN"Lua "COLOR_MAGENTA"Warning: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
-	char *buf = malloc((strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1) * sizeof(char));
+	size_t buf_length = strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1;
+	char *buf = malloc(buf_length * sizeof(char));
+	if (!buf && buf_length) {
+		log_outOfMemory("l_log_warning");
+		e = ERR_OUTOFMEMORY;
+		goto cleanup;
+	}
 	sprintf(buf, infomessage, function, message);
 	
 	fprintf(stderr, buf);
-	
+
 	free(buf);
-	
+ cleanup:
+	if (e) lua_error(l);
 	return 0;
 }
 
 int l_log_error(lua_State *l) {
+	int e = ERR_OK;
+
 	const char *function = lua_tostring(l, 1);
 	const char *message = lua_tostring(l, 2);
 
 	const char *infomessage = COLOR_CYAN"Lua "COLOR_GREEN"Error: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
-	char *buf = malloc((strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1) * sizeof(char));
+	size_t buf_length = strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1;
+	char *buf = malloc(buf_length * sizeof(char));
+	if (!buf && buf_length) {
+		log_outOfMemory("l_log_error");
+		e = ERR_OUTOFMEMORY;
+		goto cleanup;
+	}
 	sprintf(buf, infomessage, function, message);
 	
 	fprintf(stderr, buf);
 	
 	free(buf);
-	
+ cleanup:
+	if (e) lua_error(l);
 	return 0;
 }
 
 int l_log_critical_error(lua_State *l) {
+	int e = ERR_OK;
+
 	const char *function = lua_tostring(l, 1);
 	const char *message = lua_tostring(l, 2);
 
 	const char *infomessage = COLOR_CYAN"Lua "COLOR_GREEN"Critical error: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
-	char *buf = malloc((strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1) * sizeof(char));
+	size_t buf_length = strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1;
+	char *buf = malloc(buf_length * sizeof(char));
+	if (!buf && buf_length) {
+		log_outOfMemory("l_log_critical_error");
+		e = ERR_OUTOFMEMORY;
+		goto cleanup;
+	}
 	sprintf(buf, infomessage, function, message);
 	
 	fprintf(stderr, buf);
 	
 	free(buf);
-	
+ cleanup:
+	if (e) lua_error(l);	
 	return 0;
 }
