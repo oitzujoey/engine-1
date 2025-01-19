@@ -25,6 +25,7 @@
 #include "../common/lua_common.h"
 #include "../common/str2.h"
 #include "material.h"
+#include "../common/memory.h"
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
@@ -342,7 +343,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	error = 0;
 	cleanup_l:
 	
-	insane_free(tempString);
+	memory_free(tempString);
 	
 	return error;
 }
@@ -482,7 +483,7 @@ int main (int argc, char *argv[]) {
 
 	main_quit();
 	
-	insane_free(luaFilePath);
+	memory_free(luaFilePath);
 	
 	info("Client quit (%i)", error);
 	

@@ -5,6 +5,7 @@
 #include "str2.h"
 #include "file.h"
 #include "physfs.h"
+#include "memory.h"
 
 #ifdef CLIENT
 #include "../client/input.h"
@@ -206,7 +207,7 @@ int cfg2_callback_set(cfg2_var_t *var, const char *command, lua_State *luaState)
 	error = ERR_OK;
 	cleanup_l:
 	
-	insane_free(commandCopy);
+	memory_free(commandCopy);
 	
 	return error;
 }
@@ -581,7 +582,7 @@ int cfg2_callback_copy(cfg2_var_t *var, const char *command, lua_State *luaState
 				goto cleanup_l;
 			}
 			strcpy(var1->string, tempString);
-			insane_free(tempString);
+			memory_free(tempString);
 			break;
 		case cfg2_var_type_vector:
 			tempString = malloc((3 * sizeof(int) + 1) * sizeof(char));
@@ -592,7 +593,7 @@ int cfg2_callback_copy(cfg2_var_t *var, const char *command, lua_State *luaState
 				goto cleanup_l;
 			}
 			strcpy(var1->string, tempString);
-			insane_free(tempString);
+			memory_free(tempString);
 			break;
 		default:
 			log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", var1->type, var1->name);
@@ -1768,13 +1769,13 @@ int cfg2_createVariables(const cfg2_var_init_t *varInit, lua_State *luaState) {
 
 void cfg2_free(void) {
 	for (int i = 0; i < g_cfg2.vars_length; i++) {
-		insane_free(g_cfg2.vars[i].name);
-		// insane_free(g_cfg2.vars[i].command);
-		insane_free(g_cfg2.vars[i].string);
+		memory_free(g_cfg2.vars[i].name);
+		// memory_free(g_cfg2.vars[i].command);
+		memory_free(g_cfg2.vars[i].string);
 		// string_free(&g_cfg2.vars[i].string);
-		insane_free(g_cfg2.vars[i].script);
+		memory_free(g_cfg2.vars[i].script);
 	}
-	insane_free(g_cfg2.vars);
+	memory_free(g_cfg2.vars);
 	g_cfg2.vars_length = 0;
 }
 
@@ -1865,7 +1866,7 @@ int cfg2_execString(const char *line, lua_State *luaState, const char *tag) {
 				goto cleanup_l;
 			}
 			error = cfg2_setVariable(var, value, luaState, tag);
-			insane_free(value);
+			memory_free(value);
 		}
 		else {
 			error = cfg2_setVariable(var, value, luaState, tag);
@@ -1878,10 +1879,10 @@ int cfg2_execString(const char *line, lua_State *luaState, const char *tag) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	insane_free(commands);
-	insane_free(lineCopy);
-	// insane_free(varName);
-	// insane_free(value);
+	memory_free(commands);
+	memory_free(lineCopy);
+	// memory_free(varName);
+	// memory_free(value);
 	
 	return error;
 }
@@ -1969,11 +1970,11 @@ int cfg2_execFile(const char *filepath, lua_State *luaState) {
 	
 	PHYSFS_close(vfsFile);
 	
-	insane_free(fileText);
+	memory_free(fileText);
 	if (lines != NULL) {
-		insane_free(*lines);
+		memory_free(*lines);
 	}
-	insane_free(lines);
+	memory_free(lines);
 	
 	return error;
 }

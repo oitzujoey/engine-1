@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "common.h"
 #include "log.h"
+#include "memory.h"
 
 int g_connectionTimeout;
 
@@ -230,7 +231,7 @@ int network_packetRead_entity(entity_t *data, const ptrdiff_t data_length, const
 		}
 
 		if (!data[i].inUse) {
-			insane_free(data[i].materials);
+			memory_free(data[i].materials);
 			data[i].materials_length = 0;
 		}
 #endif
@@ -700,7 +701,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 		
 		lua_pushstring(luaState, keyString);
 		
-		insane_free(keyString);
+		memory_free(keyString);
 		keyString_length = 0;
 		break;
 	default:
@@ -815,7 +816,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 		
 		lua_pushstring(luaState, tempLuaString);
 		
-		insane_free(tempLuaString);
+		memory_free(tempLuaString);
 		tempLuaString_length = 0;
 		break;
 	case network_lua_type_table:

@@ -3,7 +3,6 @@
 #define COMMON_H
 
 #include "types.h"
-#include "insane.h"
 
 #define ERR_OK          0
 #define ERR_GENERIC     1

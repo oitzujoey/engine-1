@@ -157,7 +157,7 @@ int str3_copyMalloc(uint8_t **destination, const uint8_t *source) {
 /* } */
 
 /* // void str2_free(str2_t * string) { */
-/* // 	insane_free(string->value); */
+/* // 	memory_free(string->value); */
 /* // 	string->length = 0; */
 /* // } */
 

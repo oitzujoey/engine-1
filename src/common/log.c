@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "insane.h"
+#include "memory.h"
 
 /*
 0   info
@@ -149,7 +149,7 @@ int l_log_info(lua_State *l) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	insane_free(buf);
+	memory_free(buf);
 	
 	if (error) {
 		lua_error(l);

@@ -180,7 +180,7 @@ int str2_tokenizeMalloc(char ***tokens, size_t *length, const char *string, cons
 }
 
 // void str2_free(str2_t * string) {
-// 	insane_free(string->value);
+// 	memory_free(string->value);
 // 	string->length = 0;
 // }
 

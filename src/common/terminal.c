@@ -4,6 +4,7 @@
 #include "log.h"
 #include "cfg2.h"
 #include "str2.h"
+#include "memory.h"
 
 #ifdef LINUX
 #include <termios.h>
@@ -55,7 +56,7 @@ int terminal_callback_updateCommandHistoryLength(cfg2_var_t *var, const char *co
 		if (g_commandHistoryLength < lastLength) {
 			// Need to free.
 			for (int i = g_commandHistoryLength; i < lastLength; i++) {
-				insane_free(g_commandHistory[i]);
+				memory_free(g_commandHistory[i]);
 			}
 		}
 	
@@ -332,7 +333,7 @@ static int terminal_codeCompletion(char **line, bool *badComplete, int *tabs) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	insane_free(fragment);
+	memory_free(fragment);
 	
 	return error;
 }
@@ -760,7 +761,7 @@ int terminal_addLineToHistory(const char *line) {
 	}
 	
 	if (duplicate < 0) {
-		insane_free(g_commandHistory[historyLength - 1]);
+		memory_free(g_commandHistory[historyLength - 1]);
 		for (int i = historyLength - 1; i > 0; --i) {
 			g_commandHistory[i] = g_commandHistory[i - 1];
 		}
@@ -877,15 +878,15 @@ void terminal_quitConsole(void) {
 	
 	if (g_commandHistory != NULL) {
 		for (int i = 0; i < v_historyLength->integer; i++) {
-			insane_free(g_commandHistory[i]);
+			memory_free(g_commandHistory[i]);
 		}
 	}
-	insane_free(g_commandHistory);
+	memory_free(g_commandHistory);
 	
 	cleanup_l:
 	
-	insane_free(g_commandComplete);
-	insane_free(g_consoleCommand);
+	memory_free(g_commandComplete);
+	memory_free(g_consoleCommand);
 	
 	return;
 }

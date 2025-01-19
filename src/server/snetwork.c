@@ -3,13 +3,13 @@
 #include <stdio.h>
 #include <string.h>
 #include "../common/log.h"
-#include "../common/insane.h"
 #include "../common/network.h"
 #include "server.h"
 #include "../common/entity.h"
 #include "../common/vector.h"
 #include "../common/lua_common.h"
 #include "../common/lua_sandbox.h"
+#include "../common/memory.h"
 
 // client_t g_clients[MAX_CLIENTS];
 // UDPsocket g_serverSocket;
@@ -60,7 +60,7 @@ static int snetwork_connect(ENetEvent event, lua_State *luaState) {
 		
 		network_ipv4ToString(&ipAddress, peer->address.host);
 		info("%s:%u attempted to connect, but server is full.", ipAddress, peer->address.port);
-		insane_free(ipAddress);
+		memory_free(ipAddress);
 		error = ERR_OK;
 		goto cleanup_l;
 	}
@@ -78,7 +78,7 @@ static int snetwork_connect(ENetEvent event, lua_State *luaState) {
 	
 	network_ipv4ToString(&ipAddress, peer->address.host);
 	info("%s:%u (Client %i) connected", ipAddress, peer->address.port, index);
-	insane_free(ipAddress);
+	memory_free(ipAddress);
 	
 	
 	luaTimeout_t luaTimeout = {
@@ -224,7 +224,7 @@ static int snetwork_disconnect(ENetEvent event, lua_State *luaState) {
 	
 	index = *((int *) event.peer->data);
 	
-	insane_free(event.peer->data);
+	memory_free(event.peer->data);
 	if (index < 0) {
 		// Not a currently connected client.
 		error = ERR_OK;
@@ -477,7 +477,7 @@ void snetwork_quit(void) {
 	// Free client data.
 	for (int i = 0; i < MAX_CLIENTS; i++) {
 		if ((g_clients[i].peer != NULL) && (g_clients[i].peer->data != NULL)) {
-			insane_free(g_clients[i].peer->data);
+			memory_free(g_clients[i].peer->data);
 		}
 	}
 	

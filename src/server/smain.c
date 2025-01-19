@@ -25,6 +25,7 @@
 #include "../common/terminal.h"
 #endif
 #include "../common/str2.h"
+#include "../common/memory.h"
 
 int l_main_checkQuit(lua_State *luaState);
 
@@ -283,7 +284,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	insane_free(tempString);
+	memory_free(tempString);
 
 	return error;
 }
@@ -452,8 +453,8 @@ int main(int argc, char *argv[]) {
 	
 	cfg2_free();
 	
-	insane_free(luaFilePath);
-	insane_free(tempString);
+	memory_free(luaFilePath);
+	memory_free(tempString);
 	
 	// Exit.
 	

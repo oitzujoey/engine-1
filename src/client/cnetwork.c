@@ -3,12 +3,12 @@
 #include <string.h>
 #include <stdio.h>
 #include "../common/log.h"
-#include "../common/insane.h"
 #include "../common/network.h"
 #include "../common/entity.h"
 #include "../common/vector.h"
 #include "../common/str2.h"
 #include "../common/lua_common.h"
+#include "../common/memory.h"
 
 // UDPsocket g_serverSocket;
 // UDPsocket g_clientSocket;
@@ -294,7 +294,7 @@ static int cnetwork_sendState(lua_State *luaState) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	insane_free(g_clientStateArray);
+	memory_free(g_clientStateArray);
 	g_clientStateArray_length = 0;
 	
 	return error;

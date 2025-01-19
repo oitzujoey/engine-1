@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include "common.h"
 #include "log.h"
-#include "insane.h"
 #include "obj.h"
 #include "vector.h"
+#include "memory.h"
 #ifdef CLIENT
 #include "../client/material.h"
 #endif
@@ -35,10 +35,10 @@ static void entity_initEntity(entity_t *entity) {
 }
 
 static void entity_freeEntity(entity_t *entity) {
-	insane_free(entity->children);
+	memory_free(entity->children);
 	entity->children_length = 0;
 #	ifdef CLIENT
-	insane_free(entity->materials);
+	memory_free(entity->materials);
 	entity->materials_length = 0;
 #	endif
 }
@@ -60,9 +60,9 @@ void entity_freeEntityList(void) {
 	for (int i = 0; i < g_entityList.entities_length; i++) {
 		entity_freeEntity(&g_entityList.entities[i]);
 	}
-	insane_free(g_entityList.entities);
+	memory_free(g_entityList.entities);
 	g_entityList.entities_length = 0;
-	insane_free(g_entityList.deletedEntities);
+	memory_free(g_entityList.deletedEntities);
 	g_entityList.deletedEntities_length = 0;
 	g_entityList.deletedEntities_length_allocated = 0;
 }
@@ -148,7 +148,7 @@ int entity_deleteEntity(int index) {
 	}
 	
 	// Unlink children and free list.
-	insane_free(g_entityList.entities[index].children)
+	memory_free(g_entityList.entities[index].children);
 	g_entityList.entities[index].children_length = 0;
 	// Easy!
 	
@@ -221,7 +221,7 @@ int entity_unlinkChild(ptrdiff_t parentIndex, ptrdiff_t childIndex) {
 			}
 		}
 		else {
-			insane_free(parent->children);
+			memory_free(parent->children);
 		}
 	}
 	else {

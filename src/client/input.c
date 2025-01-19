@@ -4,6 +4,7 @@
 #include "../common/log.h"
 #include "../common/cfg2.h"
 #include "../common/str2.h"
+#include "../common/memory.h"
 
 keybinds_t g_keybinds;
 
@@ -425,8 +426,8 @@ int input_stringToKeybind(const char * const key, keybind_t *keybind) {
 	error = ERR_OK;
 	cleanup_l:
 
-	insane_free(deviceId);
-	insane_free(name);
+	memory_free(deviceId);
+	memory_free(name);
 	
 	return error;
 }

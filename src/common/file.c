@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <physfs.h>
 #include "common.h"
-#include "insane.h"
 #include "str2.h"
 
 // char *file_getText(const char *filename) {
@@ -299,8 +298,8 @@ void file_resolveRelativePaths(char *path) {
 // 	for (int i = 0; i < slashes + 1; i++) {
 // 		string_free(&parts[i]);
 // 	}
-// 	insane_free(parts);
-// 	insane_free(partIndices);
+// 	memory_free(parts);
+// 	memory_free(partIndices);
 // 	string_free(&filePathCopy);
 	
 // 	return localError;

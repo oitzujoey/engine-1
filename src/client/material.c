@@ -7,6 +7,7 @@
 #include "../common/common.h"
 #include "../common/log.h"
 #include "../common/vfs.h"
+#include "../common/memory.h"
 
 material_list_t g_materialList;
 size_t g_textures_length;
@@ -18,7 +19,7 @@ void material_initList(material_list_t *materialList) {
 }
 
 void material_freeList(material_list_t *materialList) {
-	insane_free(materialList->materials);
+	memory_free(materialList->materials);
 	materialList->materials_length = 0;
 }
 
@@ -132,7 +133,7 @@ static int material_loadTexture(GLuint *textureIndex, const char* const filePath
 	error = ERR_OK;
 	cleanupPHYSFS_l:
 	
-	insane_free(fileContents);
+	memory_free(fileContents);
 	fileContents_length = 0;
 	
 	stbi_image_free(pixels);

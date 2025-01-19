@@ -11,9 +11,9 @@
 #include "cfg2.h"
 #include "common.h"
 #include "file.h"
-#include "insane.h"
 #include "vector.h"
 #include "str2.h"
+#include "memory.h"
 #ifdef CLIENT
 #include "../client/material.h"
 #endif
@@ -93,7 +93,7 @@ void modelList_free(void) {
 	for (int i = 0; i < g_modelList.models_length_actual; i++) {
 		model_free(&g_modelList.models[i]);
 	}
-	insane_free(g_modelList.models);
+	memory_free(g_modelList.models);
 	g_modelList.models_length = 0;
 	g_modelList.models_length_actual = 0;
 }
@@ -131,25 +131,25 @@ void model_init(model_t *model) {
 }
 
 void model_free(model_t *model) {
-	insane_free(model->vertices);
+	memory_free(model->vertices);
 	model->vertices_length = 0;
-	insane_free(model->surface_normals);
+	memory_free(model->surface_normals);
 	for (int i = 0; i < model->faces_length; i++) {
-		insane_free(model->faces[i]);
+		memory_free(model->faces[i]);
 	}
-	insane_free(model->faces);
+	memory_free(model->faces);
 #ifdef CLIENT
-	insane_free(model->glVertices);
-	insane_free(model->glNormals);
+	memory_free(model->glVertices);
+	memory_free(model->glNormals);
 	model->boundingSphere = 0;
-	insane_free(model->defaultMaterials);
+	memory_free(model->defaultMaterials);
 	model->defaultMaterials_index = 0;
 	for (ptrdiff_t i = 0; i < model->faces_length; i++) {
-		insane_free(model->texCoords[i]);
+		memory_free(model->texCoords[i]);
 	}
-	insane_free(model->texCoords);
-	insane_free(model->texCoords_textures);
-	insane_free(model->glTexCoords);
+	memory_free(model->texCoords);
+	memory_free(model->texCoords_textures);
+	memory_free(model->glTexCoords);
 #endif
 	model->faces_length = 0;
 }
@@ -804,7 +804,7 @@ int obj_loadOoliteDAT(const char *filePath, size_t *index) {
 	// 	string_free(&argv[i]);
 	// }
 	// string_free(&line);
-	insane_free(fileText);
+	memory_free(fileText);
 	
 	return error;
 }
@@ -835,7 +835,7 @@ int l_obj_loadOoliteDAT(lua_State *luaState) {
 	error = 0;
 	cleanup_l:
 	
-	insane_free(filePath);
+	memory_free(filePath);
 	
 	if (error == ERR_OUTOFMEMORY) {
 		outOfMemory();

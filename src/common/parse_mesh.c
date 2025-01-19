@@ -7,7 +7,7 @@
 #include "obj.h"
 #include "vector.h"
 #include "str3.h"
-#include "insane.h"
+#include "memory.h"
 #include <stdio.h>
 
 
@@ -36,7 +36,7 @@ static int cmsh_parse(file_cmsh_t *cmsh, uint8_t *bytes, size_t length) {
 	if (!cmsh->vertices) return ERR_OUTOFMEMORY;
 	e = file_parse_vecArray(cmsh->vertices, cmsh->vertices_length, bytes, &index, length);
 	if (e) {
-		insane_free(cmsh->vertices);
+		memory_free(cmsh->vertices);
 		cmsh->vertices_length = 0;
 	}
 	return e;
@@ -83,9 +83,9 @@ static int rmsh_parse(file_rmsh_t *rmsh, uint8_t *bytes, size_t length) {
 		if (e) break;
 	} while (0);
 	if (e) {
-		if (!rmsh->vertices) insane_free(rmsh->vertices);
-		if (!rmsh->vertexNormals) insane_free(rmsh->vertexNormals);
-		if (!rmsh->vertexTextureCoords) insane_free(rmsh->vertexTextureCoords);
+		if (!rmsh->vertices) memory_free(rmsh->vertices);
+		if (!rmsh->vertexNormals) memory_free(rmsh->vertexNormals);
+		if (!rmsh->vertexTextureCoords) memory_free(rmsh->vertexTextureCoords);
 		rmsh->vertices_length = 0;
 		rmsh->vertexNormals_length = 0;
 		rmsh->vertexTextureCoords_length = 0;
@@ -189,7 +189,7 @@ static int cmsh_load(size_t *index, uint8_t *filePath) {
 
  cleanup:
 	if (e) {
-		if (cmsh.vertices) insane_free(cmsh.vertices);
+		if (cmsh.vertices) memory_free(cmsh.vertices);
 		// Can't free models?!? I guess that's OK?
 	}
 	return e;
@@ -241,11 +241,11 @@ static int rmsh_load(size_t *index, uint8_t *filePath) {
 
  cleanup:
 	if (e) {
-		if (rmsh.vertices) insane_free(rmsh.vertices);
-		if (rmsh.vertexNormals) insane_free(rmsh.vertexNormals);
-		if (rmsh.vertexTextureCoords) insane_free(rmsh.vertexTextureCoords);
+		if (rmsh.vertices) memory_free(rmsh.vertices);
+		if (rmsh.vertexNormals) memory_free(rmsh.vertexNormals);
+		if (rmsh.vertexTextureCoords) memory_free(rmsh.vertexTextureCoords);
 #ifdef CLIENT
-		if (model->defaultMaterials) insane_free(model->defaultMaterials);
+		if (model->defaultMaterials) memory_free(model->defaultMaterials);
 #endif
 		// Can't free models?!? I guess that's OK?
 	}
@@ -272,7 +272,7 @@ int l_cmsh_load(lua_State *luaState) {
 	if (e) goto cleanup;
 
  cleanup:
-	insane_free(filePath);
+	memory_free(filePath);
 
 	if (e == ERR_OUTOFMEMORY) {
 		outOfMemory();
@@ -304,7 +304,7 @@ int l_rmsh_load(lua_State *luaState) {
 	if (e) goto cleanup;
 
  cleanup:
-	insane_free(filePath);
+	memory_free(filePath);
 
 	if (e == ERR_OUTOFMEMORY) {
 		outOfMemory();

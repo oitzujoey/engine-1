@@ -8,6 +8,7 @@
 #include "log.h"
 #include "cfg2.h"
 #include "str2.h"
+#include "memory.h"
 
 
 // @TODO: See how `g_mods` contains an array of mods? This was misguided and it should only have one mod.
@@ -116,7 +117,7 @@ static int vfs_PHYSFS_saveScriptFilesEnumerator(void *data, const char *origdir,
 	
 	cleanup_l:
 	
-	insane_free(filepath);
+	memory_free(filepath);
 	
     return error;
 }
