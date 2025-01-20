@@ -56,7 +56,7 @@ int terminal_callback_updateCommandHistoryLength(cfg2_var_t *var, const char *co
 		if (g_commandHistoryLength < lastLength) {
 			// Need to free.
 			for (int i = g_commandHistoryLength; i < lastLength; i++) {
-				memory_free(g_commandHistory[i]);
+				MEMORY_FREE(&g_commandHistory[i]);
 			}
 		}
 	
@@ -333,7 +333,7 @@ static int terminal_codeCompletion(char **line, bool *badComplete, int *tabs) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	memory_free(fragment);
+	MEMORY_FREE(&fragment);
 	
 	return error;
 }
@@ -761,7 +761,7 @@ int terminal_addLineToHistory(const char *line) {
 	}
 	
 	if (duplicate < 0) {
-		memory_free(g_commandHistory[historyLength - 1]);
+		MEMORY_FREE(&g_commandHistory[historyLength - 1]);
 		for (int i = historyLength - 1; i > 0; --i) {
 			g_commandHistory[i] = g_commandHistory[i - 1];
 		}
@@ -878,15 +878,15 @@ void terminal_quitConsole(void) {
 	
 	if (g_commandHistory != NULL) {
 		for (int i = 0; i < v_historyLength->integer; i++) {
-			memory_free(g_commandHistory[i]);
+			MEMORY_FREE(&g_commandHistory[i]);
 		}
 	}
-	memory_free(g_commandHistory);
+	MEMORY_FREE(&g_commandHistory);
 	
 	cleanup_l:
 	
-	memory_free(g_commandComplete);
-	memory_free(g_consoleCommand);
+	MEMORY_FREE(&g_commandComplete);
+	MEMORY_FREE(&g_consoleCommand);
 	
 	return;
 }

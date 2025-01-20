@@ -231,7 +231,7 @@ int network_packetRead_entity(entity_t *data, const ptrdiff_t data_length, const
 		}
 
 		if (!data[i].inUse) {
-			memory_free(data[i].materials);
+			MEMORY_FREE(&data[i].materials);
 			data[i].materials_length = 0;
 		}
 #endif
@@ -701,7 +701,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 		
 		lua_pushstring(luaState, keyString);
 		
-		memory_free(keyString);
+		MEMORY_FREE(&keyString);
 		keyString_length = 0;
 		break;
 	default:
@@ -816,7 +816,7 @@ int network_packetRead_lua_object(lua_State *luaState, ENetPacket *packet, ptrdi
 		
 		lua_pushstring(luaState, tempLuaString);
 		
-		memory_free(tempLuaString);
+		MEMORY_FREE(&tempLuaString);
 		tempLuaString_length = 0;
 		break;
 	case network_lua_type_table:

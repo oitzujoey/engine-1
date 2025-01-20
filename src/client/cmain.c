@@ -343,7 +343,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	error = 0;
 	cleanup_l:
 	
-	memory_free(tempString);
+	MEMORY_FREE(&tempString);
 	
 	return error;
 }
@@ -483,7 +483,7 @@ int main (int argc, char *argv[]) {
 
 	main_quit();
 	
-	memory_free(luaFilePath);
+	MEMORY_FREE(&luaFilePath);
 	
 	info("Client quit (%i)", error);
 	

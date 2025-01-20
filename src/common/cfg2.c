@@ -207,7 +207,7 @@ int cfg2_callback_set(cfg2_var_t *var, const char *command, lua_State *luaState)
 	error = ERR_OK;
 	cleanup_l:
 	
-	memory_free(commandCopy);
+	MEMORY_FREE(&commandCopy);
 	
 	return error;
 }
@@ -582,7 +582,7 @@ int cfg2_callback_copy(cfg2_var_t *var, const char *command, lua_State *luaState
 				goto cleanup_l;
 			}
 			strcpy(var1->string, tempString);
-			memory_free(tempString);
+			MEMORY_FREE(&tempString);
 			break;
 		case cfg2_var_type_vector:
 			tempString = malloc((3 * sizeof(int) + 1) * sizeof(char));
@@ -593,7 +593,7 @@ int cfg2_callback_copy(cfg2_var_t *var, const char *command, lua_State *luaState
 				goto cleanup_l;
 			}
 			strcpy(var1->string, tempString);
-			memory_free(tempString);
+			MEMORY_FREE(&tempString);
 			break;
 		default:
 			log_critical_error(__func__, "Illegal type \"%i\" for variable \"%s\".", var1->type, var1->name);
@@ -1769,13 +1769,13 @@ int cfg2_createVariables(const cfg2_var_init_t *varInit, lua_State *luaState) {
 
 void cfg2_free(void) {
 	for (int i = 0; i < g_cfg2.vars_length; i++) {
-		memory_free(g_cfg2.vars[i].name);
-		// memory_free(g_cfg2.vars[i].command);
-		memory_free(g_cfg2.vars[i].string);
+		MEMORY_FREE(&g_cfg2.vars[i].name);
+		// MEMORY_FREE(g_cfg2.vars[i].command);
+		MEMORY_FREE(&g_cfg2.vars[i].string);
 		// string_free(&g_cfg2.vars[i].string);
-		memory_free(g_cfg2.vars[i].script);
+		MEMORY_FREE(&g_cfg2.vars[i].script);
 	}
-	memory_free(g_cfg2.vars);
+	MEMORY_FREE(&g_cfg2.vars);
 	g_cfg2.vars_length = 0;
 }
 
@@ -1866,7 +1866,7 @@ int cfg2_execString(const char *line, lua_State *luaState, const char *tag) {
 				goto cleanup_l;
 			}
 			error = cfg2_setVariable(var, value, luaState, tag);
-			memory_free(value);
+			MEMORY_FREE(&value);
 		}
 		else {
 			error = cfg2_setVariable(var, value, luaState, tag);
@@ -1879,10 +1879,10 @@ int cfg2_execString(const char *line, lua_State *luaState, const char *tag) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	memory_free(commands);
-	memory_free(lineCopy);
-	// memory_free(varName);
-	// memory_free(value);
+	MEMORY_FREE(&commands);
+	MEMORY_FREE(&lineCopy);
+	// MEMORY_FREE(&varName);
+	// MEMORY_FREE(&value);
 	
 	return error;
 }
@@ -1970,11 +1970,11 @@ int cfg2_execFile(const char *filepath, lua_State *luaState) {
 	
 	PHYSFS_close(vfsFile);
 	
-	memory_free(fileText);
+	MEMORY_FREE(&fileText);
 	if (lines != NULL) {
-		memory_free(*lines);
+		MEMORY_FREE(lines);
 	}
-	memory_free(lines);
+	MEMORY_FREE(&lines);
 	
 	return error;
 }

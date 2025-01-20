@@ -117,7 +117,7 @@ static int vfs_PHYSFS_saveScriptFilesEnumerator(void *data, const char *origdir,
 	
 	cleanup_l:
 	
-	memory_free(filepath);
+	MEMORY_FREE(&filepath);
 	
     return error;
 }

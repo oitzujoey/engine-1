@@ -35,10 +35,10 @@ static void entity_initEntity(entity_t *entity) {
 }
 
 static void entity_freeEntity(entity_t *entity) {
-	memory_free(entity->children);
+	MEMORY_FREE(&entity->children);
 	entity->children_length = 0;
 #	ifdef CLIENT
-	memory_free(entity->materials);
+	MEMORY_FREE(&entity->materials);
 	entity->materials_length = 0;
 #	endif
 }
@@ -60,9 +60,9 @@ void entity_freeEntityList(void) {
 	for (int i = 0; i < g_entityList.entities_length; i++) {
 		entity_freeEntity(&g_entityList.entities[i]);
 	}
-	memory_free(g_entityList.entities);
+	MEMORY_FREE(&g_entityList.entities);
 	g_entityList.entities_length = 0;
-	memory_free(g_entityList.deletedEntities);
+	MEMORY_FREE(&g_entityList.deletedEntities);
 	g_entityList.deletedEntities_length = 0;
 	g_entityList.deletedEntities_length_allocated = 0;
 }
@@ -148,7 +148,7 @@ int entity_deleteEntity(int index) {
 	}
 	
 	// Unlink children and free list.
-	memory_free(g_entityList.entities[index].children);
+	MEMORY_FREE(&g_entityList.entities[index].children);
 	g_entityList.entities[index].children_length = 0;
 	// Easy!
 	
@@ -221,7 +221,7 @@ int entity_unlinkChild(ptrdiff_t parentIndex, ptrdiff_t childIndex) {
 			}
 		}
 		else {
-			memory_free(parent->children);
+			MEMORY_FREE(&parent->children);
 		}
 	}
 	else {

@@ -2,10 +2,10 @@
 #include "log.h"
 #include <stdlib.h>
 
-void memory_free(void *pointer) {
-	if (pointer) {
-		free(pointer);
-		pointer = NULL;
+void memory_free(void **pointer) {
+	if (*pointer) {
+		free(*pointer);
+		*pointer = NULL;
 	}
 	else {
 		log_warning("memory_free", "Attempted to free a null pointer.");

@@ -36,7 +36,7 @@ static int cmsh_parse(file_cmsh_t *cmsh, uint8_t *bytes, size_t length) {
 	if (!cmsh->vertices) return ERR_OUTOFMEMORY;
 	e = file_parse_vecArray(cmsh->vertices, cmsh->vertices_length, bytes, &index, length);
 	if (e) {
-		memory_free(cmsh->vertices);
+		MEMORY_FREE(&cmsh->vertices);
 		cmsh->vertices_length = 0;
 	}
 	return e;
@@ -83,9 +83,9 @@ static int rmsh_parse(file_rmsh_t *rmsh, uint8_t *bytes, size_t length) {
 		if (e) break;
 	} while (0);
 	if (e) {
-		if (!rmsh->vertices) memory_free(rmsh->vertices);
-		if (!rmsh->vertexNormals) memory_free(rmsh->vertexNormals);
-		if (!rmsh->vertexTextureCoords) memory_free(rmsh->vertexTextureCoords);
+		if (!rmsh->vertices) MEMORY_FREE(&rmsh->vertices);
+		if (!rmsh->vertexNormals) MEMORY_FREE(&rmsh->vertexNormals);
+		if (!rmsh->vertexTextureCoords) MEMORY_FREE(&rmsh->vertexTextureCoords);
 		rmsh->vertices_length = 0;
 		rmsh->vertexNormals_length = 0;
 		rmsh->vertexTextureCoords_length = 0;
@@ -189,7 +189,7 @@ static int cmsh_load(size_t *index, uint8_t *filePath) {
 
  cleanup:
 	if (e) {
-		if (cmsh.vertices) memory_free(cmsh.vertices);
+		if (cmsh.vertices) MEMORY_FREE(&cmsh.vertices);
 		// Can't free models?!? I guess that's OK?
 	}
 	return e;
@@ -241,11 +241,11 @@ static int rmsh_load(size_t *index, uint8_t *filePath) {
 
  cleanup:
 	if (e) {
-		if (rmsh.vertices) memory_free(rmsh.vertices);
-		if (rmsh.vertexNormals) memory_free(rmsh.vertexNormals);
-		if (rmsh.vertexTextureCoords) memory_free(rmsh.vertexTextureCoords);
+		if (rmsh.vertices) MEMORY_FREE(&rmsh.vertices);
+		if (rmsh.vertexNormals) MEMORY_FREE(&rmsh.vertexNormals);
+		if (rmsh.vertexTextureCoords) MEMORY_FREE(&rmsh.vertexTextureCoords);
 #ifdef CLIENT
-		if (model->defaultMaterials) memory_free(model->defaultMaterials);
+		if (model->defaultMaterials) MEMORY_FREE(&model->defaultMaterials);
 #endif
 		// Can't free models?!? I guess that's OK?
 	}
@@ -271,7 +271,7 @@ int l_cmsh_load(lua_State *luaState) {
 	if (e) goto cleanup;
 
  cleanup:
-	memory_free(filePath);
+	MEMORY_FREE(&filePath);
 
 	if (e == ERR_OUTOFMEMORY) {
 		outOfMemory();
@@ -302,7 +302,7 @@ int l_rmsh_load(lua_State *luaState) {
 	if (e) goto cleanup;
 
  cleanup:
-	memory_free(filePath);
+	MEMORY_FREE(&filePath);
 
 	if (e == ERR_OUTOFMEMORY) {
 		outOfMemory();

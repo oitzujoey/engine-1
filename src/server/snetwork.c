@@ -60,7 +60,7 @@ static int snetwork_connect(ENetEvent event, lua_State *luaState) {
 		
 		network_ipv4ToString(&ipAddress, peer->address.host);
 		info("%s:%u attempted to connect, but server is full.", ipAddress, peer->address.port);
-		memory_free(ipAddress);
+		MEMORY_FREE(&ipAddress);
 		error = ERR_OK;
 		goto cleanup_l;
 	}
@@ -78,7 +78,7 @@ static int snetwork_connect(ENetEvent event, lua_State *luaState) {
 	
 	network_ipv4ToString(&ipAddress, peer->address.host);
 	info("%s:%u (Client %i) connected", ipAddress, peer->address.port, index);
-	memory_free(ipAddress);
+	MEMORY_FREE(&ipAddress);
 	
 	
 	luaTimeout_t luaTimeout = {
@@ -224,7 +224,7 @@ static int snetwork_disconnect(ENetEvent event, lua_State *luaState) {
 	
 	index = *((int *) event.peer->data);
 	
-	memory_free(event.peer->data);
+	MEMORY_FREE(&event.peer->data);
 	if (index < 0) {
 		// Not a currently connected client.
 		error = ERR_OK;
@@ -477,7 +477,7 @@ void snetwork_quit(void) {
 	// Free client data.
 	for (int i = 0; i < MAX_CLIENTS; i++) {
 		if ((g_clients[i].peer != NULL) && (g_clients[i].peer->data != NULL)) {
-			memory_free(g_clients[i].peer->data);
+			MEMORY_FREE(&g_clients[i].peer->data);
 		}
 	}
 	

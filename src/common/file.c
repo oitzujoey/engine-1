@@ -298,8 +298,8 @@ void file_resolveRelativePaths(char *path) {
 // 	for (int i = 0; i < slashes + 1; i++) {
 // 		string_free(&parts[i]);
 // 	}
-// 	memory_free(parts);
-// 	memory_free(partIndices);
+// 	MEMORY_FREE(&parts);
+// 	MEMORY_FREE(&partIndices);
 // 	string_free(&filePathCopy);
 	
 // 	return localError;

@@ -284,7 +284,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	memory_free(tempString);
+	MEMORY_FREE(&tempString);
 
 	return error;
 }
@@ -453,8 +453,8 @@ int main(int argc, char *argv[]) {
 	
 	cfg2_free();
 	
-	memory_free(luaFilePath);
-	memory_free(tempString);
+	MEMORY_FREE(&luaFilePath);
+	MEMORY_FREE(&tempString);
 	
 	// Exit.
 	

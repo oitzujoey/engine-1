@@ -19,7 +19,7 @@ void material_initList(material_list_t *materialList) {
 }
 
 void material_freeList(material_list_t *materialList) {
-	memory_free(materialList->materials);
+	MEMORY_FREE(&materialList->materials);
 	materialList->materials_length = 0;
 }
 
@@ -133,7 +133,7 @@ static int material_loadTexture(GLuint *textureIndex, const char* const filePath
 	error = ERR_OK;
 	cleanupPHYSFS_l:
 	
-	memory_free(fileContents);
+	MEMORY_FREE(&fileContents);
 	fileContents_length = 0;
 	
 	stbi_image_free(pixels);

@@ -294,7 +294,7 @@ static int cnetwork_sendState(lua_State *luaState) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	memory_free(g_clientStateArray);
+	MEMORY_FREE(&g_clientStateArray);
 	g_clientStateArray_length = 0;
 	
 	return error;

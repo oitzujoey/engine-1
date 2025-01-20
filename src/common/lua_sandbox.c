@@ -77,7 +77,7 @@ static int l_lua_sandbox_include(lua_State *luaState) {
 	if (!PHYSFS_exists(luaFilePath)) {
 	// if (!file_exists(luaFilePath)) {
 		error("File \"%s\" does not exist", luaFilePath);
-		memory_free(luaFilePath);
+		MEMORY_FREE(&luaFilePath);
 		lua_error(luaState);
 	}
 	
@@ -85,7 +85,7 @@ static int l_lua_sandbox_include(lua_State *luaState) {
 	if (error) {
 		error("Could not read text from file \"%s\".", luaFilePath);
 		error = ERR_GENERIC;
-		memory_free(luaFilePath);
+		MEMORY_FREE(&luaFilePath);
 		lua_error(luaState);
 	}
 	
@@ -93,8 +93,8 @@ static int l_lua_sandbox_include(lua_State *luaState) {
 	// error = luaL_loadfile(*Lua, filename);
 	if (error) {
 		error("Could not load lua file %s due to error %s", luaFilePath, luaError[error]);
-		memory_free(fileText);
-		memory_free(luaFilePath);
+		MEMORY_FREE(&fileText);
+		MEMORY_FREE(&luaFilePath);
 		lua_error(luaState);
 	}
 	
@@ -117,8 +117,8 @@ static int l_lua_sandbox_include(lua_State *luaState) {
 	
 	SDL_RemoveTimer(timerId);
 	
-	memory_free(fileText);
-	memory_free(luaFilePath);
+	MEMORY_FREE(&fileText);
+	MEMORY_FREE(&luaFilePath);
 	
 	return 0;
 }
@@ -230,7 +230,7 @@ int lua_sandbox_init(lua_State **Lua, const char *filename) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	memory_free(fileText);
+	MEMORY_FREE(&fileText);
 	
 	return error;
 }

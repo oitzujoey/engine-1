@@ -93,7 +93,7 @@ void modelList_free(void) {
 	for (int i = 0; i < g_modelList.models_length_actual; i++) {
 		model_free(&g_modelList.models[i]);
 	}
-	memory_free(g_modelList.models);
+	MEMORY_FREE(&g_modelList.models);
 	g_modelList.models_length = 0;
 	g_modelList.models_length_actual = 0;
 }
@@ -131,25 +131,25 @@ void model_init(model_t *model) {
 }
 
 void model_free(model_t *model) {
-	memory_free(model->vertices);
+	MEMORY_FREE(&model->vertices);
 	model->vertices_length = 0;
-	memory_free(model->surface_normals);
+	MEMORY_FREE(&model->surface_normals);
 	for (int i = 0; i < model->faces_length; i++) {
-		memory_free(model->faces[i]);
+		MEMORY_FREE(&model->faces[i]);
 	}
-	memory_free(model->faces);
+	MEMORY_FREE(&model->faces);
 #ifdef CLIENT
-	memory_free(model->glVertices);
-	memory_free(model->glNormals);
+	MEMORY_FREE(&model->glVertices);
+	MEMORY_FREE(&model->glNormals);
 	model->boundingSphere = 0;
-	memory_free(model->defaultMaterials);
+	MEMORY_FREE(&model->defaultMaterials);
 	model->defaultMaterials_index = 0;
 	for (ptrdiff_t i = 0; i < model->faces_length; i++) {
-		memory_free(model->texCoords[i]);
+		MEMORY_FREE(&model->texCoords[i]);
 	}
-	memory_free(model->texCoords);
-	memory_free(model->texCoords_textures);
-	memory_free(model->glTexCoords);
+	MEMORY_FREE(&model->texCoords);
+	MEMORY_FREE(&model->texCoords_textures);
+	MEMORY_FREE(&model->glTexCoords);
 #endif
 	model->faces_length = 0;
 }
@@ -804,7 +804,7 @@ int obj_loadOoliteDAT(const char *filePath, size_t *index) {
 	// 	string_free(&argv[i]);
 	// }
 	// string_free(&line);
-	memory_free(fileText);
+	MEMORY_FREE(&fileText);
 	
 	return error;
 }
@@ -835,7 +835,7 @@ int l_obj_loadOoliteDAT(lua_State *luaState) {
 	error = 0;
 	cleanup_l:
 	
-	memory_free(filePath);
+	MEMORY_FREE(&filePath);
 	
 	if (error == ERR_OUTOFMEMORY) {
 		outOfMemory();
