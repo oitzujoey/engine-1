@@ -733,6 +733,32 @@ Mesh collides with mesh. So it's O(M*N). That's why octrees and BVH is of intere
 CMSH and RMSH files are stored little endian.
 
 
+I'd like normal people to be able to use the engine, so I need to figure out a way to make it easy to install and manage. Here's what I currently need to run a game called "game".
+engine-1/
+  cengine-1.exe
+  sengine-1.exe
+  SDL2-2.0.dll
+  lua.dll
+  enet.dll
+  physfs.dll
+  game.pk3
+  autoexec.cfg
+  workspace/
+
+Here's the minimum I could get it to, ignoring all other factors:
+engine-1/
+  engine-1.exe
+  game.pk3
+  settings.cfg  -- Created by engine
+  workspace/  -- Created by engine
+    game/  -- Created by engine
+      file.txt  -- Created by game
+
+It would be nice if I could have the zip file in the executable, but it sounds like that's not practical.
+
+Maybe I should just do it the way OpenArena does it, accept there's going to be a lot of files and distribute them in a zip file.
+
+
 
 
 Stuff I need to add before public release:

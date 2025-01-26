@@ -11,8 +11,8 @@ worldOrientation = {w=1.0, x=0.0, y=0.0, z=0.0}
 TurnRate = 100
 
 function loadWorld()
-	-- terrainModel, error = mesh_load("untitled")
-	terrainModel, error = mesh_load("blender/terrain10")
+	terrainModel, error = mesh_load("blender/cube")
+ 	-- terrainModel, error = mesh_load("blender/terrain10")
 	terrainEntity, error = entity_createEntity(g_entity_type_model)
 	error = entity_linkChild(g_worldEntity, terrainEntity)
 	error = entity_linkChild(terrainEntity, terrainModel)
