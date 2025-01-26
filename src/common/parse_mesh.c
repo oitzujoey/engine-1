@@ -9,6 +9,7 @@
 #include "str3.h"
 #include "memory.h"
 #include <stdio.h>
+#include "str4.h"
 
 
 static int cmsh_parse(file_cmsh_t *cmsh, uint8_t *bytes, size_t length) {
@@ -303,6 +304,65 @@ int l_rmsh_load(lua_State *luaState) {
 
  cleanup:
 	MEMORY_FREE(&filePath);
+
+	if (e == ERR_OUTOFMEMORY) {
+		outOfMemory();
+		lua_error(luaState);
+	}
+
+	lua_pushinteger(luaState, index);
+	lua_pushinteger(luaState, e);
+
+	return 2;
+}
+
+int l_mesh_load(lua_State *luaState) {
+	int e = 0;
+
+	Allocator a = allocator_create_stdlib();
+	const uint8_t *filePathRoot = NULL;
+	size_t filePathRoot_length = 0;
+	uint8_t *cmsh_filePath = NULL;
+	uint8_t *rmsh_filePath = NULL;
+	size_t index;
+
+	if (!lua_isstring(luaState, 1)) {
+		error("Argument 1 must be a string.", "");
+		e = ERR_GENERIC;
+		goto cleanup;
+	}
+	filePathRoot = lua_tostring(luaState, 1);
+	filePathRoot_length = strlen(filePathRoot);
+
+	{
+		Str4 rmsh_filePath = str4_create(&a);
+		(void) str4_copyC(&rmsh_filePath, filePathRoot, filePathRoot_length);
+		Str4 rmsh_extension = STR4(".rmsh");
+		(void) str4_concatenate(&rmsh_filePath, &rmsh_filePath, &rmsh_extension);
+		if (rmsh_filePath.error) {
+			e = rmsh_filePath.error;
+			goto cleanup;
+		}
+		e = rmsh_load(&index, rmsh_filePath.str);
+		if (e) goto cleanup;
+	}
+
+	{
+		Str4 cmsh_filePath = str4_create(&a);
+		(void) str4_copyC(&cmsh_filePath, filePathRoot, filePathRoot_length);
+		Str4 cmsh_extension = STR4(".cmsh");
+		(void) str4_concatenate(&cmsh_filePath, &cmsh_filePath, &cmsh_extension);
+		if (cmsh_filePath.error) {
+			e = cmsh_filePath.error;
+			goto cleanup;
+		}
+		e = cmsh_load(&index, cmsh_filePath.str);
+		if (e) goto cleanup;
+	}
+
+ cleanup:
+	if (cmsh_filePath) MEMORY_FREE(&cmsh_filePath);
+	if (rmsh_filePath) MEMORY_FREE(&rmsh_filePath);
 
 	if (e == ERR_OUTOFMEMORY) {
 		outOfMemory();
