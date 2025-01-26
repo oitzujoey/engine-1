@@ -16,19 +16,21 @@ typedef struct {
 /* Usage:
 
    Allocator a;
-   a.allocator = myAllocator;
+   a.context = myAllocator;
    a.alloc = myAllocator_malloc;
    a.free = myAllocator_free;
 
-   e = a.alloc(a.allocator, &newDataBlock, newDataBlock_length);
+   e = a.alloc(a.context, &newDataBlock, newDataBlock_length);
    if (e) panic();
    // Do stuff with `newDataBlock`.
    // ...
-   e = a.free(a.allocator &newDataBlock);
+   e = a.free(a.context &newDataBlock);
    if (e) panic(); */
 
 // Wrapper around stdlib's malloc and free.
 Allocator allocator_create_stdlib(void);
+int allocator_stdlib_malloc(void *allocator, void **data, size_t data_length);
+int allocator_stdlib_free(void *allocator, void **data);
 
 // Can only allocate byte lengths of size 0. Can only free null pointers.
 Allocator allocator_create_dummy(void);

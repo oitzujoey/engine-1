@@ -12,7 +12,9 @@ TurnRate = 100
 
 function loadWorld()
 	-- terrainModel, error = rmsh_load("untitled.rmsh")
-	terrainModel, error = rmsh_load("blender/terrain10.rmsh")
+	-- terrainCollisionModel, error = cmsh_load("blender/terrain10.cmsh")
+	-- terrainModel, error = rmsh_load("blender/terrain10.rmsh")
+	terrainModel, error = mesh_load("blender/terrain10")
 	terrainEntity, error = entity_createEntity(g_entity_type_model)
 	error = entity_linkChild(g_worldEntity, terrainEntity)
 	error = entity_linkChild(terrainEntity, terrainModel)

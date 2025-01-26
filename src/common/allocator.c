@@ -4,6 +4,11 @@
 #include "log.h"
 
 int allocator_stdlib_malloc(void *allocator, void **data, size_t data_length) {
+	if (!data_length) {
+		*data = NULL;
+		warning("allocator_stdlib_malloc", "Allocated a block of length zero.");
+		return ERR_OK;
+	}
 	*data = malloc(data_length);
 	if (!*data) return ERR_OUTOFMEMORY;
 	return ERR_OK;

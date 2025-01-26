@@ -22,6 +22,7 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_obj_loadOoliteDAT,       .name = "loadOoliteModel"},
 	{.func = l_cmsh_load,               .name = "cmsh_load"},
 	{.func = l_rmsh_load,               .name = "rmsh_load"},
+	{.func = l_mesh_load,               .name = "mesh_load"},
 	{.func = l_common_toString,         .name = "toString"},
 	{.func = l_entity_createEntity,     .name = "entity_createEntity"},
 	{.func = l_entity_deleteEntity,     .name = "entity_deleteEntity"},

@@ -4,6 +4,12 @@
 #include "common.h"
 #include "log.h"
 
+void vec3_clear(vec3_t *destination) {
+	(*destination)[0] = 0;
+	(*destination)[1] = 0;
+	(*destination)[2] = 0;
+}
+
 void vec3_copy(vec3_t *destination, vec3_t *source) {
 	(*destination)[0] = (*source)[0];
 	(*destination)[1] = (*source)[1];

@@ -22,7 +22,9 @@ void str4_copyC(Str4 *str4, const uint8_t *str, size_t str_length) {
 	}
 	Allocator *destination_allocator = str4->allocator;
 	uint8_t *destination_bytes = NULL;
-	int e = destination_allocator->alloc(destination_allocator, (void **) &destination_bytes, (str_length + 1) * sizeof(uint8_t));
+	int e = destination_allocator->alloc(destination_allocator->context,
+	                                     (void **) &destination_bytes,
+	                                     (str_length + 1) * sizeof(uint8_t));
 	if (e) {
 		str4->error = e;
 		return;
@@ -41,7 +43,9 @@ void str4_copy(Str4 *destination, Str4 *source) {
 	Allocator *destination_allocator = destination->allocator;
 	size_t destination_bytes_length = source->str_length;
 	uint8_t *destination_bytes = NULL;
-	int e = destination_allocator->alloc(destination_allocator, (void **) &destination_bytes, (destination_bytes_length + 1) * sizeof(uint8_t));
+	int e = destination_allocator->alloc(destination_allocator->context,
+	                                     (void **) &destination_bytes,
+	                                     (destination_bytes_length + 1) * sizeof(uint8_t));
 	if (e) {
 		destination->error = e;
 		return;
@@ -60,7 +64,9 @@ void str4_concatenate(Str4 *destination, Str4 *left, Str4 *right) {
 	Allocator *destination_allocator = destination->allocator;
 	size_t destination_str_length = left->str_length + right->str_length;
 	uint8_t *destination_str = NULL;
-	int e = destination_allocator->alloc(destination_allocator, (void **) &destination_str, (destination_str_length + 1) * sizeof(uint8_t));
+	int e = destination_allocator->alloc(destination_allocator->context,
+	                                     (void **) &destination_str,
+	                                     (destination_str_length + 1) * sizeof(uint8_t));
 	if (e) {
 		destination->error = e;
 		return;

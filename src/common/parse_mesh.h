@@ -5,5 +5,6 @@
 
 int l_cmsh_load(lua_State *luaState);
 int l_rmsh_load(lua_State *luaState);
+int l_mesh_load(lua_State *luaState);
 
 #endif // PARSE_MESH_H

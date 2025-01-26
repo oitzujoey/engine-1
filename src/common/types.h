@@ -75,10 +75,10 @@ typedef struct {
     vec3_t *surface_normals;    // Same length as faces.  // Probably not needed.
 
 	// Collisions:
-	vec3_t bb_mins;
-	vec3_t bb_maxs;
-	vec3_t aabb_mins;
-	vec3_t aabb_maxs;
+	vec3_t collision_bb_mins;
+	vec3_t collision_bb_maxs;
+	vec3_t collision_aabb_mins;
+	vec3_t collision_aabb_maxs;
 	vec_t *collision_vertices;
 	size_t collision_vertices_length;
 
@@ -90,7 +90,7 @@ typedef struct {
 	size_t glVertices_length;
 	vec_t *glNormals;
 	size_t glNormals_length;
-	vec_t boundingSphere;
+	vec_t boundingSphere;  // Eventually maybe replace with AABB?
 	ptrdiff_t *defaultMaterials;
 	ptrdiff_t defaultMaterials_index;
 	vec2_t **texCoords;
