@@ -252,6 +252,101 @@ static int rmsh_load(size_t *index, uint8_t *filePath) {
 	return e;
 }
 
+// `rmsh_filePath` and `cmsh_filePath` are null terminated.
+static int mesh_load(size_t *index, uint8_t *filePathRoot, size_t filePathRoot_length) {
+	int e = ERR_OK;
+	int e1 = 0;
+
+	Allocator a;
+	e = allocator_create_stdlibArena(&a);
+	if (e) goto cleanup;
+	Str4 rmsh_filePath = str4_create(&a);
+	Str4 cmsh_filePath = str4_create(&a);
+	file_cmsh_t cmsh = {0};
+	file_rmsh_t rmsh = {0};
+	model_t *model = NULL;
+
+	e = modelList_createModel(&model, index);
+	if (e) {
+		error("Failed to create new model", "");
+		goto cleanup;
+	}
+
+	{
+		(void) str4_copyC(&rmsh_filePath, filePathRoot, filePathRoot_length);
+		(void) str4_copyC(&cmsh_filePath, filePathRoot, filePathRoot_length);
+		Str4 rmsh_extension = STR4(".rmsh");
+		Str4 cmsh_extension = STR4(".cmsh");
+		(void) str4_concatenate(&rmsh_filePath, &rmsh_filePath, &rmsh_extension);
+		(void) str4_concatenate(&cmsh_filePath, &cmsh_filePath, &cmsh_extension);
+		if (rmsh_filePath.error) {
+			e = rmsh_filePath.error;
+			goto cleanup;
+		}
+		if (cmsh_filePath.error) {
+			e = cmsh_filePath.error;
+			goto cleanup;
+		}
+	}
+
+	e = cmsh_read(&cmsh, cmsh_filePath.str);
+	if (e) goto cleanup;
+	e = rmsh_read(&rmsh, rmsh_filePath.str);
+	if (e) goto cleanup;
+
+	(void) cmsh_print(&cmsh);
+	(void) rmsh_print(&rmsh);
+
+	// `model` now has ownership of cmsh's vertices buffer.
+	model->collision_vertices = cmsh.vertices;
+	model->collision_vertices_length = cmsh.vertices_length;
+	(void) vec3_copy(&model->collision_bb_mins, &cmsh.mins);
+	(void) vec3_copy(&model->collision_bb_maxs, &cmsh.maxs);
+	// The AABB will change in the future, but since we start off with no rotation, BB == AABB.
+	(void) vec3_copy(&model->collision_aabb_mins, &cmsh.mins);
+	(void) vec3_copy(&model->collision_aabb_maxs, &cmsh.maxs);
+
+#ifdef CLIENT
+	// TODO: I think I'd like to use an AABB eventually, but we currently use a bounding sphere. Just stick an arbitrary
+	// value in there to pacify the renderer. It will be set from rmsh.mins and rmsh.maxs.
+	model->boundingSphere = 1.0;
+
+	// `model` now has ownership of rmsh's vertices buffer.
+	model->glVertices = rmsh.vertices;
+	model->glVertices_length = rmsh.vertices_length;
+	// `model` now has ownership of rmsh's vertex normals buffer.
+	model->glNormals = rmsh.vertexNormals;
+	model->glNormals_length = rmsh.vertexNormals_length;
+	// `model` now has ownership of rmsh's texture coordinates buffer.
+	model->glTexCoords = rmsh.vertexTextureCoords;
+	model->glTexCoords_length = rmsh.vertexTextureCoords_length;
+
+	// Only allow one texture to be bound to the model.
+	model->numBindableMaterials = 1;
+	model->defaultMaterials = malloc(model->numBindableMaterials * sizeof(ptrdiff_t));
+	if (model->defaultMaterials == NULL) {
+		e = ERR_OUTOFMEMORY;
+		goto cleanup;
+	}
+#endif
+
+ cleanup:
+	// Free `rmsh_filePath` and `cmsh_filePath`.
+	e1 = a.quit(a.context);
+	if (e1) e = e1;
+	if (e) {
+		if (cmsh.vertices) MEMORY_FREE(&cmsh.vertices);
+		if (rmsh.vertices) MEMORY_FREE(&rmsh.vertices);
+		if (rmsh.vertexNormals) MEMORY_FREE(&rmsh.vertexNormals);
+		if (rmsh.vertexTextureCoords) MEMORY_FREE(&rmsh.vertexTextureCoords);
+#ifdef CLIENT
+		if (model->defaultMaterials) MEMORY_FREE(&model->defaultMaterials);
+#endif
+		// Can't free models?!? I guess that's OK?
+	}
+	return e;
+}
+
 
 int l_cmsh_load(lua_State *luaState) {
 	int e = 0;
@@ -317,58 +412,18 @@ int l_rmsh_load(lua_State *luaState) {
 
 int l_mesh_load(lua_State *luaState) {
 	int e = 0;
-	int e1 = 0;
 
-	Allocator a;
-	e = allocator_create_stdlibArena(&a);
-	if (e) goto cleanup;
-	const uint8_t *filePathRoot = NULL;
-	size_t filePathRoot_length = 0;
-	uint8_t *cmsh_filePath = NULL;
-	uint8_t *rmsh_filePath = NULL;
 	size_t index;
-
 	if (!lua_isstring(luaState, 1)) {
 		error("Argument 1 must be a string.", "");
 		e = ERR_GENERIC;
 		goto cleanup;
 	}
-	filePathRoot = lua_tostring(luaState, 1);
-	filePathRoot_length = strlen(filePathRoot);
-	puts("HERE");
-	{
-		Str4 rmsh_filePath = str4_create(&a);
-		(void) str4_copyC(&rmsh_filePath, filePathRoot, filePathRoot_length);
-		Str4 rmsh_extension = STR4(".rmsh");
-		(void) str4_concatenate(&rmsh_filePath, &rmsh_filePath, &rmsh_extension);
-		if (rmsh_filePath.error) {
-			e = rmsh_filePath.error;
-			goto cleanup;
-		}
-		e = rmsh_load(&index, rmsh_filePath.str);
-		if (e) goto cleanup;
-	}
-	// TODO: Notice how `index` is passed to both `rmsh_load` and `cmsh_load`. This creates two different models. We
-	// must only create one model.
-	{
-		Str4 cmsh_filePath = str4_create(&a);
-		(void) str4_copyC(&cmsh_filePath, filePathRoot, filePathRoot_length);
-		Str4 cmsh_extension = STR4(".cmsh");
-		(void) str4_concatenate(&cmsh_filePath, &cmsh_filePath, &cmsh_extension);
-		if (cmsh_filePath.error) {
-			e = cmsh_filePath.error;
-			goto cleanup;
-		}
-		e = cmsh_load(&index, cmsh_filePath.str);
-		if (e) goto cleanup;
-	}
+	const char *filePathRoot = lua_tostring(luaState, 1);
+	e = mesh_load(&index, (uint8_t *) filePathRoot, strlen(filePathRoot));
+	if (e) goto cleanup;
 
  cleanup:
-	if (cmsh_filePath) MEMORY_FREE(&cmsh_filePath);
-	if (rmsh_filePath) MEMORY_FREE(&rmsh_filePath);
-	e1 = a.quit(a.context);
-	if (e1) e = e1;
-
 	if (e == ERR_OUTOFMEMORY) {
 		outOfMemory();
 		lua_error(luaState);
@@ -376,6 +431,5 @@ int l_mesh_load(lua_State *luaState) {
 
 	lua_pushinteger(luaState, index);
 	lua_pushinteger(luaState, e);
-
 	return 2;
 }

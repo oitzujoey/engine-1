@@ -836,6 +836,7 @@ Other improvements:
 [ ] (Client) Load GLSL from files.
 [ ] (Client) Allow GLSL to include GLSL libraries (preprocessor).
 [*] (Common) Allow Lua to include Lua source code.
+[*] (Common) Import .obj files.
 ===========================
 * * Start work on game. ***
 ===========================
