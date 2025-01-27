@@ -762,6 +762,13 @@ Maybe I should just do it the way OpenArena does it, accept there's going to be 
 I think I will have a default texture: Hot pink
 
 
+I don't think I like the structure of the scene graph.
+I want entities to be more like groups, so I think I will rename `entity_t` to `scenegraph_group_t`. I think I will create a new type called `scenegraph_model_t`, which binds to a single `model_t` and can do things such as override the material and specify the position, orientation, and size. `model_t` will still have a default material. Or maybe I'll just leave it as is, which is pretty close to what I want, but I'll make it so model entities can only link to one model. Once multiple textures are working, then maybe I can rename all the "entity" stuff to "scenegraph".
+
+group
+model
+
+
 
 
 Stuff I need to add before public release:
@@ -867,17 +874,32 @@ Other improvements:
 [*] (Common) Allow Lua to include Lua source code.
 [*] (Common) Import .obj files.
 ===========================
-* * Start work on game. ***
+*/* Start work on games. ***
 ===========================
-[ ] (Client) Texture models.
-    [ ] (Client) Load images.
-    [ ] (Client) Create texture list.
-    [ ] (Server Client) Bind texture to entity.
-    [ ] (Client) Render texture.
+[/] (Client) Texture models.
+    [*] (Client) Load images.
+    [*] (Client) Create texture list.
+    [*] (Client) Bind texture to model.
+    [ ] (Client) Bind texture to entity.
+    [*] (Client) Render texture.
+
+=====================
+*/* Boxes sandbox ***
+=====================
+[/] (Art) Make models
+    [*] Make boxes
+	[ ] Make map
+	[ ] Make player models
+[ ] (Lua) Texture boxes with different colors corresponding to the keyboard numbers 0-9.
+[ ] (Lua) Add physics and collision handling.
+
+=========================
+*/* Multiplayer Elite ***
+=========================
 [ ] (Lua)    Load Asteroid model.
 [ ] (Lua)    Procedurally generate universe.
 [ ] (Client) Create 2D reference entities.
-[ ] (Client) Create 3D reference entities.
+[*] (Client) Create 3D reference entities.
 [ ] (Lua)    Implement radar.
 [ ] (All)    Add collision handling.
 [ ] (Client) Add more correct looking lighting.

@@ -12,10 +12,15 @@ function startup()
 	loadWorld()
 
 	-- Prepare the textures.
-	terrainMaterial, error = material_create()
-	terrainTexture, error = material_loadTexture("blender/terrain_material Base Color.png")
-	error = material_linkTexture(terrainMaterial, terrainTexture)
-	error = model_linkDefaultMaterial(terrainModel, terrainMaterial)
+	defaultTerrainMaterial, error = material_create()
+	defaultTerrainTexture, error = material_loadTexture("blender/terrain_material Base Color.png")
+	error = material_linkTexture(defaultTerrainMaterial, defaultTerrainTexture)
+	error = model_linkDefaultMaterial(terrainModel, defaultTerrainMaterial)
+
+	defaultBoxMaterial, error = material_create()
+	defaultBoxTexture, error = material_loadTexture("textures/blue.png")
+	error = material_linkTexture(defaultBoxMaterial, defaultBoxTexture)
+	error = model_linkDefaultMaterial(boxModel, defaultBoxMaterial)
 
 	keys_createFullBind("k_1073741903", "key_left",			"key_left_d",		"key_left_u")
 	keys_createFullBind("k_1073741904", "key_right",		"key_right_d",		"key_right_u")

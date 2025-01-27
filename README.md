@@ -7,10 +7,9 @@
 Honestly, I have no idea what this is going to be yet. At this point, it's just a tech demo.
 Here is what I do know:
 
-* Written in C
+* Written in C and moddable through Lua
+* Client-server multiplayer, with optional single player
 * Cross-platform (Linux + Windows 10) (Console does not currently work on Windows.)
-* Client-server
-* Moddable through Lua
 
 ## Installation
 
@@ -66,32 +65,28 @@ build/cengine-1
 
 ### Currently implemented
 
+Mod loading
+Configuration scripts
+
 ### Partially implemented
 
 Lua sandboxes  
-Model loader  
-Model list  
-Entity tree  
+.obj model import  
+Scene graph  
 Networking  
-Rendering  
-Mod loader
-Scripting (for configuration)
-README.md
+
 
 ## Engine documentation
 
 ### Terminology
 
-```text
-model   A standard 3D model. May include other types of models in the future.
-entity  A node in the entity tree. It stores information used for manipulating models during rendering.
-object  A general term for a model or an entity.
-```
+    model   A 3D model.
+    entity  A node in the scene graph. It is used to manage collections of models and entities.
+    object  A general term for a model or an entity.
 
 ### 3D graphics model
 
-The rendering system is a bit complicated, but hopefully not too difficult to understand.
-To render a model, it must first be loaded by the engine. This is done manually to save memory and loading time. The model is then bound to an entity. I expect that in most cases, only one model will be bound to a given entity for reasons that should become obvious shortly. Before binding can occur, the entity must first be created. Since we are going to bind a model to it, the entity must be created as a model entity. The model can now be bound to the newly created entity. After this is done, the model entity must be linked to the world entity. The world entity is created by the engine and anything linked to it will be rendered.
+To render a model, it must first be loaded by the engine. The model is then bound to an entity. Before binding can occur, the entity must first be created. Since we are going to bind a model to it, the entity must be created as a model entity. The model can now be bound to the newly created entity. After this is done, the model entity must be linked to the world entity. The world entity is created by the engine and anything linked to it will be rendered.
 
 More concisely, with results shown after each step:
 
@@ -118,7 +113,7 @@ The reason for this structure is to make manipulating models easier, as is expla
 
 ### Models
 
-Models are standard 3D models. They contain vertices and other information required for rendering. Models can be reused as many times as needed in a scene after they are loaded. They contain no position or orientation information, so they must be bound to an entity to be placed in the scene.
+Models are standard 3D models. They contain vertices and other information required for rendering. Models can be reused as many times as needed in a scene after they are loaded. They contain no position or orientation information, so they must be bound to an entity to be placed in the scene. This means that unless you have a multi-part model, you will usually want each entity to have only one model bound to it.
 
 #### Model functions
 
@@ -128,7 +123,7 @@ Models are standard 3D models. They contain vertices and other information requi
 
 ### Entities
 
-An entity is a node in the entity tree. Each entity has a type, and only objects of that type can be bound to an entity. This was touched on a bit already. To bind a model to an entity, that model must be created with the model type. To bind an entity to another entity, the parent entity must be created with the entity type. A list of types is presented below.
+An entity is a node in the entity tree. Each entity has a type, and only objects of that type can be bound to that entity. To bind a model to an entity, that model must be created with the model type. To bind an entity to another entity, the parent entity must be created with the entity type. A list of types is presented below.
 
 #### Entity types
 
