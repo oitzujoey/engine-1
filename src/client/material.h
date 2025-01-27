@@ -6,7 +6,7 @@
 
 extern material_list_t g_materialList;
 
-void material_initList(material_list_t *materialList);
+int material_initList(material_list_t *materialList);
 void material_freeList(material_list_t *materialList);
 bool material_indexExists(const material_list_t materialList, const ptrdiff_t materialIndex);
 

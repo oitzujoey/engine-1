@@ -759,6 +759,9 @@ It would be nice if I could have the zip file in the executable, but it sounds l
 Maybe I should just do it the way OpenArena does it, accept there's going to be a lot of files and distribute them in a zip file.
 
 
+I think I will have a default texture: Hot pink
+
+
 
 
 Stuff I need to add before public release:

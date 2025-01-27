@@ -328,6 +328,8 @@ static int mesh_load(size_t *index, uint8_t *filePathRoot, size_t filePathRoot_l
 		e = ERR_OUTOFMEMORY;
 		goto cleanup;
 	}
+	// This is hard coded. Assuming the materials are setup right, this points to the hot pink default material.
+	model->defaultMaterials[0] = 0;
 #endif
 
  cleanup:

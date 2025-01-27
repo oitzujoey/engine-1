@@ -12,10 +12,29 @@
 material_list_t g_materialList;
 size_t g_textures_length;
 
-void material_initList(material_list_t *materialList) {
+
+static void material_loadTexturemissingTexture(GLuint *textureIndex);
+static int material_create(material_list_t *, ptrdiff_t *);
+static inline void material_linkTexture(const material_list_t, const ptrdiff_t, GLuint);
+
+
+int material_initList(material_list_t *materialList) {
 	materialList->materials = NULL;
 	materialList->materials_length = 0;
 	g_textures_length = 0;
+
+	{
+		// Load hot pink texture as the default texture so that we know when a texture is missing on a model.
+		GLuint textureIndex;
+		ptrdiff_t materialIndex;
+		(void) material_loadTexturemissingTexture(&textureIndex);
+		// `materialIndex` will be 0.
+		int e = material_create(&g_materialList, &materialIndex);
+		if (e) return e;
+		(void) material_linkTexture(g_materialList, materialIndex, textureIndex);
+	}
+
+	return ERR_OK;
 }
 
 void material_freeList(material_list_t *materialList) {
@@ -32,7 +51,8 @@ static void material_init(material_t *material) {
 // }
 
 static int material_create(material_list_t *materialList, ptrdiff_t *materialIndex) {
-	
+	int error = ERR_OK;
+
 	materialList->materials_length++;
 	materialList->materials = realloc(materialList->materials, materialList->materials_length * sizeof(material_t));
 	if (materialList->materials == NULL) {
@@ -66,6 +86,30 @@ static inline bool material_textureIndexExists(const GLuint textureIndex) {
 static inline void material_linkTexture(const material_list_t materialList, const ptrdiff_t materialIndex, GLuint textureIndex) {
 
 	materialList.materials[materialIndex].texture = textureIndex;
+}
+
+// This should be the first texture loaded, so the texture index will be 1.
+static void material_loadTexturemissingTexture(GLuint *textureIndex) {
+	int width = 1;
+	int height = 1;
+	int channels = 3;
+	// Hot Pink.
+	uint8_t pixels[3] = {255, 0, 255};
+
+	// Dummy index. Nobody sees this. We just assume it will be 0.
+	glGenTextures(1, textureIndex);
+	glBindTexture(GL_TEXTURE_2D, *textureIndex);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	// glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+
+	g_textures_length++;
 }
 
 static int material_loadTexture(GLuint *textureIndex, const char* const filePath) {

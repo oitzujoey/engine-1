@@ -187,7 +187,11 @@ int windowInit(void) {
 		goto cleanup_l;
 	}
 	
-	material_initList(&g_materialList);
+	error = material_initList(&g_materialList);
+	if (error) {
+		critical_error("Failed to initialize material list.", "");
+		goto cleanup_l;
+	}
 	
 	error = ERR_OK;
 	cleanup_l:
