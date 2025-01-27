@@ -213,7 +213,7 @@ static int rmsh_load(size_t *index, uint8_t *filePath) {
 	e = rmsh_read(&rmsh, filePath);
 	if (e) goto cleanup;
 
-	(void) rmsh_print(&rmsh);
+	/* (void) rmsh_print(&rmsh); */
 
 #ifdef CLIENT
 	// TODO: I think I'd like to use an AABB eventually, but we currently use a bounding sphere. Just stick an arbitrary
@@ -271,6 +271,7 @@ static int mesh_load(size_t *index, uint8_t *filePathRoot, size_t filePathRoot_l
 		error("Failed to create new model", "");
 		goto cleanup;
 	}
+	(void) memset(model, 0, sizeof(model_t));
 
 	{
 		(void) str4_copyC(&rmsh_filePath, filePathRoot, filePathRoot_length);
@@ -294,8 +295,8 @@ static int mesh_load(size_t *index, uint8_t *filePathRoot, size_t filePathRoot_l
 	e = rmsh_read(&rmsh, rmsh_filePath.str);
 	if (e) goto cleanup;
 
-	(void) cmsh_print(&cmsh);
-	(void) rmsh_print(&rmsh);
+	/* (void) cmsh_print(&cmsh); */
+	/* (void) rmsh_print(&rmsh); */
 
 	// `model` now has ownership of cmsh's vertices buffer.
 	model->collision_vertices = cmsh.vertices;
@@ -337,6 +338,7 @@ static int mesh_load(size_t *index, uint8_t *filePathRoot, size_t filePathRoot_l
 	e1 = a.quit(a.context);
 	if (e1) e = e1;
 	if (e) {
+		error("Failed to load model \"%s\"", filePathRoot);
 		if (cmsh.vertices) MEMORY_FREE(&cmsh.vertices);
 		if (rmsh.vertices) MEMORY_FREE(&rmsh.vertices);
 		if (rmsh.vertexNormals) MEMORY_FREE(&rmsh.vertexNormals);

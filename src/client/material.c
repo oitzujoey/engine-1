@@ -28,7 +28,6 @@ int material_initList(material_list_t *materialList) {
 		GLuint textureIndex;
 		ptrdiff_t materialIndex;
 		(void) material_loadTexturemissingTexture(&textureIndex);
-		// `materialIndex` will be 0.
 		int e = material_create(&g_materialList, &materialIndex);
 		if (e) return e;
 		(void) material_linkTexture(g_materialList, materialIndex, textureIndex);

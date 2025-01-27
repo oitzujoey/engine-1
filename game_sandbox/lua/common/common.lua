@@ -8,6 +8,15 @@ g_models = {}
 g_entities = {}
 
 
+function quit()
+	cfg2_setVariable("quit")
+end
+
+function abort(message)
+	critical_error("abort", message)
+end
+
+
 function common_loadModel(modelName)
 	local modelPath = modelName
 	local model = model_load(modelPath)

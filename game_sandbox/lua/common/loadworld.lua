@@ -16,7 +16,9 @@ boxes_spacing = 10
 
 function loadWorld()
 	boxModel, error = mesh_load("blender/cube")
+	if error ~= 0 then quit() end
 	terrainModel, error = mesh_load("blender/terrain10")
+	if error ~= 0 then quit() end
 
 
 	terrainEntity, error = entity_createEntity(g_entity_type_model)
