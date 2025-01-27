@@ -14,7 +14,6 @@ function startup()
 	-- Prepare the textures.
 	terrainMaterial, error = material_create()
 	terrainTexture, error = material_loadTexture("blender/terrain_material Base Color.png")
-	-- terrainTexture, error = material_loadTexture("oolite_cobramk1_diffuse.png")
 	error = material_linkTexture(terrainMaterial, terrainTexture)
 	error = model_linkDefaultMaterial(terrainModel, terrainMaterial)
 
