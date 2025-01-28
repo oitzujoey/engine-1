@@ -93,7 +93,7 @@ static void material_loadTexturemissingTexture(GLuint *textureIndex) {
 	int height = 1;
 	int channels = 3;
 	// Hot Pink.
-	uint8_t pixels[3] = {255, 0, 255};
+	uint8_t pixels[3] = {0xff, 0x45, 0xfc};
 
 	// Dummy index. Nobody sees this. We just assume it will be 0.
 	glGenTextures(1, textureIndex);
