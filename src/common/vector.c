@@ -511,3 +511,71 @@ int l_quatNormalize(lua_State *luaState) {
 
 	return 2;
 }
+
+// Normalize the vector part of an axis angle.
+int l_aaNormalize(lua_State *luaState) {
+	int error = ERR_OK;
+
+	// This is an axis angle. Trust me.
+	quat_t q;
+
+	lua_pushstring(luaState, "w");
+	if (lua_gettable(luaState, 1) != LUA_TNUMBER) {
+		error("Key w must be a number", "");
+		lua_error(luaState);
+	}
+	q.s = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+
+	lua_pushstring(luaState, "x");
+	if (lua_gettable(luaState, 1) != LUA_TNUMBER) {
+		error("Key x must be a number", "");
+		lua_error(luaState);
+	}
+	q.v[0] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+
+	lua_pushstring(luaState, "y");
+	if (lua_gettable(luaState, 1) != LUA_TNUMBER) {
+		error("Key y must be a number", "");
+		lua_error(luaState);
+	}
+	q.v[1] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+
+	lua_pushstring(luaState, "z");
+	if (lua_gettable(luaState, 1) != LUA_TNUMBER) {
+		error("Key z must be a number", "");
+		lua_error(luaState);
+	}
+	q.v[2] = lua_tonumber(luaState, -1);
+	lua_pop(luaState, 1);
+
+	error = vec3_normalize(&q.v);
+	if (error) {
+		error("aaNormalize failed.", "");
+		lua_error(luaState);
+	}
+
+	lua_newtable(luaState);
+
+	lua_pushstring(luaState, "w");
+	lua_pushnumber(luaState, q.s);
+	lua_settable(luaState, -3);
+
+	lua_pushliteral(luaState, "x");
+	lua_pushnumber(luaState, q.v[0]);
+	lua_settable(luaState, -3);
+
+	lua_pushliteral(luaState, "y");
+	lua_pushnumber(luaState, q.v[1]);
+	lua_settable(luaState, -3);
+
+	lua_pushliteral(luaState, "z");
+	lua_pushnumber(luaState, q.v[2]);
+	lua_settable(luaState, -3);
+
+	lua_pushinteger(luaState, error);
+
+	return 2;
+}

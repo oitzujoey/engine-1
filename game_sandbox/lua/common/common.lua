@@ -17,22 +17,9 @@ function abort(message)
 end
 
 
-function common_loadModel(modelName)
-	local modelPath = modelName
-	local model = model_load(modelPath)
-	g_models[#g_models+1] = model
-end
-
-
--- Load player, box, and map collision models.
-function common_loadCollisionModels()
-	-- common_loadModel("player")
-	boxModel, error = cmsh_load("untitled.cmsh")
-	-- Load untitled.cmsh and untitled.rmsh.
-	-- boxModel, error = model_load("untitled")
-	puts("error: "..error)
-	puts("model: "..boxModel)
-	terrainModel, error = cmsh_load("blender/terrain10.cmsh")
-	puts("error: "..error)
-	puts("model: "..terrainModel)
+function aaToQuat(axisAngle)
+	angle = axisAngle.w
+	w_part = cos(angle)/2
+	v_part = sin(angle)/2
+	return {w=w_part, x=axisAngle.x*v_part, y=axisAngle.y*v_part, z=axisAngle.z*v_part}
 end

@@ -59,55 +59,64 @@ function main()
 			-- Inform the client how many clients there are.
 			serverState[i].numClients = numClients
 
-			tempVec3 = {x=0, y=0, z=0}
+			local tempVec3 = {x=0, y=0, z=0}
+
 			if clientState[i].keys.left then
 				tempVec3 = vec3_crossProduct(Vec3_yp, Vec3_xp)
-				tempQuat = {w=0, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}
-				tempQuat = quatNormalize(tempQuat)
-				tempQuat.w = TurnRate
-				tempQuat = quatNormalize(tempQuat)
+				local tempQuat = aaToQuat(aaNormalize({w=TurnRate, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}))
 				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
 			end
+
 			if clientState[i].keys.right then
 				tempVec3 = vec3_crossProduct(Vec3_yp, Vec3_xn)
-				tempQuat = {w=0, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}
-				tempQuat = quatNormalize(tempQuat)
-				tempQuat.w = TurnRate
-				tempQuat = quatNormalize(tempQuat)
+				local tempQuat = aaToQuat(aaNormalize({w=TurnRate, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}))
 				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
 			end
-			if clientState[i].keys.up or (clientState[i].mouse.delta_y and clientState[i].mouse.delta_y > 0) then
-				tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_yn)
-				tempQuat = {w=0, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}
-				tempQuat = quatNormalize(tempQuat)
-				tempQuat.w = TurnRate
-				tempQuat = quatNormalize(tempQuat)
-				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
+
+			tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_yn)
+			local angle = 0
+			if clientState[i].keys.up then
+				angle = angle + TurnRate
 			end
-			if clientState[i].keys.down or (clientState[i].mouse.delta_y and clientState[i].mouse.delta_y < 0) then
-				tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_yp)
-				tempQuat = {w=0, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}
-				tempQuat = quatNormalize(tempQuat)
-				tempQuat.w = TurnRate
-				tempQuat = quatNormalize(tempQuat)
-				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
+			if (clientState[i].mouse.delta_y and clientState[i].mouse.delta_y > 0) then
+				angle = angle + clientState[i].mouse.delta_y/1000.0
 			end
-			if clientState[i].keys.yawLeft or (clientState[i].mouse.delta_y and clientState[i].mouse.delta_x > 0) then
-				tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_xp)
-				tempQuat = {w=0, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}
-				tempQuat = quatNormalize(tempQuat)
-				tempQuat.w = TurnRate
-				tempQuat = quatNormalize(tempQuat)
-				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
+			local tempQuat = aaToQuat(aaNormalize({w=angle, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}))
+			serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
+
+			tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_yp)
+			local angle = 0
+			if clientState[i].keys.down then
+				angle = angle + TurnRate
 			end
-			if clientState[i].keys.yawRight or (clientState[i].mouse.delta_y and clientState[i].mouse.delta_x < 0) then
-				tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_xn)
-				tempQuat = {w=0, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}
-				tempQuat = quatNormalize(tempQuat)
-				tempQuat.w = TurnRate
-				tempQuat = quatNormalize(tempQuat)
-				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
+			if (clientState[i].mouse.delta_y and clientState[i].mouse.delta_y < 0) then
+				angle = angle - clientState[i].mouse.delta_y/1000.0
 			end
+			local tempQuat = aaToQuat(aaNormalize({w=angle, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}))
+			serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
+
+			tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_xp)
+			local angle = 0
+			if clientState[i].keys.yawLeft then
+				angle = angle + TurnRate
+			end
+			if (clientState[i].mouse.delta_y and clientState[i].mouse.delta_x > 0) then
+				angle = angle + clientState[i].mouse.delta_x/1000.0
+			end
+			local tempQuat = aaToQuat(aaNormalize({w=angle, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}))
+			serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
+
+			tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_xn)
+			local angle = 0
+			if clientState[i].keys.yawRight then
+				angle = angle + TurnRate
+			end
+			if (clientState[i].mouse.delta_y and clientState[i].mouse.delta_x < 0) then
+				angle = angle - clientState[i].mouse.delta_x/1000.0
+			end
+			local tempQuat = aaToQuat(aaNormalize({w=angle, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}))
+			serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
+
 			if clientState[i].keys.accelerate then
 				serverState[i].speed = serverState[i].speed + 0.1
 			end

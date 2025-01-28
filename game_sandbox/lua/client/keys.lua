@@ -162,5 +162,8 @@ end
 
 function mouse_motion(motionEvent)
 	g_mouse = motionEvent
-	clientState.mouse = motionEvent
+	clientState.mouse = {x=motionEvent.x,
+						 y=motionEvent.y,
+						 delta_x=motionEvent.delta_x*g_sensitivity,
+						 delta_y=motionEvent.delta_y*g_sensitivity}
 end

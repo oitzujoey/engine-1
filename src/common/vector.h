@@ -32,4 +32,6 @@ int l_vec3_rotate(lua_State *luaState);
 int l_hamiltonProduct(lua_State *luaState);
 int l_quatNormalize(lua_State *luaState);
 
+int l_aaNormalize(lua_State *luaState);
+
 #endif

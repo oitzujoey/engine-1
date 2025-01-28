@@ -8,7 +8,7 @@ Vec3_zp = {x=0, y=0, z=1}
 
 worldOrientation = {w=1.0, x=0.0, y=0.0, z=0.0}
 
-TurnRate = 100
+TurnRate = 0.01
 
 boxes_length = 1000
 boxes_spacing = 4

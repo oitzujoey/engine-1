@@ -5,6 +5,8 @@ include "../common/loadworld.lua"
 Keys = {}
 g_mouse = {}
 
+g_sensitivity = 1.0
+
 function startup()
 	info("startup", "Lua start");
 

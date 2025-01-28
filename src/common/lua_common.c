@@ -13,6 +13,9 @@
 
 luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_puts,             .name = "puts"},
+	{.func = l_common_toString,         .name = "toString"},
+	{.func = l_common_sin,              .name = "sin"},
+	{.func = l_common_cos,              .name = "cos"},
 	// {.func = l_loadObj,                 .name = "loadObj"},
 	{.func = l_log_info,                .name = "info"},
 	{.func = l_log_warning,             .name = "warning"},
@@ -23,7 +26,6 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_cmsh_load,               .name = "cmsh_load"},
 	{.func = l_rmsh_load,               .name = "rmsh_load"},
 	{.func = l_mesh_load,               .name = "mesh_load"},
-	{.func = l_common_toString,         .name = "toString"},
 	{.func = l_entity_createEntity,     .name = "entity_createEntity"},
 	{.func = l_entity_deleteEntity,     .name = "entity_deleteEntity"},
 	{.func = l_entity_linkChild,        .name = "entity_linkChild"},
@@ -35,11 +37,75 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_vec3_rotate,             .name = "vec3_rotate"},
 	{.func = l_hamiltonProduct,         .name = "hamiltonProduct"},
 	{.func = l_quatNormalize,           .name = "quatNormalize"},
+	{.func = l_aaNormalize,             .name = "aaNormalize"},
 	{.func = l_cfg2_setVariable,        .name = "cfg2_setVariable"},
 	{.func = l_cfg2_setCallback,        .name = "cfg2_setCallback"},
 	// {.func = l_cnetwork_receive,    .name = "l_snetwork_receive"},
 	{.func = NULL,                  .name = NULL}
 };
+
+
+int l_common_cos(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 1) {
+		error("`cos` requires 1 argument", "");
+		lua_error(l);
+	}
+
+	vec_t s;
+
+	if (lua_isinteger(l, 1)) {
+		s = lua_tointeger(l, 1);
+	}
+	else if (lua_isnumber(l, 1)) {
+		s = lua_tonumber(l, 1);
+	}
+	else {
+		error("Argument of `cos` must be a number.", "");
+		lua_error(l);
+	}
+
+#ifdef DOUBLE_VEC
+	s = cos(s);
+#else
+	s = cosf(s);
+#endif
+
+	(void) lua_pushnumber(l, s);
+
+	return 1;
+}
+
+int l_common_sin(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 1) {
+		error("`sin` requires 1 argument", "");
+		lua_error(l);
+	}
+
+	vec_t s;
+
+	if (lua_isinteger(l, 1)) {
+		s = lua_tointeger(l, 1);
+	}
+	else if (lua_isnumber(l, 1)) {
+		s = lua_tonumber(l, 1);
+	}
+	else {
+		error("Argument of `sin` must be a number.", "");
+		lua_error(l);
+	}
+
+#ifdef DOUBLE_VEC
+	s = sin(s);
+#else
+	s = sinf(s);
+#endif
+
+	(void) lua_pushnumber(l, s);
+
+	return 1;
+}
 
 int l_common_toString(lua_State *luaState) {
 	
