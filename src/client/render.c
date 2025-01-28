@@ -405,7 +405,7 @@ int render_initOpenGL(void) {
 	return error;
 }
 
-int renderModels(entity_t entity, vec3_t position, quat_t orientation, vec_t scale) {
+int renderModels(entity_t entity, vec3_t position, quat_t orientation, vec_t scale, ptrdiff_t material_index) {
 	int error = ERR_CRITICAL;
 	
 	// For each model...
@@ -449,7 +449,8 @@ int renderModels(entity_t entity, vec3_t position, quat_t orientation, vec_t sca
 		glUseProgram(g_shaderProgram[0]);
 		glActiveTexture(GL_TEXTURE0);
 		// TODO: Change this from texture #1 to whatever texture is called for.
-		glBindTexture(GL_TEXTURE_2D, g_materialList.materials[model.defaultMaterials[0]].texture);
+		if (material_index < 0) material_index = model.defaultMaterials[0];
+		glBindTexture(GL_TEXTURE_2D, g_materialList.materials[material_index].texture);
 		glBindVertexArray(g_vao);
 		// glVertices_length is always a multiple of three.
 		glDrawArrays(GL_TRIANGLES, 0, model.glVertices_length / 3);
@@ -459,12 +460,13 @@ int renderModels(entity_t entity, vec3_t position, quat_t orientation, vec_t sca
 	return error;
 }
 
-int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation, vec_t scale) {
+int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation, vec_t scale, ptrdiff_t material_index) {
 	int error = ERR_CRITICAL;
 
 	vec3_t localPosition;
 	quat_t localOrientation;
 	vec_t localScale;
+	ptrdiff_t local_material_index;
 	
 	if (!entity.inUse) {
 		// Don't draw deleted entities.
@@ -483,13 +485,18 @@ int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation, vec_t s
 	vec3_rotate(&localPosition, orientation);
 	quat_hamilton(&localOrientation, orientation, &entity.orientation);
 	localScale = scale * entity.scale;
-	
+	if (material_index < 0 && entity.materials_length) material_index = entity.materials[0];
+
 	if (entity.childType == entity_childType_model) {
-		error = renderModels(entity, localPosition, localOrientation, localScale);
+		error = renderModels(entity, localPosition, localOrientation, localScale, material_index);
 	}
 	else if (entity.childType == entity_childType_entity) {
 		for (int i = 0; i < entity.children_length; i++) {
-			error = renderEntity(g_entityList.entities[entity.children[i]], &localPosition, &localOrientation, localScale);
+			error = renderEntity(g_entityList.entities[entity.children[i]],
+			                     &localPosition,
+			                     &localOrientation,
+			                     localScale,
+			                     material_index);
 		}
 	}
 	
@@ -510,7 +517,7 @@ int render(entity_t entity) {
 	glUniform1f(g_screenHeightUniform, 16.0f/9.0f);
 	
 	// Render world entity.
-	error = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}}, 1.0);
+	error = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}}, 1.0, -1);
 	
 	/* Show */
 	

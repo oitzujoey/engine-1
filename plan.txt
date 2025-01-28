@@ -772,7 +772,6 @@ model
 
 
 Stuff I need to add before public release:
-    RMSH & CMSH pipelines
     Textures
     Collision detection
     Authentication

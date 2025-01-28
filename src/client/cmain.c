@@ -43,6 +43,7 @@ luaCFunc_t luaClientFunctions[] = {
 	{.func = l_material_linkTexture,        .name = "material_linkTexture"},
 	{.func = l_material_loadTexture,        .name = "material_loadTexture"},
 	{.func = l_model_linkDefaultMaterial,   .name = "model_linkDefaultMaterial"},
+	{.func = l_entity_linkMaterial,         .name = "entity_linkMaterial"},
 	{.func = NULL,                          .name = NULL}
 };
 

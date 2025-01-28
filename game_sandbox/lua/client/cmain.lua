@@ -17,10 +17,59 @@ function startup()
 	error = material_linkTexture(defaultTerrainMaterial, defaultTerrainTexture)
 	error = model_linkDefaultMaterial(terrainModel, defaultTerrainMaterial)
 
-	defaultBoxMaterial, error = material_create()
-	defaultBoxTexture, error = material_loadTexture("textures/blue.png")
-	error = material_linkTexture(defaultBoxMaterial, defaultBoxTexture)
-	error = model_linkDefaultMaterial(boxModel, defaultBoxMaterial)
+	-- Load a .png texture from "textures/".
+	function loadTexture(name)
+		local e = false
+		material, e = material_create()
+		if e ~= 0 then return nil, e end
+		texture, e = material_loadTexture("textures/"..name..".png")
+		if e ~= 0 then return nil, e end
+		e = material_linkTexture(material, texture)
+		if e ~= 0 then return nil, e end
+		return material, nil
+	end
+	redMaterial, error = loadTexture("red")
+	greenMaterial, error = loadTexture("green")
+	blueMaterial, error = loadTexture("blue")
+	whiteMaterial, error = loadTexture("white")
+	blackMaterial, error = loadTexture("black")
+	cyanMaterial, error = loadTexture("cyan")
+	magentaMaterial, error = loadTexture("magenta")
+	yellowMaterial, error = loadTexture("yellow")
+
+	error = model_linkDefaultMaterial(boxModel, whiteMaterial)
+
+	_ = (function()
+			local e = nil
+			for i = 1,boxes_length,1 do
+				local material = redMaterial
+				local factor = 2
+				function mutate()
+					factor = factor + 1
+				end
+				if i%3 == 0 then
+					material = greenMaterial
+				end
+				-- mutate()
+				if i%5 == 0 then
+					material = blueMaterial
+				end
+				-- mutate()
+				if i%15 == 0 then
+					material = cyanMaterial
+				end
+				-- mutate()
+				-- if i%factor == 0 then
+				-- 	material = magentaMaterial
+				-- end
+				-- mutate()
+				-- if i%factor == 0 then
+				-- 	material = yellowMaterial
+				-- end
+				e = entity_linkMaterial(g_boxEntities[i], material)
+			end
+			return nil
+	end)()
 
 	keys_createFullBind("k_1073741903", "key_left",			"key_left_d",		"key_left_u")
 	keys_createFullBind("k_1073741904", "key_right",		"key_right_d",		"key_right_u")

@@ -284,16 +284,18 @@ void entity_printEntity(int index) {
 static inline int entity_linkMaterial(ptrdiff_t parentIndex, ptrdiff_t materialIndex) {
 	int error = ERR_CRITICAL;
 
-	g_entityList.entities[parentIndex].materials_length++;
-	g_entityList.entities[parentIndex].materials = realloc(g_entityList.entities[parentIndex].materials, g_entityList.entities[parentIndex].materials_length * sizeof(ptrdiff_t));
-	if (g_entityList.entities[parentIndex].materials == NULL) {
+	entity_t *entity = &g_entityList.entities[parentIndex];
+	entity->materials_length++;
+	entity->materials = realloc(entity->materials, entity->materials_length * sizeof(ptrdiff_t));
+	if (entity->materials == NULL) {
 		outOfMemory();
 		error = ERR_OUTOFMEMORY;
-		goto cleanup_l;
+		goto cleanup;
 	}
-	
+	entity->materials[entity->materials_length-1] = materialIndex;
+
 	error = ERR_OK;
-	cleanup_l:
+ cleanup:
 	return error;
 }
 #endif
@@ -637,21 +639,21 @@ int l_entity_linkMaterial(lua_State *luaState) {
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
-	
-	materialIndex = lua_tointeger(luaState, 1);
-	if (!material_indexExists(g_materialList, materialIndex)) {
-		error("Bad material index %i.", materialIndex);
-		error = ERR_GENERIC;
-		goto cleanup_l;
-	}
-	
-	entityIndex = lua_tointeger(luaState, 2);
+
+	entityIndex = lua_tointeger(luaState, 1);
 	if (!entity_isValidEntityIndex(entityIndex)) {
 		error("Bad entity index %i.", entityIndex);
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
-	
+
+	materialIndex = lua_tointeger(luaState, 2);
+	if (!material_indexExists(g_materialList, materialIndex)) {
+		error("Bad material index %i.", materialIndex);
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+
 	error = entity_linkMaterial(entityIndex, materialIndex);
 	if (error) {
 		goto cleanup_l;
