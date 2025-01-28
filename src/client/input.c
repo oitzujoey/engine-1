@@ -34,6 +34,12 @@ int input_init(void) {
 
 int input_execKeyBind(SDL_Event sdlEvent, buttonType_t buttonType, bool keyDown, lua_State *luaState) {
 	int error = ERR_CRITICAL;
+	if (buttonType == buttonType_keyboard) printf("Keyboard %i\n", sdlEvent.key.keysym.sym);
+	if (buttonType == buttonType_mouse) printf("Mouse %i\n", sdlEvent.button.button);
+	if (buttonType == buttonType_joystick)
+		printf("Joystick %i %i\n", sdlEvent.jbutton.button, sdlEvent.jbutton.which);
+	if (buttonType == buttonType_controller)
+		printf("Controller %i %i\n", sdlEvent.cbutton.button, sdlEvent.cbutton.which);
 	
 	// Search bindings for keycode. I don't think there is a convenient way to do binding without a search.
 	for (int i = 0; i < g_keybinds.length; i++) {
@@ -43,7 +49,6 @@ int input_execKeyBind(SDL_Event sdlEvent, buttonType_t buttonType, bool keyDown,
 		
 		switch (buttonType) {
 		case buttonType_keyboard:
-			printf("Keyboard %i\n", sdlEvent.key.keysym.sym);
 			if (g_keybinds.keys[i].key.keycode == sdlEvent.key.keysym.sym) {
 				// Found the key. Now run the attached script.
 				error = cfg2_execString(keyDown ? g_keybinds.keys[i].keyDownCommand : g_keybinds.keys[i].keyUpCommand, luaState, "bind");
@@ -53,7 +58,6 @@ int input_execKeyBind(SDL_Event sdlEvent, buttonType_t buttonType, bool keyDown,
 			}
 			break;
 		case buttonType_mouse:
-			printf("Mouse %i\n", sdlEvent.button.button);
 			if (g_keybinds.keys[i].key.mouseButton == sdlEvent.button.button) {
 				// Found the key. Now run the attached script.
 				error = cfg2_execString(keyDown ? g_keybinds.keys[i].keyDownCommand : g_keybinds.keys[i].keyUpCommand, luaState, "bind");
@@ -63,7 +67,6 @@ int input_execKeyBind(SDL_Event sdlEvent, buttonType_t buttonType, bool keyDown,
 			}
 			break;
 		case buttonType_joystick:
-			printf("Joystick %i %i\n", sdlEvent.jbutton.button, sdlEvent.jbutton.which);
 			if ((g_keybinds.keys[i].key.joystickButton == sdlEvent.jbutton.button) && (g_keybinds.keys[i].which == sdlEvent.jbutton.which)) {
 				// Found the key. Now run the attached script.
 				error = cfg2_execString(keyDown ? g_keybinds.keys[i].keyDownCommand : g_keybinds.keys[i].keyUpCommand, luaState, "bind");
@@ -73,7 +76,6 @@ int input_execKeyBind(SDL_Event sdlEvent, buttonType_t buttonType, bool keyDown,
 			}
 			break;
 		case buttonType_controller:
-			printf("Controller %i %i\n", sdlEvent.cbutton.button, sdlEvent.cbutton.which);
 			if ((g_keybinds.keys[i].key.controllerButton == sdlEvent.cbutton.button) && (g_keybinds.keys[i].which == sdlEvent.cbutton.which)) {
 				// Found the key. Now run the attached script.
 				error = cfg2_execString(keyDown ? g_keybinds.keys[i].keyDownCommand : g_keybinds.keys[i].keyUpCommand, luaState, "bind");
