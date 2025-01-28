@@ -61,6 +61,18 @@ const cfg2_var_init_t g_clientVarInit[] = {
 		.permissionCallback = cfg2_admin_supervisor,
 		.callback = cfg2_callback_bind
 	},
+	{
+		.name = "bindMouse",
+		.vector = 0,
+		.integer = 0,
+		.string = "",
+		.type = cfg2_var_type_none,
+		.permissionRead = cfg2_admin_supervisor,
+		.permissionWrite = cfg2_admin_game,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = cfg2_callback_bindMouse
+	},
 	// Variables
 	{
 		.name = "client",

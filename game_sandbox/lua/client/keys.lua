@@ -1,16 +1,20 @@
 
 function keys_createFullBind(key, configVariable, callbackDown, callbackUp)
-	cfg2_setVariable("create none +" .. configVariable)
-	cfg2_setVariable("create none -" .. configVariable)
+	cfg2_setVariable("create command +" .. configVariable)
+	cfg2_setVariable("create command -" .. configVariable)
 	cfg2_setCallback("+" .. configVariable, callbackDown)
 	cfg2_setCallback("-" .. configVariable, callbackUp)
 	cfg2_setVariable("bind " .. key .. " +" .. configVariable .. " -" .. configVariable)
 end
 
 function keys_createHalfBind(key, configVariable, callback)
-	cfg2_setVariable("create none " .. configVariable)
+	cfg2_setVariable("create command " .. configVariable)
 	cfg2_setCallback(configVariable, callback)
 	cfg2_setVariable("bind " .. key .. " " .. configVariable)
+end
+
+function keys_createMouseBind(callback)
+	cfg2_setVariable("bindMouse "..callback)
 end
 
 
@@ -145,4 +149,18 @@ function key_decelerate_u()
 	if Keys.accelerate then
 		clientState.keys.accelerate = true
 	end
+end
+
+
+function mouse_leftPress()
+	info("mouse_leftPress", "Mouse press!")
+end
+
+function mouse_leftRelease()
+	info("mouse_leftRelease", "Mouse release!")
+end
+
+function mouse_motion(motionEvent)
+	g_mouse = motionEvent
+	clientState.mouse = motionEvent
 end

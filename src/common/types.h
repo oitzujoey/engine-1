@@ -317,13 +317,14 @@ typedef struct {
 		Uint8 controllerButton;
 	} key;
 	SDL_JoystickID which;
-	char *keyUpCommand;
-	char *keyDownCommand;
+	uint8_t *keyUpCommand;
+	uint8_t *keyDownCommand;
 } keybind_t;
 
 typedef struct {
 	keybind_t *keys;
 	size_t length;
+	uint8_t *mouseMotionCallbackName;
 } keybinds_t;
 
 /* network.h */

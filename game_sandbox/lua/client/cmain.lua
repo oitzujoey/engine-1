@@ -3,6 +3,7 @@ include "../client/keys.lua"
 include "../common/loadworld.lua"
 
 Keys = {}
+g_mouse = {}
 
 function startup()
 	info("startup", "Lua start");
@@ -79,6 +80,8 @@ function startup()
 	keys_createFullBind("k_97", "key_yawRight", "key_yawRight_d", "key_yawRight_u")
 	keys_createFullBind("k_119",		"key_accelerate",	"key_accelerate_d", "key_accelerate_u")
 	keys_createFullBind("k_115",		"key_decelerate",	"key_decelerate_d", "key_decelerate_u")
+	keys_createFullBind("m_1", "mouse_leftButton", "mouse_leftPress", "mouse_leftRelease")
+	keys_createMouseBind("mouse_motion")
 
 	cfg2_setVariable("bind k_113 quit")
 
@@ -99,6 +102,9 @@ function startup()
 	Keys.right = false
 	Keys.yawLeft = false
 	Keys.yawRight = false
+
+	g_mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
+	clientState.mouse = g_mouse
 
 	orientation = {w=1, x=0, y=0, z=0}
 	position = {x=0, y=0, z=0}
@@ -144,6 +150,8 @@ function main()
 		init()
 		return
 	end
+
+	clientState.mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
 
 	-- Display self.
 	if (serverState.position ~= nil) then

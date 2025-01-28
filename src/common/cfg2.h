@@ -24,6 +24,7 @@ int cfg2_callback_command(cfg2_var_t *var, const char *command, lua_State *luaSt
 int cfg2_callback_delete(cfg2_var_t *var, const char *command, lua_State *luaState);
 #ifdef CLIENT
 int cfg2_callback_bind(cfg2_var_t *var, const char *command, lua_State *luaState);
+int cfg2_callback_bindMouse(cfg2_var_t *var, const char *command, lua_State *luaState);
 #endif
 
 int cfg2_callback_maxRecursion(cfg2_var_t *var, const char *command, lua_State *luaState);

@@ -379,6 +379,9 @@ int cfg2_callback_create(cfg2_var_t *var, const char *command, lua_State *luaSta
 	if (!strcmp(arg1, "none")) {
 		type2 = cfg2_var_type_none;
 	}
+	else if (!strcmp(arg1, "command")) {
+		type2 = cfg2_var_type_none;
+	}
 	else if (!strcmp(arg1, "integer")) {
 		type2 = cfg2_var_type_integer;
 	}
@@ -1430,6 +1433,42 @@ int cfg2_callback_bind(cfg2_var_t *var, const char *command, lua_State *luaState
 	return error;
 }
 
+int cfg2_callback_bindMouse(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	int e = ERR_OK;
+
+	// Prevent execution on creation.
+	static bool created = false;
+	if (!created) {
+		created = true;
+		return ERR_OK;
+	}
+
+	uint8_t *callbackName = NULL;
+	cfg2_var_t *var2 = NULL, *var3 = NULL;
+
+	char *commandCopy = malloc((strlen(command) + 1) * sizeof(char));
+	if (commandCopy == NULL) {
+		e = ERR_OUTOFMEMORY;
+		goto cleanup;
+	}
+	strcpy(commandCopy, command);
+
+	callbackName = strtok(commandCopy, " ");
+	if (callbackName == NULL) {
+		warning("Bad syntax for command \"%s\". (1)", var->name);
+		e = ERR_GENERIC;
+		goto cleanup;
+	}
+
+	// Bind the Lua callback.
+	e = input_bindMouse(callbackName);
+	if (e) goto cleanup;
+	
+ cleanup:
+	free(commandCopy);
+	return e;
+}
+        
 #endif
 
 /* cfg2 variable callbacks */

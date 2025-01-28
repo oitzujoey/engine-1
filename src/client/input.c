@@ -1,10 +1,13 @@
 
 #include "input.h"
+#include <lua.h>
 #include "../common/common.h"
 #include "../common/log.h"
 #include "../common/cfg2.h"
 #include "../common/str2.h"
+#include "../common/str3.h"
 #include "../common/memory.h"
+#include "../common/lua_sandbox.h"
 
 keybinds_t g_keybinds;
 
@@ -13,6 +16,7 @@ int input_init(void) {
 	
 	g_keybinds.keys = NULL; //malloc(sizeof(keybinds_t));
 	g_keybinds.length = 0;
+	g_keybinds.mouseMotionCallbackName = NULL;  // mouseMotioncommand_length:uint8_t
 	
 	const int numJoysticks = SDL_NumJoysticks();
 	info("Found %i joysticks.", numJoysticks);
@@ -96,6 +100,45 @@ int input_execKeyBind(SDL_Event sdlEvent, buttonType_t buttonType, bool keyDown,
 	return error;
 }
 
+int input_execMousemotionBind(SDL_Event *event, lua_State *luaState) {
+	int e = ERR_OK;
+
+	SDL_MouseMotionEvent *motionEvent = &event->motion;
+	printf("motionEvent->state %u\n", motionEvent->state);
+	// Unlike key presses, the mouse can't be accessed from the console. There is no cvar for it.
+
+	if (g_keybinds.mouseMotionCallbackName) {
+		e = lua_getglobal(luaState, g_keybinds.mouseMotionCallbackName);
+		if (e != LUA_TFUNCTION) {
+			error("Lua file does not contain \"%s\" function.", g_keybinds.mouseMotionCallbackName);
+			e = ERR_CRITICAL;
+			goto cleanup;
+		}
+
+		(void) lua_createtable(luaState, 0, 4);
+		(void) lua_pushinteger(luaState, motionEvent->x);
+		(void) lua_setfield(luaState, -2, "x");
+		(void) lua_pushinteger(luaState, motionEvent->y);
+		(void) lua_setfield(luaState, -2, "y");
+		(void) lua_pushinteger(luaState, motionEvent->xrel);
+		(void) lua_setfield(luaState, -2, "delta_x");
+		(void) lua_pushinteger(luaState, motionEvent->yrel);
+		(void) lua_setfield(luaState, -2, "delta_y");
+
+		e = lua_pcall(luaState, 1, 0, 0);
+		if (e) {
+			error("Lua function \"%s\" exited with error %s", g_keybinds.mouseMotionCallbackName, luaError[error]);
+			goto cleanup;
+		}
+
+		error = ERR_OK;
+	cleanup:
+	}
+
+	return e;
+}
+
+
 int input_processSdlEvents(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
@@ -157,7 +200,7 @@ int input_processSdlEvents(lua_State *luaState) {
 		
 		// Mouse events
 		case SDL_MOUSEMOTION:
-			error("Unhandled mouse event type %i", event.type);
+			input_execMousemotionBind(&event, luaState);
 			break;
 		case SDL_MOUSEBUTTONDOWN:
 			input_execKeyBind(event, buttonType_mouse, true, luaState);
@@ -434,7 +477,7 @@ int input_stringToKeybind(const char * const key, keybind_t *keybind) {
 	return error;
 }
 
-int input_bind(const char * const key, const char * const downCommand, const char * const upCommand) {
+int input_bind(const uint8_t * const key, const uint8_t * const downCommand, const uint8_t * const upCommand) {
 	int error = ERR_CRITICAL;
 	
 	int index = 0;
@@ -487,15 +530,19 @@ int input_bind(const char * const key, const char * const downCommand, const cha
 	}
 	
 	// Bind command(s) to keys.
-	str2_copyMalloc(&g_keybinds.keys[index].keyDownCommand, downCommand);
+	str3_copyMalloc(&g_keybinds.keys[index].keyDownCommand, downCommand);
 	if (upCommand == NULL) {
-		str2_copyMalloc(&g_keybinds.keys[index].keyUpCommand, "");
+		str3_copyMalloc(&g_keybinds.keys[index].keyUpCommand, "");
 	}
 	else {
-		str2_copyMalloc(&g_keybinds.keys[index].keyUpCommand, upCommand);
+		str3_copyMalloc(&g_keybinds.keys[index].keyUpCommand, upCommand);
 	}
 
 	error = ERR_OK;
 	cleanup_l:
 	return error;
+}
+
+int input_bindMouse(const uint8_t *callback) {
+	return str3_copyMalloc(&g_keybinds.mouseMotionCallbackName, callback);
 }
