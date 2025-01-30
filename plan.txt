@@ -769,10 +769,23 @@ group
 model
 
 
+I want to switch out sets of materials (each containing GLSL shader programs). Would that be called a shader? What do other engines call it?
+Quake 3 would call it a shader.
+Maybe I could use a GLSL shader to swap between pre-loaded textures?
+Maybe I could allow Lua to create the uniforms it needs?
+Maybe I could figure out some way to give Lua a high level of control of the shaders? Looking at the renderer, I'm not sure that's wise if I want to make it fast in the future. It would probably require Lua executing while rendering.
+
+
+Alpha models need to be drawn last! I think the reason is that the z-buffer culls any pixels that are farther than the alpha pixels. So the opaque pixels need to be written first, then the alpha pixels are drawn over top. The alpha pixels will look at the pixels beneath them and apply a transparency function on them.
+
+
+Frame rate plummets sometimes when I get the culling bug.
+
+
+
 
 
 Stuff I need to add before public release:
-    Textures
     Collision detection
     Authentication
     Lighting?
