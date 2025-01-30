@@ -411,7 +411,8 @@ int render_initOpenGL(void) {
 
 int renderModels(entity_t entity, vec3_t position, quat_t orientation, vec_t scale, ptrdiff_t material_index) {
 	int error = ERR_CRITICAL;
-	
+
+	// TODO: Only allow one model in a model entity.
 	// For each model...
 	for (int j = 0; j < entity.children_length; j++) {
 		
@@ -484,9 +485,10 @@ int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation, vec_t s
 		error = ERR_OK;
 		goto cleanup_l;
 	}
-	
-	vec3_add(&localPosition, position, &entity.position);
+
+	vec3_copy(&localPosition, &entity.position);
 	vec3_rotate(&localPosition, orientation);
+	vec3_add(&localPosition, position, &localPosition);
 	quat_hamilton(&localOrientation, orientation, &entity.orientation);
 	localScale = scale * entity.scale;
 	if (material_index < 0 && entity.materials_length) material_index = entity.materials[0];

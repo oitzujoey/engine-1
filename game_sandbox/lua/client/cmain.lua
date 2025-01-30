@@ -8,6 +8,7 @@ g_mouse = {}
 g_sensitivity = 1.0
 
 function startup()
+	local e
 	info("startup", "Lua start");
 
 	info("startup", "Loading models")
@@ -39,36 +40,44 @@ function startup()
 	cyanMaterial, error = loadTexture("cyan")
 	magentaMaterial, error = loadTexture("magenta")
 	yellowMaterial, error = loadTexture("yellow")
+	cardboardBoxMaterial, error = loadTexture("box")
+	magentaAlphaMaterial, error = loadTexture("magenta-alpha")
 
-	error = model_linkDefaultMaterial(boxModel, whiteMaterial)
+	-- error = model_linkDefaultMaterial(boxModel, whiteMaterial)
+
+	g_cursorEntity = modelEntity_create({x=0, y=0, z=1000}, {w=1, x=-1, y=0, z=0}, 100.0)
+	e = entity_linkMaterial(g_cursorEntity, magentaAlphaMaterial)
+
+	e = entity_linkMaterial(modelEntity_create({x=0, y=0, z=2000}, {w=1, x=-1, y=0, z=0}, 400.0), cyanMaterial)
+
+	g_solarSystem, e = entity_createEntity(g_entity_type_entity)
+	e = entity_linkChild(g_cameraEntity, g_solarSystem)
+
+	g_binarySystem, e = entity_createEntity(g_entity_type_entity)
+	e = entity_linkChild(g_solarSystem, g_binarySystem)
+
+	g_bigPlanet, e = entity_createEntity(g_entity_type_model)
+	e = entity_linkChild(g_bigPlanet, boxModel)
+	entity_setScale(g_bigPlanet, 20.0)
+	entity_setPosition(g_bigPlanet, {x=-25, y=-25, z=0})
+	entity_setOrientation(g_bigPlanet, {w=1, x=-1, y=0, z=0})
+	e = entity_linkMaterial(g_bigPlanet, redMaterial)
+	e = entity_linkChild(g_binarySystem, g_bigPlanet)
+
+	g_smallPlanet, e = entity_createEntity(g_entity_type_model)
+	e = entity_linkChild(g_smallPlanet, boxModel)
+	entity_setScale(g_smallPlanet, 15.0)
+	entity_setPosition(g_smallPlanet, {x=25, y=25, z=-5})
+	entity_setOrientation(g_smallPlanet, {w=1, x=-1, y=0, z=0})
+	e = entity_linkMaterial(g_smallPlanet, greenMaterial)
+	e = entity_linkChild(g_binarySystem, g_smallPlanet)
+
+	g_entity = modelEntity_create({x=500, y=0, z=1000}, {w=1, x=-1, y=0, z=0}, 100.0)
 
 	_ = (function()
 			local e = nil
-			for i = 1,boxes_length,1 do
-				local material = redMaterial
-				local factor = 2
-				function mutate()
-					factor = factor + 1
-				end
-				if i%3 == 0 then
-					material = greenMaterial
-				end
-				-- mutate()
-				if i%5 == 0 then
-					material = blueMaterial
-				end
-				-- mutate()
-				if i%15 == 0 then
-					material = cyanMaterial
-				end
-				-- mutate()
-				-- if i%factor == 0 then
-				-- 	material = magentaMaterial
-				-- end
-				-- mutate()
-				-- if i%factor == 0 then
-				-- 	material = yellowMaterial
-				-- end
+			for i = 1,g_boxes_length,1 do
+				local material = cardboardBoxMaterial
 				e = entity_linkMaterial(g_boxEntities[i], material)
 			end
 			return nil
@@ -160,12 +169,13 @@ function main()
 		position.x = -serverState.position.x
 		position.y = -serverState.position.y
 		position.z = -serverState.position.z
+		-- entity_setOrientation(g_cameraEntity, serverState.orientation)
 		orientation.w = serverState.orientation.w
 		orientation.x = -serverState.orientation.x
 		orientation.y = -serverState.orientation.y
 		orientation.z = -serverState.orientation.z
 		entity_setOrientation(g_worldEntity, orientation)
-		entity_setPosition(g_worldEntity, position)
+		entity_setPosition(g_cameraEntity, position)
 	end
 
 	-- -- Display other client ships.
@@ -186,6 +196,24 @@ function main()
 	-- 		entity_setOrientation(clientEntity, otherClientState.orientation)
 	-- 	end
 	-- end
+
+
+	_ = (function()
+			entity_deleteEntity(g_entity)
+			g_entity = modelEntity_create({x=500, y=0, z=1000}, {w=1, x=-1, y=0, z=0}, 100.0)
+			local materials = {redMaterial, greenMaterial, blueMaterial}
+			local material = materials[((g_frame//60) % 3) + 1]
+			puts(material)
+			e = entity_linkMaterial(g_entity, material)
+	end)()
+
+
+	entity_setPosition(g_solarSystem, {x=100*sin(g_frame/100.0), y=100*cos(g_frame/100.0), z=500})
+	entity_setOrientation(g_solarSystem, aaToQuat({w=g_frame/60, x=0, y=0, z=1}))
+	entity_setOrientation(g_smallPlanet, aaToQuat({w=g_frame/60*7, x=1, y=1, z=0}))
+	entity_setOrientation(g_bigPlanet, aaToQuat({w=g_frame/60*3, x=0, y=1, z=1}))
+
+	g_frame = g_frame + 1
 end
 
 function shutdown()
