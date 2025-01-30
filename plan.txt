@@ -779,7 +779,56 @@ Maybe I could figure out some way to give Lua a high level of control of the sha
 Alpha models need to be drawn last! I think the reason is that the z-buffer culls any pixels that are farther than the alpha pixels. So the opaque pixels need to be written first, then the alpha pixels are drawn over top. The alpha pixels will look at the pixels beneath them and apply a transparency function on them.
 
 
-Frame rate plummets sometimes when I get the culling bug.
+Frame rate plummets sometimes when I get the culling bug. Update: Frame rate plummets over time.
+Reason: Every time an entity is created, it needs to be linked to a reachable entity. This increases the length of the `children` array. The framerate drop is noticeable with a length of ~1500. What needs to happen is that the deleted entity must be manually unlinked from its parent node.
+There's a few ways to solve this.
+* Force the user to manually unlink the entity from the parent entity.
+* Make the entity point at its parent, and automatically unlink the entity when it is deleted.
+This introduces a new problem though: an entity can have more than one parent entity.
+* Make unlinking from a parent automatically delete the entity if its reference count is zero.
+But what if I want an entity to be able to point at itself?
+* Rendering a cyclic entity will terminate at N levels of recursion. Unlinking from a parent automatically deletes the entity if it is no longer reachable from a reachable entity.
+But when was the last time you saw an "infinite" grid or space of objects placed at regular intervals? For me it was in a renderer demo on YouTube. I haven't ever seen it in the few games I've played. I think we can safely say no to tracing garbage collection.
+Multiple parents pointing to an entity *would* be useful. Let's say you want five motorcycles. The frame is one entity, the handle bars are another entity, the wheels are two other entities. Well... actually that wouldn't be that useful. I would still need a bunch of different entities because the handle bars would be in different positions. Let's try no garbage collection...
+Models can have multiple parents. They are never freed.
+Each time an entity is linked to another entity, check to make sure that the child doesn't already have a parent. In fact, let's create the entity when we link it. Creation is linking.
+
+
+function Model_construct(position, orientation, scale)
+	local entity = Model(g_cameraEntity, g_boxModel)
+	entity_setScale(entity, scale)
+	entity_setPosition(entity, position)
+	entity_setOrientation(entity, orientation)
+    return entity
+end
+
+-- A group entity must always have a parent. Children are added by passing the group entity to the constructors of new entities.
+g_cameraEntity = Group(g_worldEntity)
+
+-- A model entity must always have a parent and a child.
+terrainEntity = Model(g_cameraEntity, mesh_load("blender/terrain10"))
+setScale(terrainEntity, 1100.0)
+setPosition(terrainEntity, {x=0, y=0, z=2000})
+setOrientation(terrainEntity, {w=1, x=-1, y=0, z=0})
+
+g_entity = Model_construct({x=500, y=0, z=1000}, {w=1, x=-1, y=0, z=0}, 100.0)
+
+-- Deleting the entity automatically unlinks it from its parent.
+deleteEntity(g_entity)
+g_entity = Model_construct({x=500, y=0, z=1000}, {w=1, x=-1, y=0, z=0}, 100.0)
+local materials = {redMaterial, greenMaterial, blueMaterial}
+local material = materials[((g_frame//60) % 3) + 1]
+setMaterial(g_entity, material)
+
+
+This feels robust to me.
+
+
+I think collision detection for this game might be possible with just a hash table (a sparse 3D array) since block positions will be snapped to the grid.
+Should I interpolate block positions like Pac-Man does?
+Line tracing could be done with a line drawing algorithm.
+
+For physics, each block can have a real position (snapped to the grid), a rendered position, and a velocity. When you drop a block, it smoothly accelerates as it falls, but the real position is always snapped to the grid. The rendered position does determine which point on the grid the block resides at though.
 
 
 

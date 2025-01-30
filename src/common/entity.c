@@ -35,10 +35,11 @@ static void entity_initEntity(entity_t *entity) {
 }
 
 static void entity_freeEntity(entity_t *entity) {
-	MEMORY_FREE(&entity->children);
+	if (entity->children) MEMORY_FREE(&entity->children);
 	entity->children_length = 0;
+	entity->inUse = false;
 #	ifdef CLIENT
-	MEMORY_FREE(&entity->materials);
+	if (entity->materials) MEMORY_FREE(&entity->materials);
 	entity->materials_length = 0;
 #	endif
 }
@@ -109,7 +110,12 @@ int entity_createEntity(int *index, entity_childType_t type) {
 		   new entity. */
 		*index = g_entityList.entities_length;
 		g_entityList.entities_length++;
-		g_entityList.entities = realloc(g_entityList.entities, g_entityList.entities_length * sizeof(entity_t));
+		if (g_entityList.entities == NULL){
+			g_entityList.entities = malloc(g_entityList.entities_length * sizeof(entity_t));
+		}
+		else {
+			g_entityList.entities = realloc(g_entityList.entities, g_entityList.entities_length * sizeof(entity_t));
+		}
 		if (g_entityList.entities == NULL) {
 			outOfMemory();
 			error = ERR_OUTOFMEMORY;
@@ -138,7 +144,13 @@ int entity_deleteEntity(int index) {
 	else {
 		g_entityList.deletedEntities_length_allocated++;
 		g_entityList.deletedEntities_length++;
-		g_entityList.deletedEntities = realloc(g_entityList.deletedEntities, g_entityList.deletedEntities_length_allocated * sizeof(ptrdiff_t));
+		if (g_entityList.deletedEntities == NULL) {
+			g_entityList.deletedEntities = malloc(g_entityList.deletedEntities_length_allocated * sizeof(ptrdiff_t));
+		}
+		else {
+			g_entityList.deletedEntities = realloc(g_entityList.deletedEntities,
+			                                       g_entityList.deletedEntities_length_allocated * sizeof(ptrdiff_t));
+		}
 		if (g_entityList.deletedEntities == NULL) {
 			outOfMemory();
 			error = ERR_OUTOFMEMORY;
@@ -148,13 +160,10 @@ int entity_deleteEntity(int index) {
 	}
 	
 	// Unlink children and free list.
-	MEMORY_FREE(&g_entityList.entities[index].children);
-	g_entityList.entities[index].children_length = 0;
-	// Easy!
+	(void) entity_freeEntity(&g_entityList.entities[index]);
 	
-	// And finally, save the index and mark as deleted.
+	// And finally, save the index.
 	g_entityList.deletedEntities[g_entityList.deletedEntities_length - 1] = index;
-	g_entityList.entities[index].inUse = false;
 	
 	error = ERR_OK;
 	cleanup_l:
