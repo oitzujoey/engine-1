@@ -200,6 +200,7 @@ function main()
 
 	_ = (function()
 			entity_deleteEntity(g_entity)
+			e = entity_unlinkChild(g_cameraEntity, g_entity)
 			g_entity = modelEntity_create({x=500, y=0, z=1000}, {w=1, x=-1, y=0, z=0}, 100.0)
 			local materials = {redMaterial, greenMaterial, blueMaterial}
 			local material = materials[((g_frame//60) % 3) + 1]
