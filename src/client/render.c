@@ -4,6 +4,7 @@
 #include <stdarg.h>
 #include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
+#include <math.h>
 #include "../common/common.h"
 #include "../common/log.h"
 #include "../common/entity.h"
@@ -198,6 +199,9 @@ int render_initOpenGL(void) {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
 	
 	// glDepthRange(0, 1);
 	
