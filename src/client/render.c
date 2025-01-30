@@ -279,9 +279,9 @@ int render_initOpenGL(void) {
 		"  vec3 vertex;\n"
 		"  vertex = rotate(scale * vp, orientation);\n"
 		"  vertex += position;\n"
-		"  vertex.x = vertex.x/vertex.z;\n"
-		"  vertex.y = vertex.y/vertex.z * screenHeight;\n"
-		"  vertex.z = (vertex.z - 10050.0) / 10000.0;\n"
+		"  vertex.x = vertex.x/abs(vertex.z);\n"
+		"  vertex.y = vertex.y/abs(vertex.z) * screenHeight;\n"
+		"  vertex.z = 2*vertex.z/10000.0 - 1;\n"
 		"  gl_Position = vec4(vertex, 1.0);\n"
 		"  color = rotate(normal, orientation);\n"
 		"  textureCoordinate = texCoord;\n"
@@ -294,14 +294,8 @@ int render_initOpenGL(void) {
 		"in vec2 textureCoordinate;"
 		"uniform sampler2D ourTexture;"
 		"void main() {"
-		// "  float b = 2 * gl_FragCoord.z;"
-		// "  frag_colour = vec4(b, b, b, 1.0);"
 		"  float dot = dot(color, vec3(0.0, 0.0, 1.0));"
 		"  frag_colour = texture(ourTexture, textureCoordinate) * vec4(abs(dot), abs(dot), abs(dot), 1.0);"
-		// "  frag_colour = vec4(abs(dot), abs(dot), abs(dot), 1.0);"
-		// "  frag_colour = vec4(length(color), length(color), length(color), 1.0);"
-		// "  frag_colour = vec4(color.x, color.y, color.z, 1.0);"
-		// "  frag_colour = vec4(abs(color.x * dot), abs(color.y * dot), abs(color.z * dot), 1.0);"
 		"}";
 	
 	/* Compile shaders and link program. */
