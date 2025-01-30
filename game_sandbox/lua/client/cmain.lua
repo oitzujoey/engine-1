@@ -211,8 +211,9 @@ function main()
 
 	entity_setPosition(g_solarSystem, {x=100*sin(g_frame/100.0), y=100*cos(g_frame/100.0), z=500})
 	entity_setOrientation(g_solarSystem, aaToQuat({w=g_frame/60, x=0, y=0, z=1}))
-	entity_setOrientation(g_smallPlanet, aaToQuat({w=g_frame/60*7, x=1, y=1, z=0}))
-	entity_setOrientation(g_bigPlanet, aaToQuat({w=g_frame/60*3, x=0, y=1, z=1}))
+	entity_setOrientation(g_binarySystem, aaToQuat({w=g_frame/60*2.1, x=1, y=0, z=1}))
+	entity_setOrientation(g_smallPlanet, aaToQuat({w=g_frame/60*7.1, x=1, y=1, z=0}))
+	entity_setOrientation(g_bigPlanet, aaToQuat({w=g_frame/60*3.1, x=0, y=1, z=1}))
 
 	g_frame = g_frame + 1
 end
