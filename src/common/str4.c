@@ -1,4 +1,5 @@
 #include "str4.h"
+#include <string.h>
 #include "common.h"
 
 int str4_errorp(Str4 *str) {

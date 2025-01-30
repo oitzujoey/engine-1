@@ -1,4 +1,5 @@
 #include "types.h"
+#include <string.h>
 #include "common.h"
 #include "file.h"
 #include "vfs.h"

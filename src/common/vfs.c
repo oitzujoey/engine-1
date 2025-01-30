@@ -1,8 +1,8 @@
-
 #include "vfs.h"
 #include <string.h>
 #include <stdlib.h>
 #include <physfs.h>
+#include <stdio.h>
 #include "common.h"
 #include "file.h"
 #include "log.h"

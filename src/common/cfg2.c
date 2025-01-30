@@ -1,5 +1,8 @@
-
 #include "cfg2.h"
+#include <string.h>
+#include <stdio.h>
+#include <math.h>
+#include <ctype.h>
 #include "common.h"
 #include "log.h"
 #include "str2.h"

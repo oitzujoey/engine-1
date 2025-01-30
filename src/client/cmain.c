@@ -7,6 +7,7 @@
 #include <lualib.h>
 #include <SDL2/SDL.h>
 #include <physfs.h>
+#include <string.h>
 #include "render.h"
 #include "input.h"
 #include "../common/common.h"

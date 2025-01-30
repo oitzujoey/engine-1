@@ -1,5 +1,7 @@
-
 #include "terminal.h"
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
 #include "common.h"
 #include "log.h"
 #include "cfg2.h"

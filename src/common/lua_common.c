@@ -1,6 +1,7 @@
-
 #include "lua_common.h"
 #include <stdlib.h>
+#include <math.h>
+#include <stdio.h>
 #include "log.h"
 #include "obj.h"
 #include "vfs.h"

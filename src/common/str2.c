@@ -1,5 +1,7 @@
-
 #include "str2.h"
+#include <string.h>
+#include <ctype.h>
+#include <stdio.h>
 #include "common.h"
 #include "log.h"
 
