@@ -195,6 +195,11 @@ int windowInit(void) {
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
+
+	error = SDL_SetRelativeMouseMode(SDL_TRUE);
+	if (error < 0) {
+		error("Relative mouse mode is not supported on this platform. It will be hard to use the mouse", "");
+	}
 	
 	error = render_initOpenGL();
 	if (error) {
