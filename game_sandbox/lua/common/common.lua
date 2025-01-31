@@ -19,6 +19,10 @@ function abort(message)
 end
 
 
+function vec3_add(a, b)
+	return {x=a.x+b.x, y=a.y+b.y, z=a.z+b.z}
+end
+
 function aaToQuat(axisAngle)
 	angle = axisAngle.w
 	w_part = cos(angle)/2
@@ -42,7 +46,7 @@ end
 -- Game specific functions
 --------------------------
 
-g_gridSpacing = 100
+g_gridSpacing = 20
 
 function snapToGrid(point)
 	function snapScalarToPeriod(scalar)

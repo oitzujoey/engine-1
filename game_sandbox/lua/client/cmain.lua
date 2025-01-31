@@ -7,6 +7,8 @@ g_mouse = {}
 
 g_sensitivity = 1.0
 
+g_cursorOffset = {x=0, y=0, z=100}
+
 function startup()
 	local e
 	info("startup", "Lua start");
@@ -43,11 +45,6 @@ function startup()
 	cardboardBoxMaterial, error = loadTexture("box")
 	magentaAlphaMaterial, error = loadTexture("magenta-alpha")
 
-	-- error = model_linkDefaultMaterial(boxModel, whiteMaterial)
-
-	g_cursorEntity = modelEntity_create({x=0, y=0, z=1000}, {w=1, x=-1, y=0, z=0}, 100.0)
-	e = entity_linkMaterial(g_cursorEntity, magentaAlphaMaterial)
-
 	e = entity_linkMaterial(modelEntity_create({x=0, y=0, z=2000}, {w=1, x=-1, y=0, z=0}, 400.0), cyanMaterial)
 
 	g_solarSystem, e = entity_createEntity(g_entity_type_entity)
@@ -74,6 +71,10 @@ function startup()
 
 	g_entity = modelEntity_create({x=500, y=0, z=1000}, {w=1, x=-1, y=0, z=0}, 100.0)
 
+	g_cursorEntity = modelEntity_create(g_cursorOffset, {w=1, x=0, y=0, z=0}, 11.0)
+	e = entity_linkMaterial(g_cursorEntity, magentaAlphaMaterial)
+	e = entity_linkChild(g_cameraEntity, g_cursorEntity)
+
 	_ = (function()
 			local e = nil
 			for i = 1,g_boxes_length,1 do
@@ -93,7 +94,6 @@ function startup()
 	keys_createFullBind("k_115",		"key_decelerate",	"key_decelerate_d", "key_decelerate_u")
 	keys_createFullBind("m_1", "mouse_leftButton", "mouse_leftPress", "mouse_leftRelease")
 	keys_createMouseBind("mouse_motion")
-
 	cfg2_setVariable("bind k_113 quit")
 
 	-- Create keys/buttons
@@ -214,6 +214,9 @@ function main()
 	entity_setOrientation(g_binarySystem, aaToQuat({w=g_frame/60*2.1, x=1, y=0, z=1}))
 	entity_setOrientation(g_smallPlanet, aaToQuat({w=g_frame/60*7.1, x=1, y=1, z=0}))
 	entity_setOrientation(g_bigPlanet, aaToQuat({w=g_frame/60*3.1, x=0, y=1, z=1}))
+
+	entity_setPosition(g_cursorEntity,
+					   snapToGrid(vec3_add(serverState.position, vec3_rotate(g_cursorOffset, serverState.orientation))))
 
 	g_frame = g_frame + 1
 end

@@ -837,7 +837,7 @@ For physics, each block can have a real position (snapped to the grid), a render
 Stuff I need to add before public release:
     Collision detection
     Authentication
-    Lighting?
+    Lighting? -- Probably not. No light would probably make the world show up better.
 
 Stuff I need to document:
     Rmsh & script

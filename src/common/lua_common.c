@@ -17,6 +17,7 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_toString,         .name = "toString"},
 	{.func = l_common_sin,              .name = "sin"},
 	{.func = l_common_cos,              .name = "cos"},
+	{.func = l_common_round,            .name = "round"},
 	// {.func = l_loadObj,                 .name = "loadObj"},
 	{.func = l_log_info,                .name = "info"},
 	{.func = l_log_warning,             .name = "warning"},
@@ -45,6 +46,37 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = NULL,                  .name = NULL}
 };
 
+
+int l_common_round(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 1) {
+		error("`round` requires 1 argument", "");
+		lua_error(l);
+	}
+
+	vec_t s;
+
+	if (lua_isinteger(l, 1)) {
+		s = lua_tointeger(l, 1);
+	}
+	else if (lua_isnumber(l, 1)) {
+		s = lua_tonumber(l, 1);
+	}
+	else {
+		error("Argument of `round` must be a number.", "");
+		lua_error(l);
+	}
+
+#ifdef DOUBLE_VEC
+	s = round(s);
+#else
+	s = roundf(s);
+#endif
+
+	(void) lua_pushnumber(l, s);
+
+	return 1;
+}
 
 int l_common_cos(lua_State *l) {
 	int argc = lua_gettop(l);
