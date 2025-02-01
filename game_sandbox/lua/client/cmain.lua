@@ -18,10 +18,10 @@ function startup()
 	loadWorld()
 
 	-- Prepare the textures.
-	defaultTerrainMaterial, error = material_create()
-	defaultTerrainTexture, error = material_loadTexture("blender/terrain_material Base Color.png")
-	error = material_linkTexture(defaultTerrainMaterial, defaultTerrainTexture)
-	error = model_linkDefaultMaterial(terrainModel, defaultTerrainMaterial)
+	-- defaultTerrainMaterial, error = material_create()
+	-- defaultTerrainTexture, error = material_loadTexture("blender/terrain_material Base Color.png")
+	-- error = material_linkTexture(defaultTerrainMaterial, defaultTerrainTexture)
+	-- error = model_linkDefaultMaterial(terrainModel, defaultTerrainMaterial)
 
 	-- Load a .png texture from "textures/".
 	function loadTexture(name)
@@ -48,7 +48,7 @@ function startup()
 	groundMaterial, error = loadTexture("lava")
 	e = entity_linkMaterial(g_planeEntity, groundMaterial)
 
-	e = entity_linkMaterial(modelEntity_create({x=0, y=0, z=2000}, {w=1, x=-1, y=0, z=0}, 400.0), cyanMaterial)
+	-- e = entity_linkMaterial(modelEntity_create({x=0, y=0, z=2000}, {w=1, x=-1, y=0, z=0}, 400.0), cyanMaterial)
 
 	g_solarSystem, e = entity_createEntity(g_entity_type_entity)
 	e = entity_linkChild(g_cameraEntity, g_solarSystem)
@@ -72,9 +72,9 @@ function startup()
 	e = entity_linkMaterial(g_smallPlanet, greenMaterial)
 	e = entity_linkChild(g_binarySystem, g_smallPlanet)
 
-	g_entity = modelEntity_create({x=500, y=0, z=1000}, {w=1, x=-1, y=0, z=0}, 100.0)
+	g_entity = modelEntity_create({x=500, y=0, z=0}, {w=1, x=-1, y=0, z=0}, 100.0)
 
-	g_cursorEntity = modelEntity_create(g_cursorOffset, {w=1, x=0, y=0, z=0}, 11.0)
+	g_cursorEntity = modelEntity_create(g_cursorOffset, {w=1, x=0, y=0, z=0}, g_boxes_scale * 1.1)
 	e = entity_linkMaterial(g_cursorEntity, magentaAlphaMaterial)
 	e = entity_linkChild(g_cameraEntity, g_cursorEntity)
 
@@ -105,6 +105,8 @@ function startup()
 	keys_createFullBind("k_115", "key_backward", "key_backward_d", "key_backward_u")
 	-- Left mouse
 	keys_createFullBind("m_1", "mouse_leftButton", "mouse_leftPress", "mouse_leftRelease")
+	-- Right mouse
+	keys_createFullBind("m_3", "mouse_rightButton", "mouse_rightPress", "mouse_rightRelease")
 	-- Mouse x-y
 	keys_createMouseBind("mouse_motion")
 	-- q
@@ -186,7 +188,7 @@ function main()
 	end)()
 
 
-	entity_setPosition(g_solarSystem, {x=100*sin(g_frame/100.0), y=100*cos(g_frame/100.0), z=500})
+	entity_setPosition(g_solarSystem, {x=100*sin(g_frame/100.0), y=100*cos(g_frame/100.0), z=0})
 	entity_setOrientation(g_solarSystem, aaToQuat({w=g_frame/60, x=0, y=0, z=1}))
 	entity_setOrientation(g_binarySystem, aaToQuat({w=g_frame/60*2.1, x=1, y=0, z=1}))
 	entity_setOrientation(g_smallPlanet, aaToQuat({w=g_frame/60*7.1, x=1, y=1, z=0}))

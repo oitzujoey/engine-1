@@ -162,6 +162,14 @@ function mouse_leftRelease()
 	info("mouse_leftRelease", "Mouse release!")
 end
 
+function mouse_rightPress()
+	clientState.keys.jump = true
+end
+
+function mouse_rightRelease()
+	clientState.keys.jump = false
+end
+
 function mouse_motion(motionEvent)
 	g_mouse = motionEvent
 	clientState.mouse = {x=motionEvent.x,

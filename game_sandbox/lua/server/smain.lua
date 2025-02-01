@@ -16,13 +16,15 @@ function clientConnect(clientNumber)
 	-- Inform the client how many total clients there may be.
 	serverState[clientNumber].maxClients = maxClients
 
-	-- Spawn a spaceship.
+	-- Set the physics state.
 	serverState[clientNumber].position = {x=0, y=0, z=0}
 	serverState[clientNumber].orientation = aaToQuat({w=G_PI/2, x=1, y=0, z=0})
-	serverState[clientNumber].velocity = {x=0, y=0, z=0}
 	serverState[clientNumber].euler = {}
 	serverState[clientNumber].euler.yaw = 0.0
 	serverState[clientNumber].euler.pitch = 0.0
+	serverState[clientNumber].velocity = {x=0, y=0, z=0}
+	serverState[clientNumber].collided = false
+	serverState[clientNumber].grounded = false
 end
 
 function clientDisconnect(clientNumber)
@@ -62,75 +64,59 @@ function main()
 			-- Inform the client how many clients there are.
 			serverState[i].numClients = numClients
 
-			serverState[i].velocity = vec3_scale(serverState[i].velocity, 0.90)
-			-- puts(serverState[i].velocity.x)
-			-- puts(serverState[i].velocity.y)
-			-- puts(serverState[i].velocity.z)
+			local keys = clientState[i].keys
 
-			local tempVec3 = {x=0, y=0, z=0}
-
-			if clientState[i].keys.forward then
-				puts(serverState[i].euler.yaw)
-				serverState[i].velocity = vec3_add(serverState[i].velocity,
-												   {x=sin(serverState[i].euler.yaw),
-													y=-cos(serverState[i].euler.yaw),
-													z=0})
+			do
+				local scale = 0.90
+				serverState[i].velocity.x = serverState[i].velocity.x * scale
+				serverState[i].velocity.y = serverState[i].velocity.y * scale
 			end
 
-			if clientState[i].keys.backward then
-				puts(serverState[i].euler.yaw)
-				serverState[i].velocity = vec3_add(serverState[i].velocity,
-												   {x=-sin(serverState[i].euler.yaw),
-													y=cos(serverState[i].euler.yaw),
-													z=0})
+			do
+				local yaw_x, yaw_y = 0, 0
+				if keys.forward then
+					yaw_x = yaw_x + sin(serverState[i].euler.yaw)
+					yaw_y = yaw_y - cos(serverState[i].euler.yaw)
+				end
+				if keys.backward then
+					yaw_x = yaw_x - sin(serverState[i].euler.yaw)
+					yaw_y = yaw_y + cos(serverState[i].euler.yaw)
+				end
+				if keys.strafeLeft then
+					yaw_x = yaw_x - cos(serverState[i].euler.yaw)
+					yaw_y = yaw_y - sin(serverState[i].euler.yaw)
+				end
+				if keys.strafeRight then
+					yaw_x = yaw_x + cos(serverState[i].euler.yaw)
+					yaw_y = yaw_y + sin(serverState[i].euler.yaw)
+				end
+				serverState[i].velocity = vec3_add(serverState[i].velocity, {x=yaw_x, y=yaw_y, z=0})
+			end
+			if serverState[i].grounded and keys.jump then
+				serverState[i].velocity.z = serverState[i].velocity.z + G_JUMPVELOCITY
 			end
 
-			if clientState[i].keys.strafeLeft then
-				puts(serverState[i].euler.yaw)
-				serverState[i].velocity = vec3_add(serverState[i].velocity,
-												   {x=-cos(serverState[i].euler.yaw),
-													y=-sin(serverState[i].euler.yaw),
-													z=0})
-			end
-
-			if clientState[i].keys.strafeRight then
-				puts(serverState[i].euler.yaw)
-				serverState[i].velocity = vec3_add(serverState[i].velocity,
-												   {x=cos(serverState[i].euler.yaw),
-													y=sin(serverState[i].euler.yaw),
-													z=0})
-			end
-
-			-- if clientState[i].keys.backward then
-			-- 	serverState[i].velocity = vec3_add(serverState[i].velocity, {x=cos(angle), y=sin(angle), 0})
-			-- end
-
-			tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_yn)
-			local angle = 0
 			if (clientState[i].mouse.delta_y and clientState[i].mouse.delta_y ~= 0) then
 				serverState[i].euler.pitch = serverState[i].euler.pitch + clientState[i].mouse.delta_y/1000.0
 			end
-
 			if (clientState[i].mouse.delta_x and clientState[i].mouse.delta_x ~= 0) then
 				serverState[i].euler.yaw = serverState[i].euler.yaw + clientState[i].mouse.delta_x/1000.0
 			end
 
+			-- Constrain up-down view to not go past vertical.
+			if serverState[i].euler.pitch > G_PI/2 then serverState[i].euler.pitch = G_PI/2 end
+			if serverState[i].euler.pitch < -G_PI/2 then serverState[i].euler.pitch = -G_PI/2 end
 
-			-- entity_setVisible(worldEntity, i)
+			serverState[i].velocity.z = serverState[i].velocity.z + G_GRAVITY
 
 			serverState[i].orientation = hamiltonProduct(eulerToQuat(serverState[i].euler),
 														 aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
-			local newPosition = {}
-			newPosition.x = serverState[i].position.x + serverState[i].velocity.x
-			newPosition.y = serverState[i].position.y + serverState[i].velocity.y
-			newPosition.z = serverState[i].position.z + G_GRAVITY
-			if playerIsInBounds(newPosition) then
-				serverState[i].position = newPosition
-			end
-
-			serverState[i].position.z = serverState[i].position.z
-
-            serverState[i].list = {0, 1, 2}
+			serverState[i] = playerCollide(serverState[i])
+			puts(serverState[i].velocity.x)
+			puts(serverState[i].velocity.y)
+			puts(serverState[i].velocity.z)
+			puts(toString(serverState[i].collided))
+			puts(toString(serverState[i].grounded))
 		end
 	end
 

@@ -834,6 +834,9 @@ For physics, each block can have a real position (snapped to the grid), a render
 All this fun physics stuff I think I should leave for the end. For now, I need to figure out how to do basic grid collision handling. Perhaps I should start by creating the box the players are bound in and do collision handling and player movement with just that. I think I'll just hard code it like `player.position = vec3_clamp(player.mins, player.position, player.maxs)`.
 
 
+Boxes and the world boundary should make collision handling reasonably easy. Velocity is split up into x, y, and z components and the movement for each is applied in order. Maybe the order would be xyz? Or zxy? Probably doesn't matter. Choose one and adjust jump velocity and gravity to compensate.
+
+
 
 
 Needed material flags:

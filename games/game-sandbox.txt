@@ -1,3 +1,4 @@
 There's 1000 boxes. You can pick them up, move them, and set them down, including on top of other boxes. If you are holding a box then you can change the color by pressing a number key. The map is a big box. The server is always running. The state of the boxes is periodically backed up to a file in case the server crashes. The state of the boxes is loaded again on server startup.
 The player's inventory (of one block) is dropped in the place the player's cursor is when the player disconnects, assuming they are holding a block.
 All users must use their Discord user name because I want to make it clear who is who. I want accountability.
+Players are two or three blocks tall.

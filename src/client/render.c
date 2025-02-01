@@ -286,11 +286,9 @@ int render_initOpenGL(void) {
 		"  vec3 vertex;\n"
 		"  vertex = rotate(scale * vp, orientation);\n"
 		"  vertex += position;\n"
-		/* "  vertex.x = vertex.x/abs(vertex.z);\n" */
-		/* "  vertex.y = vertex.y/abs(vertex.z) * screenHeight;\n" */
-		/* "  vertex.z = 2*vertex.z/10000.0 - 1;\n" */
 		"  gl_Position = projectionMatrix * vec4(vertex, 1.0);\n"
-		"  color = rotate(normal, orientation);\n"
+		/* "  color = rotate(normal, orientation);\n" */
+		"  color = vec3(1.0, 1.0, 1.0);\n"
 		"  textureCoordinate = texCoord;\n"
 		"}\n";
 	

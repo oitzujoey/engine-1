@@ -4,8 +4,8 @@ worldOrientation = {w=1.0, x=0.0, y=0.0, z=0.0}
 TurnRate = 0.01
 
 g_boxes_length = 1
-g_boxes_spacing = 40
-g_boxes_scale = 100.0
+g_boxes_spacing = g_gridSpacing
+g_boxes_scale = g_boxes_spacing/2
 
 
 g_boxEntities = {}
@@ -42,7 +42,7 @@ function loadWorld()
 	e = entity_linkChild(g_cameraEntity, planeEntity)
 	e = entity_linkChild(planeEntity, planeModel)
 	entity_setScale(planeEntity, g_boundingBoxRadius)
-	entity_setPosition(planeEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2+200)})
+	entity_setPosition(planeEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2+g_gridSpacing)})
 	entity_setOrientation(planeEntity, {w=1, x=1, y=0, z=0})
 	g_planeEntity = planeEntity
 

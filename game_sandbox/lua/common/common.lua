@@ -17,7 +17,8 @@ Vec3_zn = {x=0, y=0, z=-1}
 Vec3_zp = {x=0, y=0, z=1}
 
 G_PI = 3.14159265358979323
-G_GRAVITY = -1.0
+G_GRAVITY = -1.0e0
+G_JUMPVELOCITY = 3.0e1
 
 
 function quit()
@@ -31,6 +32,10 @@ end
 
 function vec3_add(a, b)
 	return {x=a.x+b.x, y=a.y+b.y, z=a.z+b.z}
+end
+
+function vec3_subtract(a, b)
+	return {x=a.x-b.x, y=a.y-b.y, z=a.z-b.z}
 end
 
 function vec3_scale(a, s)
@@ -72,17 +77,18 @@ end
 -- Game specific functions
 --------------------------
 
-g_gridSpacing = 20
+g_gridSpacing = 40
 g_boundingBoxRadius = g_gridSpacing * 100
 g_boxTable = {}
 
+function snapComponentToGrid(component)
+	return g_gridSpacing*round(component/g_gridSpacing)
+end
+
 function snapToGrid(point)
-	function snapScalarToPeriod(scalar)
-		return g_gridSpacing*round(scalar/g_gridSpacing)
-	end
-	return {x=snapScalarToPeriod(point.x),
-			y=snapScalarToPeriod(point.y),
-			z=snapScalarToPeriod(point.z)}
+	return {x=snapComponentToGrid(point.x),
+			y=snapComponentToGrid(point.y),
+			z=snapComponentToGrid(point.z)}
 end
 
 -- Returns whether the point is in the map boundary.
@@ -128,4 +134,48 @@ function isOccupied(point)
 	-- Success.
 	local boxNumber = spot
 	return affirmative(boxNumber)
+end
+
+function playerCollide(state)
+	-- TODO: This is wrong. We can't just average the snapped old and new positions because it's possible we warped
+	--       through a block. We need to run a trace function to stop on the first block we encounter. Only after we
+	--       have the right block can we average the positions to get the intersection.
+	state.collided = false
+	state.grounded = false
+	local oldPosition = state.position
+	local oldVelocity = state.velocity
+	local newPosition = vec3_add(oldPosition, oldVelocity)
+	local newVelocity = {x=oldVelocity.x, y=oldVelocity.y, z=oldVelocity.z}
+	-- Do collision per-axis.
+	local x = {x=newPosition.x, y=oldPosition.y, z=oldPosition.z}
+	if not playerIsInBounds(x) then
+		state.collided = true
+		x.x = (snapComponentToGrid(x.x) + snapComponentToGrid(oldPosition.x))/2
+		newVelocity.x = 0.0
+	end
+	newPosition.x = x.x
+	local y = {x=x.x, y=newPosition.y, z=x.z}
+	if not playerIsInBounds(y) then
+		state.collided = true
+		y.y = (snapComponentToGrid(y.y) + snapComponentToGrid(x.y))/2
+		newVelocity.y = 0.0
+	end
+	newPosition.y = y.y
+	local z = {x=y.x, y=y.y, z=newPosition.z}
+	if not playerIsInBounds(z) then
+		state.collided = true
+		if oldVelocity.z < 0 then state.grounded = true end
+		z.z = (snapComponentToGrid(z.z) + snapComponentToGrid(y.z))/2
+		newVelocity.z = 0.0
+	end
+	newPosition.z = z.z
+	local delta = vec3_subtract(newPosition, oldPosition)
+	-- puts("delta {")
+	-- puts(delta.x)
+	-- puts(delta.y)
+	-- puts(delta.z)
+	-- puts("}")
+	state.position = newPosition
+	state.velocity = newVelocity
+	return state
 end
