@@ -1,11 +1,4 @@
 
-Vec3_xn = {x=-1, y=0, z=0}
-Vec3_xp = {x=1, y=0, z=0}
-Vec3_yn = {x=0, y=-1, z=0}
-Vec3_yp = {x=0, y=1, z=0}
-Vec3_zn = {x=0, y=0, z=-1}
-Vec3_zp = {x=0, y=0, z=1}
-
 worldOrientation = {w=1.0, x=0.0, y=0.0, z=0.0}
 
 TurnRate = 0.01
@@ -27,14 +20,31 @@ function loadWorld()
 	if e ~= 0 then quit() end
 	terrainModel, e = mesh_load("blender/terrain10")
 	if e ~= 0 then quit() end
+	local sandboxModel, e = mesh_load("blender/sandbox")
+	if e ~= 0 then quit() end
+	local planeModel, e = mesh_load("blender/plane")
+	if e ~= 0 then quit() end
 
+	-- local sandboxEntity, e = entity_createEntity(g_entity_type_model)
+	-- e = entity_linkChild(g_cameraEntity, sandboxEntity)
+	-- e = entity_linkChild(sandboxEntity, sandboxModel)
+	-- entity_setScale(sandboxEntity, g_boundingBoxRadius)
+	-- entity_setOrientation(sandboxEntity, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
 
-	terrainEntity, e = entity_createEntity(g_entity_type_model)
-	e = entity_linkChild(g_cameraEntity, terrainEntity)
-	e = entity_linkChild(terrainEntity, terrainModel)
-	entity_setScale(terrainEntity, 1100.0)
-	entity_setPosition(terrainEntity, {x=0, y=0, z=2000})
-	entity_setOrientation(terrainEntity, {w=1, x=-1, y=0, z=0})
+	-- terrainEntity, e = entity_createEntity(g_entity_type_model)
+	-- e = entity_linkChild(g_cameraEntity, terrainEntity)
+	-- e = entity_linkChild(terrainEntity, terrainModel)
+	-- entity_setScale(terrainEntity, 1100.0)
+	-- entity_setPosition(terrainEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2+200)})
+	-- entity_setOrientation(terrainEntity, {w=1, x=1, y=0, z=0})
+
+	local planeEntity, e = entity_createEntity(g_entity_type_model)
+	e = entity_linkChild(g_cameraEntity, planeEntity)
+	e = entity_linkChild(planeEntity, planeModel)
+	entity_setScale(planeEntity, g_boundingBoxRadius)
+	entity_setPosition(planeEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2+200)})
+	entity_setOrientation(planeEntity, {w=1, x=1, y=0, z=0})
+	g_planeEntity = planeEntity
 
 	for i = 1,g_boxes_length,1 do
 		local boxEntity, e = entity_createEntity(g_entity_type_model)

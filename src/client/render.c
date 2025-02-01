@@ -274,15 +274,22 @@ int render_initOpenGL(void) {
 		"  v4 = hamilton(hamilton(q, v4), conjugate(q));\n"
 		"  return vec3(v4.x, v4.y, v4.z);\n"
 		"}\n"
+
+		"mat4 projectionMatrix = mat4("
+		"  3.0/screenHeight, 0.0, 0.0, 0.0,"
+		"  0.0, 3.0,  0.0,      0.0,"
+		"  0.0, 0.0,          -1.01, 2.01,"
+		"  0.0, 0.0,          -1.0, 0.0"
+		");"
 		
 		"void main() {\n"
 		"  vec3 vertex;\n"
 		"  vertex = rotate(scale * vp, orientation);\n"
 		"  vertex += position;\n"
-		"  vertex.x = vertex.x/abs(vertex.z);\n"
-		"  vertex.y = vertex.y/abs(vertex.z) * screenHeight;\n"
-		"  vertex.z = 2*vertex.z/10000.0 - 1;\n"
-		"  gl_Position = vec4(vertex, 1.0);\n"
+		/* "  vertex.x = vertex.x/abs(vertex.z);\n" */
+		/* "  vertex.y = vertex.y/abs(vertex.z) * screenHeight;\n" */
+		/* "  vertex.z = 2*vertex.z/10000.0 - 1;\n" */
+		"  gl_Position = projectionMatrix * vec4(vertex, 1.0);\n"
 		"  color = rotate(normal, orientation);\n"
 		"  textureCoordinate = texCoord;\n"
 		"}\n";
@@ -412,14 +419,25 @@ int renderModels(entity_t entity, vec3_t position, quat_t orientation, vec_t sca
 		
 		int modelIndex = entity.children[j];
 		model_t model = g_modelList.models[modelIndex];
-		
-		// Make sure model is inside the frustum.
-		if (
-			((fabs(position[0]) - model.boundingSphere)/position[2] > 1.0f) ||
-			((fabs(position[1]) - model.boundingSphere)/position[2] > 16.0f/9.0f)
-		) {
-			continue;
-		}
+
+		// TODO: Fix frustum culling.
+		/* // Make sure model is inside the frustum. */
+		/* const vec_t fov = 1.0/120.0; */
+		/* printf("j %i\n", j); */
+		/* printf("position[2] %f\n", position[2]); */
+		/* printf("model.boundingSphere %f\n", model.boundingSphere); */
+		/* printf("scale %f\n", scale); */
+		/* const vec_t localBoundingSphere = model.boundingSphere * scale; */
+		/* printf("localBoundingSphere %f\n", localBoundingSphere); */
+		/* if ((position[2] + localBoundingSphere < 0.0f) */
+		/*     || (((fabs(fabs(position[0]) - localBoundingSphere)/position[2] > 16.0*fov) */
+		/*          && (fabs(position[0])/position[2] > 16.0*fov)) */
+		/*         || ((fabs(fabs(position[1]) - localBoundingSphere)/position[2] > 9.0*fov) */
+		/*             && (fabs(position[1])/position[2] > 9.0*fov))) */
+		/* ) { */
+		/* 	printf("CONTINUE %i\n", modelIndex); */
+		/* 	continue; */
+		/* } */
 		
 		/* Render */
 		

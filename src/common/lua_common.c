@@ -152,8 +152,17 @@ int l_common_toString(lua_State *luaState) {
 		warning("Are you sure you wanted to pass a string?", "");
 		lua_pushstring(luaState, lua_tostring(luaState, 1));
 	}
+	else if (lua_isnumber(luaState, 1)) {
+		lua_pushfstring(luaState, "%d", lua_tonumber(luaState, 1));
+	}
 	else if (lua_isinteger(luaState, 1)) {
 		lua_pushfstring(luaState, "%i", lua_tointeger(luaState, 1));
+	}
+	else if (lua_isboolean(luaState, 1)) {
+		lua_pushfstring(luaState, "%s", lua_toboolean(luaState, 1) ? "true" : "false");
+	}
+	else if (lua_isnil(luaState, 1)) {
+		lua_pushfstring(luaState, "nil");
 	}
 	
 	return 1;

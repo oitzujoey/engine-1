@@ -87,67 +87,69 @@ function key_down_u()
 	end
 end
 
-function key_yawLeft_d()
-	Keys.yawLeft = true
-	if not clientState.keys.yawLeft then
-		clientState.keys.yawLeft = true
-		clientState.keys.yawRight = false
+
+function key_forward_d()
+	Keys.forward = true
+	if not clientState.keys.forward then
+		clientState.keys.forward = true
+		clientState.keys.backward = false
 	end
 end
 
-function key_yawLeft_u()
-	Keys.yawLeft = false
-	clientState.keys.yawLeft = false
-	if Keys.yawRight then
-		clientState.keys.yawRight = true
+function key_forward_u()
+	Keys.forward = false
+	clientState.keys.forward = false
+	if Keys.backward then
+		clientState.keys.backward = true
 	end
 end
 
-function key_yawRight_d()
-	Keys.yawRight = true
-	if not clientState.keys.yawRight then
-		clientState.keys.yawRight = true
-		clientState.keys.yawLeft = false
+function key_backward_d()
+	Keys.backward = true
+	if not clientState.keys.backward then
+		clientState.keys.backward = true
+		clientState.keys.forward = false
 	end
 end
 
-function key_yawRight_u()
-	Keys.yawRight = false
-	clientState.keys.yawRight = false
-	if Keys.yawLeft then
-		clientState.keys.yawLeft = true
+function key_backward_u()
+	Keys.backward = false
+	clientState.keys.backward = false
+	if Keys.forward then
+		clientState.keys.forward = true
 	end
 end
 
-function key_accelerate_d()
-	Keys.accelerate = true
-	if not clientState.keys.accelerate then
-		clientState.keys.accelerate = true
-		clientState.keys.decelerate = false
+
+function key_strafeLeft_d()
+	Keys.strafeLeft = true
+	if not clientState.keys.strafeLeft then
+		clientState.keys.strafeLeft = true
+		clientState.keys.strafeRight = false
 	end
 end
 
-function key_accelerate_u()
-	Keys.accelerate = false
-	clientState.keys.accelerate = false
-	if Keys.decelerate then
-		clientState.keys.decelerate = true
+function key_strafeLeft_u()
+	Keys.strafeLeft = false
+	clientState.keys.strafeLeft = false
+	if Keys.strafeRight then
+		clientState.keys.strafeRight = true
 	end
 end
 
-function key_decelerate_d()
-	Keys.decelerate = true
-	if not clientState.keys.decelerate then
-		clientState.keys.decelerate = true
-		clientState.keys.accelerate = false
+function key_strafeRight_d()
+	Keys.strafeRight = true
+	if not clientState.keys.strafeRight then
+		clientState.keys.strafeRight = true
+		clientState.keys.strafeLeft = false
 	end
 end
 
-function key_decelerate_u()
-	Keys.decelerate = false
-	clientState.keys.decelerate = false
-	if Keys.accelerate then
-		clientState.keys.accelerate = true
+function key_strafeRight_u()
+	Keys.strafeRight = false
+	clientState.keys.strafeRight = false
+	if Keys.strafeLeft then
+		clientState.keys.strafeLeft = true
 	end
 end
 

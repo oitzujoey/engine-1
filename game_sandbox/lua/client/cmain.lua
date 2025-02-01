@@ -45,6 +45,9 @@ function startup()
 	cardboardBoxMaterial, error = loadTexture("box")
 	magentaAlphaMaterial, error = loadTexture("magenta-alpha")
 
+	groundMaterial, error = loadTexture("lava")
+	e = entity_linkMaterial(g_planeEntity, groundMaterial)
+
 	e = entity_linkMaterial(modelEntity_create({x=0, y=0, z=2000}, {w=1, x=-1, y=0, z=0}, 400.0), cyanMaterial)
 
 	g_solarSystem, e = entity_createEntity(g_entity_type_entity)
@@ -84,16 +87,27 @@ function startup()
 			return nil
 	end)()
 
+	-- Left arrow
 	keys_createFullBind("k_1073741903", "key_left",			"key_left_d",		"key_left_u")
+	-- Right arrow
 	keys_createFullBind("k_1073741904", "key_right",		"key_right_d",		"key_right_u")
+	-- Up arrow
 	keys_createFullBind("k_1073741906", "key_up",			"key_up_d",			"key_up_u")
+	-- Down arrow
 	keys_createFullBind("k_1073741905", "key_down",			"key_down_d",		"key_down_u")
-	keys_createFullBind("k_100", "key_yawLeft", "key_yawLeft_d", "key_yawLeft_u")
-	keys_createFullBind("k_97", "key_yawRight", "key_yawRight_d", "key_yawRight_u")
-	keys_createFullBind("k_119",		"key_accelerate",	"key_accelerate_d", "key_accelerate_u")
-	keys_createFullBind("k_115",		"key_decelerate",	"key_decelerate_d", "key_decelerate_u")
+	-- a
+	keys_createFullBind("k_97", "key_strafeLeft", "key_strafeLeft_d", "key_strafeLeft_u")
+	-- d
+	keys_createFullBind("k_100", "key_strafeRight", "key_strafeRight_d", "key_strafeRight_u")
+	-- w
+	keys_createFullBind("k_119", "key_forward",	"key_forward_d", "key_forward_u")
+	-- s
+	keys_createFullBind("k_115", "key_backward", "key_backward_d", "key_backward_u")
+	-- Left mouse
 	keys_createFullBind("m_1", "mouse_leftButton", "mouse_leftPress", "mouse_leftRelease")
+	-- Mouse x-y
 	keys_createMouseBind("mouse_motion")
+	-- q
 	cfg2_setVariable("bind k_113 quit")
 
 	-- Create keys/buttons
@@ -102,17 +116,19 @@ function startup()
 	clientState.keys.down = false
 	clientState.keys.left = false
 	clientState.keys.right = false
-	clientState.keys.yawLeft = false
-	clientState.keys.yawRight = false
-	clientState.keys.accelerate = false
-	clientState.keys.decelerate = false
+	clientState.keys.strafeLeft = false
+	clientState.keys.strafeRight = false
+	clientState.keys.forward = false
+	clientState.keys.backward = false
 
 	Keys.up = false
 	Keys.down = false
 	Keys.left = false
 	Keys.right = false
-	Keys.yawLeft = false
-	Keys.yawRight = false
+	Keys.strafeLeft = false
+	Keys.strafeRight = false
+	Keys.forward = false
+	Keys.backward = false
 
 	g_mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
 	clientState.mouse = g_mouse
@@ -137,24 +153,6 @@ function init()
 end
 
 
-function spawnClientShip()
-	-- local cobra3Entity, error = entity_createEntity(type_model)
-	-- -- if error then return cobra3Entity, error end
-	-- error = entity_linkChild(worldEntity, cobra3Entity)
-	-- -- if error then return cobra3Entity, error end
-	-- error = entity_linkChild(cobra3Entity, cobra3Model)
-	-- -- if error then return cobra3Entity, error end
-	-- return cobra3Entity, nil
-	return nil, nil
-end
-
-function despawnClientShip(cobra3Entity)
-	-- local error = entity_unlinkChild(worldEntity, cobra3Entity)
-	-- -- if error then return error end
-	-- entity_deleteEntity(cobra3Entity)
-	return nil
-end
-
 function main()
 	local error
 	if not initialized then
@@ -169,7 +167,6 @@ function main()
 		position.x = -serverState.position.x
 		position.y = -serverState.position.y
 		position.z = -serverState.position.z
-		-- entity_setOrientation(g_cameraEntity, serverState.orientation)
 		orientation.w = serverState.orientation.w
 		orientation.x = -serverState.orientation.x
 		orientation.y = -serverState.orientation.y
@@ -177,26 +174,6 @@ function main()
 		entity_setOrientation(g_worldEntity, orientation)
 		entity_setPosition(g_cameraEntity, position)
 	end
-
-	-- -- Display other client ships.
-	-- puts(serverState.numClients .. " " .. serverState.maxClients)
-	-- for i = 1,serverState.maxClients,1 do
-	-- 	local otherClientState = serverState.otherClients[i]
-	-- 	-- Check for client connect.
-	-- 	if not clientEntities[i] and otherClientState then
-	-- 		clientEntities[i], error = spawnClientShip(clientEntities[i])
-	-- 	-- Check for client disconnect.
-	-- 	elseif clientEntities[i] and not otherClientState then
-	-- 		error = despawnClientShip(clientEntities[i])
-	-- 		clientEntities[i] = nil
-	-- 	end
-	-- 	local clientEntity = clientEntities[i]
-	-- 	if clientEntity and otherClientState then
-	-- 		entity_setPosition(clientEntity, otherClientState.position)
-	-- 		entity_setOrientation(clientEntity, otherClientState.orientation)
-	-- 	end
-	-- end
-
 
 	_ = (function()
 			entity_deleteEntity(g_entity)
@@ -215,8 +192,11 @@ function main()
 	entity_setOrientation(g_smallPlanet, aaToQuat({w=g_frame/60*7.1, x=1, y=1, z=0}))
 	entity_setOrientation(g_bigPlanet, aaToQuat({w=g_frame/60*3.1, x=0, y=1, z=1}))
 
-	entity_setPosition(g_cursorEntity,
-					   snapToGrid(vec3_add(serverState.position, vec3_rotate(g_cursorOffset, serverState.orientation))))
+	local cursorPosition = snapToGrid(vec3_add(serverState.position,
+											   vec3_rotate(g_cursorOffset, serverState.orientation)))
+	local isOccupied, boxEntity = isOccupied(cursorPosition)
+	puts("isOccupied: "..toString(isOccupied).."    boxEntity: "..toString(boxEntity))
+	entity_setPosition(g_cursorEntity, cursorPosition)
 
 	g_frame = g_frame + 1
 end

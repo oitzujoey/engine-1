@@ -831,8 +831,14 @@ Line tracing could be done with a line drawing algorithm.
 For physics, each block can have a real position (snapped to the grid), a rendered position, and a velocity. When you drop a block, it smoothly accelerates as it falls, but the real position is always snapped to the grid. The rendered position does determine which point on the grid the block resides at though.
 
 
+All this fun physics stuff I think I should leave for the end. For now, I need to figure out how to do basic grid collision handling. Perhaps I should start by creating the box the players are bound in and do collision handling and player movement with just that. I think I'll just hard code it like `player.position = vec3_clamp(player.mins, player.position, player.maxs)`.
 
 
+
+
+Needed material flags:
+    cull=false|true
+    transparent=false|true
 
 Stuff I need to add before public release:
     Collision detection

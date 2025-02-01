@@ -18,8 +18,11 @@ function clientConnect(clientNumber)
 
 	-- Spawn a spaceship.
 	serverState[clientNumber].position = {x=0, y=0, z=0}
-	serverState[clientNumber].orientation = {w=1.0, x=0.0, y=0.0, z=0.0}
-	serverState[clientNumber].speed = 0
+	serverState[clientNumber].orientation = aaToQuat({w=G_PI/2, x=1, y=0, z=0})
+	serverState[clientNumber].velocity = {x=0, y=0, z=0}
+	serverState[clientNumber].euler = {}
+	serverState[clientNumber].euler.yaw = 0.0
+	serverState[clientNumber].euler.pitch = 0.0
 end
 
 function clientDisconnect(clientNumber)
@@ -59,83 +62,71 @@ function main()
 			-- Inform the client how many clients there are.
 			serverState[i].numClients = numClients
 
+			serverState[i].velocity = vec3_scale(serverState[i].velocity, 0.90)
+			-- puts(serverState[i].velocity.x)
+			-- puts(serverState[i].velocity.y)
+			-- puts(serverState[i].velocity.z)
+
 			local tempVec3 = {x=0, y=0, z=0}
 
-			if clientState[i].keys.left then
-				tempVec3 = vec3_crossProduct(Vec3_yp, Vec3_xp)
-				local tempQuat = aaToQuat(aaNormalize({w=TurnRate, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}))
-				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
+			if clientState[i].keys.forward then
+				puts(serverState[i].euler.yaw)
+				serverState[i].velocity = vec3_add(serverState[i].velocity,
+												   {x=sin(serverState[i].euler.yaw),
+													y=-cos(serverState[i].euler.yaw),
+													z=0})
 			end
 
-			if clientState[i].keys.right then
-				tempVec3 = vec3_crossProduct(Vec3_yp, Vec3_xn)
-				local tempQuat = aaToQuat(aaNormalize({w=TurnRate, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}))
-				serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
+			if clientState[i].keys.backward then
+				puts(serverState[i].euler.yaw)
+				serverState[i].velocity = vec3_add(serverState[i].velocity,
+												   {x=-sin(serverState[i].euler.yaw),
+													y=cos(serverState[i].euler.yaw),
+													z=0})
 			end
+
+			if clientState[i].keys.strafeLeft then
+				puts(serverState[i].euler.yaw)
+				serverState[i].velocity = vec3_add(serverState[i].velocity,
+												   {x=-cos(serverState[i].euler.yaw),
+													y=-sin(serverState[i].euler.yaw),
+													z=0})
+			end
+
+			if clientState[i].keys.strafeRight then
+				puts(serverState[i].euler.yaw)
+				serverState[i].velocity = vec3_add(serverState[i].velocity,
+												   {x=cos(serverState[i].euler.yaw),
+													y=sin(serverState[i].euler.yaw),
+													z=0})
+			end
+
+			-- if clientState[i].keys.backward then
+			-- 	serverState[i].velocity = vec3_add(serverState[i].velocity, {x=cos(angle), y=sin(angle), 0})
+			-- end
 
 			tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_yn)
 			local angle = 0
-			if clientState[i].keys.up then
-				angle = angle + TurnRate
+			if (clientState[i].mouse.delta_y and clientState[i].mouse.delta_y ~= 0) then
+				serverState[i].euler.pitch = serverState[i].euler.pitch + clientState[i].mouse.delta_y/1000.0
 			end
-			if (clientState[i].mouse.delta_y and clientState[i].mouse.delta_y > 0) then
-				angle = angle + clientState[i].mouse.delta_y/1000.0
-			end
-			local tempQuat = aaToQuat(aaNormalize({w=angle, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}))
-			serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
 
-			tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_yp)
-			local angle = 0
-			if clientState[i].keys.down then
-				angle = angle + TurnRate
-			end
-			if (clientState[i].mouse.delta_y and clientState[i].mouse.delta_y < 0) then
-				angle = angle - clientState[i].mouse.delta_y/1000.0
-			end
-			local tempQuat = aaToQuat(aaNormalize({w=angle, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}))
-			serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
-
-			tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_xp)
-			local angle = 0
-			if clientState[i].keys.yawLeft then
-				angle = angle + TurnRate
-			end
-			if (clientState[i].mouse.delta_y and clientState[i].mouse.delta_x > 0) then
-				angle = angle + clientState[i].mouse.delta_x/1000.0
-			end
-			local tempQuat = aaToQuat(aaNormalize({w=angle, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}))
-			serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
-
-			tempVec3 = vec3_crossProduct(Vec3_zp, Vec3_xn)
-			local angle = 0
-			if clientState[i].keys.yawRight then
-				angle = angle + TurnRate
-			end
-			if (clientState[i].mouse.delta_y and clientState[i].mouse.delta_x < 0) then
-				angle = angle - clientState[i].mouse.delta_x/1000.0
-			end
-			local tempQuat = aaToQuat(aaNormalize({w=angle, x=tempVec3.x, y=tempVec3.y, z=tempVec3.z}))
-			serverState[i].orientation, error = hamiltonProduct(serverState[i].orientation, tempQuat)
-
-			if clientState[i].keys.accelerate then
-				serverState[i].speed = serverState[i].speed + 0.1
-			end
-			if clientState[i].keys.decelerate then
-				serverState[i].speed = serverState[i].speed - 0.1
-				if serverState[i].speed < 0 then
-					serverState[i].speed = 0
-				end
+			if (clientState[i].mouse.delta_x and clientState[i].mouse.delta_x ~= 0) then
+				serverState[i].euler.yaw = serverState[i].euler.yaw + clientState[i].mouse.delta_x/1000.0
 			end
 
 
 			-- entity_setVisible(worldEntity, i)
 
-			serverState[i].orientation, error = quatNormalize(serverState[i].orientation)
-
-			rotatedVec3, error = vec3_rotate({x=0, y=0, z=1}, serverState[i].orientation)
-			serverState[i].position.x = serverState[i].position.x + serverState[i].speed * rotatedVec3.x
-			serverState[i].position.y = serverState[i].position.y + serverState[i].speed * rotatedVec3.y
-			serverState[i].position.z = serverState[i].position.z + serverState[i].speed * rotatedVec3.z
+			serverState[i].orientation = hamiltonProduct(eulerToQuat(serverState[i].euler),
+														 aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
+			local newPosition = {}
+			newPosition.x = serverState[i].position.x + serverState[i].velocity.x
+			newPosition.y = serverState[i].position.y + serverState[i].velocity.y
+			newPosition.z = serverState[i].position.z + G_GRAVITY
+			if playerIsInBounds(newPosition) then
+				serverState[i].position = newPosition
+			end
 
 			serverState[i].position.z = serverState[i].position.z
 
