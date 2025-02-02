@@ -179,7 +179,7 @@ int l_common_toString(lua_State *luaState) {
 	}
 	
 	if (lua_isstring(luaState, 1)) {
-		warning("Are you sure you wanted to pass a string?", "");
+		/* warning("Are you sure you wanted to pass a string?", ""); */
 		lua_pushstring(luaState, lua_tostring(luaState, 1));
 	}
 	else if (lua_isnumber(luaState, 1)) {
