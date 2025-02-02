@@ -22,7 +22,7 @@ function loadWorld()
 	if e ~= 0 then quit() end
 	local sandboxModel, e = mesh_load("blender/sandbox")
 	if e ~= 0 then quit() end
-	local planeModel, e = mesh_load("blender/plane")
+	g_planeModel, e = mesh_load("blender/plane")
 	if e ~= 0 then quit() end
 
 	-- local sandboxEntity, e = entity_createEntity(g_entity_type_model)
@@ -40,11 +40,17 @@ function loadWorld()
 
 	local planeEntity, e = entity_createEntity(g_entity_type_model)
 	e = entity_linkChild(g_cameraEntity, planeEntity)
-	e = entity_linkChild(planeEntity, planeModel)
+	e = entity_linkChild(planeEntity, g_planeModel)
 	entity_setScale(planeEntity, g_boundingBoxRadius)
-	entity_setPosition(planeEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2+g_gridSpacing)})
+	entity_setPosition(planeEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2 + g_gridSpacing/2)})
 	entity_setOrientation(planeEntity, {w=1, x=1, y=0, z=0})
-	g_planeEntity = planeEntity
+
+	local planeEntity, e = entity_createEntity(g_entity_type_model)
+	e = entity_linkChild(g_cameraEntity, planeEntity)
+	e = entity_linkChild(planeEntity, g_planeModel)
+	entity_setScale(planeEntity, g_boundingBoxRadius)
+	entity_setPosition(planeEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2 + g_gridSpacing/2)})
+	entity_setOrientation(planeEntity, {w=1, x=-1, y=0, z=0})
 
 	for i = 1,g_boxes_length,1 do
 		local boxEntity, e = entity_createEntity(g_entity_type_model)

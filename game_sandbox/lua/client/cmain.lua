@@ -46,7 +46,7 @@ function startup()
 	magentaAlphaMaterial, error = loadTexture("magenta-alpha")
 
 	groundMaterial, error = loadTexture("lava")
-	e = entity_linkMaterial(g_planeEntity, groundMaterial)
+	e = model_linkDefaultMaterial(g_planeModel, groundMaterial)
 
 	-- e = entity_linkMaterial(modelEntity_create({x=0, y=0, z=2000}, {w=1, x=-1, y=0, z=0}, 400.0), cyanMaterial)
 
