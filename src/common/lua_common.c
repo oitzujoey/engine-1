@@ -18,6 +18,7 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_sin,              .name = "sin"},
 	{.func = l_common_cos,              .name = "cos"},
 	{.func = l_common_round,            .name = "round"},
+	{.func = l_common_abs,              .name = "abs"},
 	// {.func = l_loadObj,                 .name = "loadObj"},
 	{.func = l_log_info,                .name = "info"},
 	{.func = l_log_warning,             .name = "warning"},
@@ -46,6 +47,35 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = NULL,                  .name = NULL}
 };
 
+
+int l_common_abs(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 1) {
+		error("`abs` requires 1 argument", "");
+		lua_error(l);
+	}
+
+	if (lua_isinteger(l, 1)) {
+		lua_Integer s = lua_tointeger(l, 1);
+		s = llabs(s);
+		(void) lua_pushinteger(l, s);
+	}
+	else if (lua_isnumber(l, 1)) {
+		vec_t s = lua_tonumber(l, 1);
+#ifdef DOUBLE_VEC
+		s = fabs(s);
+#else
+		s = fabsf(s);
+#endif
+		(void) lua_pushnumber(l, s);
+	}
+	else {
+		error("Argument of `abs` must be a number.", "");
+		lua_error(l);
+	}
+
+	return 1;
+}
 
 int l_common_round(lua_State *l) {
 	int argc = lua_gettop(l);
