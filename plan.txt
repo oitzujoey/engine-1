@@ -837,6 +837,10 @@ All this fun physics stuff I think I should leave for the end. For now, I need t
 Boxes and the world boundary should make collision handling reasonably easy. Velocity is split up into x, y, and z components and the movement for each is applied in order. Maybe the order would be xyz? Or zxy? Probably doesn't matter. Choose one and adjust jump velocity and gravity to compensate.
 
 
+When a box is picked up, it checks to see if there is any box above it. If there is, then that box is shoved into the physics queue. When that box is simulated on the next frame, it does the same check, and the box above it is shoved into the physics queue.
+The box in the player's inventory does not collide with anything.
+
+
 
 
 Needed material flags:

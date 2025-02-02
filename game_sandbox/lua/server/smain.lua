@@ -17,7 +17,7 @@ function clientConnect(clientNumber)
 	serverState[clientNumber].maxClients = maxClients
 
 	-- Set the physics state.
-	serverState[clientNumber].position = {x=0, y=0, z=0}
+	serverState[clientNumber].position = {x=0, y=0, z=g_boundingBoxRadius/2-3}
 	serverState[clientNumber].orientation = aaToQuat({w=G_PI/2, x=1, y=0, z=0})
 	serverState[clientNumber].euler = {}
 	serverState[clientNumber].euler.yaw = 0.0
@@ -25,6 +25,7 @@ function clientConnect(clientNumber)
 	serverState[clientNumber].velocity = {x=0, y=0, z=0}
 	serverState[clientNumber].collided = false
 	serverState[clientNumber].grounded = false
+	serverState[clientNumber].aabb = G_PLAYER_BB
 end
 
 function clientDisconnect(clientNumber)
@@ -59,6 +60,7 @@ end
 function main()
 	-- Main program loop.
 
+	-- Process clients
 	for i = 1,maxClients,1 do
 		if connectedClients[i] then
 			-- Inform the client how many clients there are.
@@ -66,35 +68,34 @@ function main()
 
 			local keys = clientState[i].keys
 
-			do
-				local scale = 0.90
-				serverState[i].velocity.x = serverState[i].velocity.x * scale
-				serverState[i].velocity.y = serverState[i].velocity.y * scale
-			end
+			local scale = 0.90
+			serverState[i].velocity.x = serverState[i].velocity.x * scale
+			serverState[i].velocity.y = serverState[i].velocity.y * scale
 
-			do
-				local yaw_x, yaw_y = 0, 0
-				if keys.forward then
-					yaw_x = yaw_x + sin(serverState[i].euler.yaw)
-					yaw_y = yaw_y - cos(serverState[i].euler.yaw)
+			if serverState[i].grounded then
+				if keys.jump then
+					serverState[i].velocity.z = serverState[i].velocity.z + G_JUMPVELOCITY
 				end
-				if keys.backward then
-					yaw_x = yaw_x - sin(serverState[i].euler.yaw)
-					yaw_y = yaw_y + cos(serverState[i].euler.yaw)
-				end
-				if keys.strafeLeft then
-					yaw_x = yaw_x - cos(serverState[i].euler.yaw)
-					yaw_y = yaw_y - sin(serverState[i].euler.yaw)
-				end
-				if keys.strafeRight then
-					yaw_x = yaw_x + cos(serverState[i].euler.yaw)
-					yaw_y = yaw_y + sin(serverState[i].euler.yaw)
-				end
-				serverState[i].velocity = vec3_add(serverState[i].velocity, {x=yaw_x, y=yaw_y, z=0})
 			end
-			if serverState[i].grounded and keys.jump then
-				serverState[i].velocity.z = serverState[i].velocity.z + G_JUMPVELOCITY
+			
+			local yaw_x, yaw_y = 0, 0
+			if keys.forward then
+				yaw_x = yaw_x + sin(serverState[i].euler.yaw)
+				yaw_y = yaw_y - cos(serverState[i].euler.yaw)
 			end
+			if keys.backward then
+				yaw_x = yaw_x - sin(serverState[i].euler.yaw)
+				yaw_y = yaw_y + cos(serverState[i].euler.yaw)
+			end
+			if keys.strafeLeft then
+				yaw_x = yaw_x - cos(serverState[i].euler.yaw)
+				yaw_y = yaw_y - sin(serverState[i].euler.yaw)
+			end
+			if keys.strafeRight then
+				yaw_x = yaw_x + cos(serverState[i].euler.yaw)
+				yaw_y = yaw_y + sin(serverState[i].euler.yaw)
+			end
+			serverState[i].velocity = vec3_add(serverState[i].velocity, {x=yaw_x, y=yaw_y, z=0})
 
 			if (clientState[i].mouse.delta_y and clientState[i].mouse.delta_y ~= 0) then
 				serverState[i].euler.pitch = serverState[i].euler.pitch + clientState[i].mouse.delta_y/1000.0
@@ -130,6 +131,9 @@ function main()
 			end
 		end
 	end
+
+	-- Process boxes
+	processBoxes(g_boxes)
 end
 
 function shutdown()

@@ -75,13 +75,16 @@ end
 -- Game specific functions
 --------------------------
 
+
 g_gridSpacing = 40
 g_boundingBoxRadius = g_gridSpacing * 20
 g_boxTable = {}
 G_GRAVITY = -1.0e0
 G_JUMPVELOCITY = 3.0e1
-G_PLAYER_BB = {mins={x=-g_gridSpacing/2, y=-g_gridSpacing/2, z=-1.8*g_gridSpacing},
-			   maxs={x=g_gridSpacing/2, y=g_gridSpacing/2, z=0.2*g_gridSpacing}}
+G_PLAYER_BB = {mins={x=-g_gridSpacing*0.4, y=-g_gridSpacing*0.4, z=-0.7*g_gridSpacing},
+			   maxs={x=g_gridSpacing*0.4, y=g_gridSpacing*0.4, z=0.2*g_gridSpacing}}
+G_BOX_BB = {mins={x=-g_gridSpacing/2, y=-g_gridSpacing/2, z=-g_gridSpacing/2},
+			maxs={x=g_gridSpacing/2, y=g_gridSpacing/2, z=g_gridSpacing/2}}
 
 
 function snapComponentToGrid(component)
@@ -112,19 +115,18 @@ function isOccupied(point)
 	if point.z > boundingBoxRadius/2 then return outOfBounds() end
 	if point.z < -boundingBoxRadius/2 then return outOfBounds() end
 	-- Check if spot contains a box.
-	local bt_xyz = g_boxTable
-	local bt_yz = bt_xyz[point.x]
-	if bt_yz == nil then return negative() end
-	local bt_z = bt_yz[point.y]
-	if bt_z == nil then return negative() end
-	local spot = bt_z[point.z]
-	if spot == nil then return negative() end
-	-- Success.
-	local boxNumber = spot
-	return affirmative(boxNumber)
+	local boxNumber = getBoxEntry(point)
+	if boxNumber then
+		return affirmative(boxNumber)
+	else
+		return negative()
+	end
 end
 
 -- traceComponent(4.3, "x", {x=23.3, y=4.0, z=-12.3}, -20, 20)
+--
+-- This function traces an axial line of grid points from `startPosition` to an end point determined by the axis name
+-- and the axis offset (`endComponent`). It stops at the first box or out-of-bounds point.
 function traceComponent(endComponent, componentName, startPosition, entityMin, entityMax)
 	local extreme
 	if endComponent > startPosition[componentName] then
@@ -165,6 +167,7 @@ function traceComponent(endComponent, componentName, startPosition, entityMin, e
 
 end
 
+-- `state` must have `position`, `velocity`, and `aabb` fields.
 function playerCollide(state)
 	state.collided = false
 	state.grounded = false
@@ -173,39 +176,124 @@ function playerCollide(state)
 	local newPosition = vec3_add(oldPosition, oldVelocity)
 	local newVelocity = {x=oldVelocity.x, y=oldVelocity.y, z=oldVelocity.z}
 	-- Do collision per-axis.
-	local traceCollided, endComponent = traceComponent(newPosition.x,
-													   "x",
-													   {x=oldPosition.x, y=oldPosition.y, z=oldPosition.z},
-													   G_PLAYER_BB.mins.x,
-													   G_PLAYER_BB.maxs.x)
-	if traceCollided then
-		state.collided = true
-		newVelocity.x = 0.0
+	components = {'x', 'y', 'z'}
+	local position = {x=oldPosition.x, y=oldPosition.y, z=oldPosition.z}
+	for componentIndex = 1,3,1 do
+		component = components[componentIndex]
+		local traceCollided, endComponent = traceComponent(newPosition[component],
+														   component,
+														   position,
+														   state.aabb.mins[component],
+														   state.aabb.maxs[component])
+		if traceCollided then
+			state.collided = true
+			if component == 'z' and oldVelocity.z < 0 then
+				state.grounded = true
+			end
+			newVelocity[component] = 0.0
+		end
+		position[component] = endComponent
 	end
-	newPosition.x = endComponent
-	local traceCollided, endComponent = traceComponent(newPosition.y,
-													   "y",
-													   {x=newPosition.x, y=oldPosition.y, z=oldPosition.z},
-													   G_PLAYER_BB.mins.y,
-													   G_PLAYER_BB.maxs.y)
-	if traceCollided then
-		state.collided = true
-		newVelocity.y = 0.0
-	end
-	newPosition.y = endComponent
-	local traceCollided, endComponent = traceComponent(newPosition.z,
-													   "z",
-													   {x=newPosition.x, y=newPosition.y, z=oldPosition.z},
-													   G_PLAYER_BB.mins.z,
-													   G_PLAYER_BB.maxs.z)
-	if traceCollided then
-		state.collided = true
-		if oldVelocity.z < 0 then state.grounded = true end
-		newVelocity.z = 0.0
-	end
-	newPosition.z = endComponent
-	local delta = vec3_subtract(newPosition, oldPosition)
-	state.position = newPosition
+	local delta = vec3_subtract(position, oldPosition)
+	state.position = position
 	state.velocity = newVelocity
 	return state
+end
+
+
+function createBoxEntry(boxEntity, point)
+	point = snapToGrid(point)
+	local bt_xyz = g_boxTable
+	local bt_yz = bt_xyz[point.x]
+	if bt_yz == nil then
+		bt_xyz[point.x] = {}
+		bt_yz = bt_xyz[point.x]
+		bt_yz.entries = 0
+	end
+	local bt_z = bt_yz[point.y]
+	if bt_z == nil then
+		bt_yz[point.y] = {}
+		bt_z = bt_yz[point.y]
+		bt_z.entries = 0
+		bt_yz.entries = bt_yz.entries + 1
+	end
+	local spot = bt_z[point.z]
+	if spot ~= nil then
+		warning("moveBox", "Box is already occupied.")
+		return
+	end
+	bt_z[point.z] = boxEntity
+	bt_z.entries = bt_z.entries + 1
+end
+
+function getBoxEntry(point)
+	-- Check if spot contains a box.
+	local bt_xyz = g_boxTable
+	local bt_yz = bt_xyz[point.x]
+	if bt_yz == nil then return nil end
+	local bt_z = bt_yz[point.y]
+	if bt_z == nil then return nil end
+	local spot = bt_z[point.z]
+	if spot == nil then return nil end
+	-- Success.
+	local boxNumber = spot
+	return boxNumber
+end
+
+function moveBox(boxEntity, newPosition, oldPosition)
+	oldPosition = snapToGrid(oldPosition)
+	newPosition = snapToGrid(newPosition)
+
+	-- Find the current box entry.
+	local bt_xyz = g_boxTable
+	local bt_yz = bt_xyz[oldPosition.x]
+	if bt_yz == nil then
+		warning("moveBox", "Box does not have x-axis entry.")
+		return
+	end
+	local bt_z = bt_yz[oldPosition.y]
+	if bt_z == nil then
+		warning("moveBox", "Box does not have y-axis entry.")
+		return
+	end
+	local spot = bt_z[oldPosition.z]
+	if spot == nil then
+		warning("moveBox", "Box does not have z-axis entry.")
+		return
+	end
+	local boxNumber = spot
+
+	-- Double check that we are moving the right box.
+	if boxNumber ~= boxEntity then
+		warning("moveBox", "The box being moved is not the box that is at this point.")
+		return
+	end
+
+	-- Delete existing entry.
+	bt_z[oldPosition.z] = nil
+	bt_z.entries = bt_z.entries - 1
+	if bt_z.entries == 0 then
+		bt_z.entries = nil
+
+		bt_yz[oldPosition.y] = nil
+		bt_yz.entries = bt_yz.entries - 1
+		if bt_yz.entries == 0 then
+			bt_yz.entries = nil
+
+			bt_xyz[oldPosition.z] = nil
+		end
+	end
+
+	-- Create new entry.
+	createBoxEntry(boxEntity, newPosition)
+end
+
+function processBoxes(boxes)
+	for i = 1,g_boxes_length,1 do
+		boxes[i].velocity.z = boxes[i].velocity.z + G_GRAVITY
+		oldPosition = boxes[i].position
+		boxes[i] = playerCollide(boxes[i])
+		moveBox(boxes[i].entity, boxes[i].position, oldPosition)
+		entity_setPosition(boxes[i].entity, boxes[i].position)
+	end
 end

@@ -194,6 +194,9 @@ int l_common_toString(lua_State *luaState) {
 	else if (lua_isnil(luaState, 1)) {
 		lua_pushfstring(luaState, "nil");
 	}
+	else {
+		lua_pushfstring(luaState, "<unhandled>");
+	}
 	
 	return 1;
 }
