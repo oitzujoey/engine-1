@@ -38,17 +38,19 @@ function loadWorld()
 	-- entity_setPosition(terrainEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2+200)})
 	-- entity_setOrientation(terrainEntity, {w=1, x=1, y=0, z=0})
 
+	-- Ground
 	local planeEntity, e = entity_createEntity(g_entity_type_model)
 	e = entity_linkChild(g_cameraEntity, planeEntity)
 	e = entity_linkChild(planeEntity, g_planeModel)
-	entity_setScale(planeEntity, g_boundingBoxRadius)
+	entity_setScale(planeEntity, g_boundingBoxRadius + g_gridSpacing/2)
 	entity_setPosition(planeEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2 + g_gridSpacing/2)})
 	entity_setOrientation(planeEntity, {w=1, x=1, y=0, z=0})
 
+	-- Reversed ground
 	local planeEntity, e = entity_createEntity(g_entity_type_model)
 	e = entity_linkChild(g_cameraEntity, planeEntity)
 	e = entity_linkChild(planeEntity, g_planeModel)
-	entity_setScale(planeEntity, g_boundingBoxRadius)
+	entity_setScale(planeEntity, g_boundingBoxRadius + g_gridSpacing/2)
 	entity_setPosition(planeEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2 + g_gridSpacing/2)})
 	entity_setOrientation(planeEntity, {w=1, x=-1, y=0, z=0})
 
