@@ -841,6 +841,25 @@ When a box is picked up, it checks to see if there is any box above it. If there
 The box in the player's inventory does not collide with anything.
 
 
+I should add a SQL database for the boxes.
+SQLite looks quite large though, maybe I should use a text file?
+
+sqlite3_open
+sqlite3_prepare_v2
+sqlite3_step
+sqlite3_column_*
+sqlite3_finalize
+(sqlite3_close?
+ | sqlite3_close_v2?)
+sqlite3_exec?
+sqlite3_reset?
+sqlite3_bind_*?
+
+I think I should prepare SQL statements and then replace the parameters with the cube data on each run.
+
+I think I will only allow one database per game and hard code the name.
+
+
 
 
 Needed material flags:
