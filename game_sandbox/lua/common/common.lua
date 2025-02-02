@@ -17,8 +17,6 @@ Vec3_zn = {x=0, y=0, z=-1}
 Vec3_zp = {x=0, y=0, z=1}
 
 G_PI = 3.14159265358979323
-G_GRAVITY = -1.0e0
-G_JUMPVELOCITY = 3.0e1
 
 
 function quit()
@@ -80,6 +78,11 @@ end
 g_gridSpacing = 40
 g_boundingBoxRadius = g_gridSpacing * 100
 g_boxTable = {}
+G_GRAVITY = -1.0e0
+G_JUMPVELOCITY = 3.0e1
+G_PLAYER_BB = {mins={x=-g_gridSpacing, y=-g_gridSpacing, z=-0},
+			   maxs={x=g_gridSpacing, y=g_gridSpacing, z=0}}
+
 
 function snapComponentToGrid(component)
 	return g_gridSpacing*round(component/g_gridSpacing)
@@ -96,6 +99,7 @@ function playerIsInBounds(point)
 	function inBounds() return true end
 	function outOfBounds() return false end
 	local boundingBoxRadius = g_boundingBoxRadius
+	point = snapToGrid(point)
 	-- Check if outside bounds.
 	if point.x > boundingBoxRadius then return outOfBounds() end
 	if point.x < -boundingBoxRadius then return outOfBounds() end
@@ -136,6 +140,54 @@ function isOccupied(point)
 	return affirmative(boxNumber)
 end
 
+-- traceComponent(4.3, "x", {x=23.3, y=4.0, z=-12.3}, -20, 20)
+function traceComponent(endComponent, componentName, startPosition, entityMin, entityMax)
+	local startPosition = snapToGrid({x=startPosition.x, y=startPosition.y, z=startPosition.z})
+	-- if not playerIsInBounds(startPosition) then return true, startPosition[componentName] end
+	-- Already snapped:
+	local endPosition = {x=startPosition.x, y=startPosition.y, z=startPosition.z}
+	endPosition[componentName] = snapComponentToGrid(endComponent)
+
+	local displacement = endPosition[componentName] - startPosition[componentName]
+
+	-- local extreme
+	-- if displacement > 0 then
+	-- 	extreme = entityMax
+	-- else
+	-- 	extreme = entityMin
+	-- end
+	-- displacement = displacement - extreme
+
+	local iterations = round(abs(displacement / g_gridSpacing))
+	local sign
+	if displacement < 0 then
+		sign = -1
+	else
+		sign = 1
+	end
+
+	if iterations ~= 0.0 then
+		puts("iterations["..componentName.."]: "..toString(iterations))
+	end
+	local hit = false
+	local gridOffset = 0
+	local position = {x=startPosition.x, y=startPosition.y, z=startPosition.z}
+	-- position[componentName] = position[componentName] + extreme
+	puts("displacement "..toString(displacement))
+	puts("sign "..toString(sign))
+	for gridOffset = 1,iterations,1 do
+		position[componentName] = startPosition[componentName] + g_gridSpacing * gridOffset * sign
+		if not playerIsInBounds(position) then
+			puts("BREAK")
+			local backOff = 0.001
+			puts(startPosition[componentName] + g_gridSpacing * (gridOffset - 0.5 - backOff) * sign)
+			return true, startPosition[componentName] + g_gridSpacing * (gridOffset - 0.5 - backOff) * sign
+		end
+	end
+	return false, endComponent
+
+end
+
 function playerCollide(state)
 	-- TODO: This is wrong. We can't just average the snapped old and new positions because it's possible we warped
 	--       through a block. We need to run a trace function to stop on the first block we encounter. Only after we
@@ -147,34 +199,49 @@ function playerCollide(state)
 	local newPosition = vec3_add(oldPosition, oldVelocity)
 	local newVelocity = {x=oldVelocity.x, y=oldVelocity.y, z=oldVelocity.z}
 	-- Do collision per-axis.
-	local x = {x=newPosition.x, y=oldPosition.y, z=oldPosition.z}
-	if not playerIsInBounds(x) then
+	local traceCollided, endComponent = traceComponent(newPosition.x,
+													   "x",
+													   {x=oldPosition.x, y=oldPosition.y, z=oldPosition.z},
+													   G_PLAYER_BB.mins.z,
+													   G_PLAYER_BB.maxs.z)
+	if traceCollided then
+		puts("STOP-X")
 		state.collided = true
-		x.x = (snapComponentToGrid(x.x) + snapComponentToGrid(oldPosition.x))/2
 		newVelocity.x = 0.0
 	end
-	newPosition.x = x.x
-	local y = {x=x.x, y=newPosition.y, z=x.z}
-	if not playerIsInBounds(y) then
+	newPosition.x = endComponent
+	local traceCollided, endComponent = traceComponent(newPosition.y,
+													   "y",
+													   {x=newPosition.x, y=oldPosition.y, z=oldPosition.z},
+													   G_PLAYER_BB.mins.z,
+													   G_PLAYER_BB.maxs.z)
+	if traceCollided then
+		puts("STOP-Y")
 		state.collided = true
-		y.y = (snapComponentToGrid(y.y) + snapComponentToGrid(x.y))/2
 		newVelocity.y = 0.0
 	end
-	newPosition.y = y.y
-	local z = {x=y.x, y=y.y, z=newPosition.z}
-	if not playerIsInBounds(z) then
+	newPosition.y = endComponent
+	puts("start "..toString(oldPosition.z))
+	local traceCollided, endComponent = traceComponent(newPosition.z,
+													   "z",
+													   {x=newPosition.x, y=newPosition.y, z=oldPosition.z},
+													   G_PLAYER_BB.mins.z,
+													   G_PLAYER_BB.maxs.z)
+	if traceCollided then
+		puts("STOP-Z")
 		state.collided = true
 		if oldVelocity.z < 0 then state.grounded = true end
-		z.z = (snapComponentToGrid(z.z) + snapComponentToGrid(y.z))/2
+		puts("endComponent "..endComponent)
+		-- z.z = (snapComponentToGrid(z.z) + snapComponentToGrid(y.z))/2
 		newVelocity.z = 0.0
 	end
-	newPosition.z = z.z
+	newPosition.z = endComponent
 	local delta = vec3_subtract(newPosition, oldPosition)
-	-- puts("delta {")
-	-- puts(delta.x)
-	-- puts(delta.y)
-	-- puts(delta.z)
-	-- puts("}")
+	puts("delta {")
+	puts(delta.x)
+	puts(delta.y)
+	puts(delta.z)
+	puts("}")
 	state.position = newPosition
 	state.velocity = newVelocity
 	return state
