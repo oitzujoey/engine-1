@@ -863,16 +863,19 @@ I think I will only allow one database per game and hard code the name.
 I think I shouldn't be using mins/maxs for collision detection since I'm trying to base it off of a grid. Instead if I want mins/maxs then I should specify it in terms of cubes. The player is 2 cubes tall and 1 cube wide for example.
 
 
+All blocks need to be sent to the client on connect. The server sends incremental block updates to all clients from then on. The client needs to simulate blocks in real time before the server has time to send the actual positions. Let's say there's 200 ms of delay between the player placing a block in midair and the server giving confirmation that the block was placed. And then the block should fall in sync on the client and server.
+
+For placing a block, I could create a placeholder block of an unusual texture to show that it isn't actually there yet. When the server confirms that the block has been placed, the block gets its proper texture. In this case, I think I would simulate on the client independently of the server. It's easier, and I don't think falling blocks need to be synchronized with the server. I don't think players will try to grab falling blocks often.
+
+Player movement should be synchronized though to some extent. I'm not exactly sure how to synchronize that. Does the client calculate the error for a past snapshot and then apply that error to all newer snapshots?
 
 
-Needed material flags:
-    cull=false|true
-    transparent=false|true
+
 
 Stuff I need to add before public release:
-    Collision detection
     Authentication
     Lighting? -- Probably not. No light would probably make the world show up better.
+    Transparency
 
 Stuff I need to document:
     Rmsh & script

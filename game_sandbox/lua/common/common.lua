@@ -236,7 +236,6 @@ function playerMoveAndCollide(state)
 				-- Shift position to cube corner.
 				local startingPoint = startingPoints[j]
 				-- Trace.
-				puts(toString(startingPoint.x).." "..toString(startingPoint.y).." "..toString(startingPoint.z))
 				local traceCollided, endComponent = traceComponent(newPosition[component] + startingPoint[component],
 																   component,
 																   vec3_add(position, startingPoints[j]),
@@ -253,7 +252,6 @@ function playerMoveAndCollide(state)
 		end
 		if tracesCollided then
 			state.collided = true
-			puts("COLLIDED "..component)
 			if component == 'z' and oldVelocity.z < 0 then
 				state.grounded = true
 			end
