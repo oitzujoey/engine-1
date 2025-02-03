@@ -112,7 +112,7 @@ function main()
 
 			serverState[i].orientation = hamiltonProduct(eulerToQuat(serverState[i].euler),
 														 aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
-			serverState[i] = playerCollide(serverState[i])
+			serverState[i] = playerMoveAndCollide(serverState[i])
 		end
 	end
 

@@ -860,6 +860,9 @@ I think I should prepare SQL statements and then replace the parameters with the
 I think I will only allow one database per game and hard code the name.
 
 
+I think I shouldn't be using mins/maxs for collision detection since I'm trying to base it off of a grid. Instead if I want mins/maxs then I should specify it in terms of cubes. The player is 2 cubes tall and 1 cube wide for example.
+
+
 
 
 Needed material flags:
@@ -981,10 +984,11 @@ Other improvements:
 =====================
 [/] (Art) Make models
     [*] Make boxes
-	[ ] Make map
+	[*] Make map
 	[ ] Make player models
 [ ] (Lua) Texture boxes with different colors corresponding to the keyboard numbers 0-9.
-[ ] (Lua) Add physics and collision handling.
+[*] (Lua) Add physics and collision handling.
+[ ] (All) Profile and optimize for speed.
 
 =========================
 */* Multiplayer Elite ***

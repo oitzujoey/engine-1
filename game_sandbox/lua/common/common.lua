@@ -168,7 +168,7 @@ function traceComponent(endComponent, componentName, startPosition, entityMin, e
 end
 
 -- `state` must have `position`, `velocity`, and `aabb` fields.
-function playerCollide(state)
+function boxMoveAndCollide(state)
 	state.collided = false
 	state.grounded = false
 	local oldPosition = state.position
@@ -200,6 +200,74 @@ function playerCollide(state)
 	return state
 end
 
+-- `state` must have `position`, `velocity`, and `aabb` fields.
+function playerMoveAndCollide(state)
+	state.collided = false
+	state.grounded = false
+	local oldPosition = state.position
+	local oldVelocity = state.velocity
+	local newPosition = vec3_add(oldPosition, oldVelocity)
+	local newVelocity = {x=oldVelocity.x, y=oldVelocity.y, z=oldVelocity.z}
+	local position = {x=oldPosition.x, y=oldPosition.y, z=oldPosition.z}
+	-- Construct bounding volume vertices.
+	local startingPoints = {}
+	local aabb = state.aabb
+	local extremeNames = {"mins", "maxs"}
+	for z = 1,2,1 do
+		extreme_z = aabb[extremeNames[z]].z
+		for y = 1,2,1 do
+			extreme_y = aabb[extremeNames[y]].y
+			for x = 1,2,1 do
+				extreme_x = aabb[extremeNames[x]].x
+				startingPoints[#startingPoints+1] = {x=extreme_x, y=extreme_y, z=extreme_z}
+			end
+		end
+	end
+	-- Do collision per-axis.
+	components = {'x', 'y', 'z'}
+	for componentIndex = 1,3,1 do
+		component = components[componentIndex]
+		local minEndComponent = newPosition[component]
+		local tracesCollided = false
+		-- Trace from each corner of the cube (so 8 points), but we only need to check the points on the leading side (so 4 points).
+		for j = 1,8,1 do
+			-- But cull the points on the trailing face of the cube.
+			if startingPoints[j][component] * (newPosition[component] - position[component]) >= 0 then
+				-- Shift position to cube corner.
+				local startingPoint = startingPoints[j]
+				-- Trace.
+				puts(toString(startingPoint.x).." "..toString(startingPoint.y).." "..toString(startingPoint.z))
+				local traceCollided, endComponent = traceComponent(newPosition[component] + startingPoint[component],
+																   component,
+																   vec3_add(position, startingPoints[j]),
+																   0,
+																   0)
+				endComponent = endComponent - startingPoint[component]
+				if traceCollided then
+					if abs(endComponent - position[component]) < abs(minEndComponent - position[component]) then
+						minEndComponent = endComponent
+					end
+					tracesCollided = true
+				end
+			end
+		end
+		if tracesCollided then
+			state.collided = true
+			puts("COLLIDED "..component)
+			if component == 'z' and oldVelocity.z < 0 then
+				state.grounded = true
+			end
+			-- newVelocity[component] = -0.001 * newVelocity[component]
+			newVelocity[component] = 0.0
+		end
+		position[component] = minEndComponent
+	end
+	local delta = vec3_subtract(position, oldPosition)
+	state.position = position
+	state.velocity = newVelocity
+	return state
+end
+
 
 function createBoxEntry(boxEntity, point)
 	point = snapToGrid(point)
@@ -219,7 +287,7 @@ function createBoxEntry(boxEntity, point)
 	end
 	local spot = bt_z[point.z]
 	if spot ~= nil then
-		warning("moveBox", "Box is already occupied.")
+		error("moveBox", "Box is already occupied.")
 		return
 	end
 	bt_z[point.z] = boxEntity
@@ -248,24 +316,24 @@ function moveBox(boxEntity, newPosition, oldPosition)
 	local bt_xyz = g_boxTable
 	local bt_yz = bt_xyz[oldPosition.x]
 	if bt_yz == nil then
-		warning("moveBox", "Box does not have x-axis entry.")
+		error("moveBox", "Box does not have x-axis entry.")
 		return
 	end
 	local bt_z = bt_yz[oldPosition.y]
 	if bt_z == nil then
-		warning("moveBox", "Box does not have y-axis entry.")
+		error("moveBox", "Box does not have y-axis entry.")
 		return
 	end
 	local spot = bt_z[oldPosition.z]
 	if spot == nil then
-		warning("moveBox", "Box does not have z-axis entry.")
+		error("moveBox", "Box does not have z-axis entry.")
 		return
 	end
 	local boxNumber = spot
 
 	-- Double check that we are moving the right box.
 	if boxNumber ~= boxEntity then
-		warning("moveBox", "The box being moved is not the box that is at this point.")
+		error("moveBox", "The box being moved is not the box that is at this point.")
 		return
 	end
 
@@ -292,7 +360,7 @@ function processBoxes(boxes)
 	for i = 1,g_boxes_length,1 do
 		boxes[i].velocity.z = boxes[i].velocity.z + G_GRAVITY
 		oldPosition = boxes[i].position
-		boxes[i] = playerCollide(boxes[i])
+		boxes[i] = boxMoveAndCollide(boxes[i])
 		moveBox(boxes[i].entity, boxes[i].position, oldPosition)
 		entity_setPosition(boxes[i].entity, boxes[i].position)
 	end
