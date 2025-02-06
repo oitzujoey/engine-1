@@ -6,6 +6,19 @@ g_worldEntity = 0
 
 g_models = {}
 g_entities = {}
+g_materialNames = {
+	"red",
+	"blue",
+	"green",
+	"yellow",
+	"cyan",
+	"magenta",
+	-- "orange",
+	-- "purple",
+	"black",
+	"white"
+}
+g_materials = {}
 
 g_frame = 1
 
@@ -25,6 +38,25 @@ end
 
 function abort(message)
 	critical_error("abort", message)
+end
+
+function createConsoleCommand(configVariable, callback)
+	cfg2_setVariable("create command " .. configVariable)
+	cfg2_setCallback(configVariable, callback)
+end
+
+
+function push(stack, item)
+	stack[#stack+1] = item
+end
+
+function pop(stack)
+	if #stack == 0 then
+		return nil
+	end
+	local item = stack[#stack]
+	stack[#stack] = nil
+	return item
 end
 
 
@@ -293,6 +325,7 @@ function createBoxEntry(boxEntity, point)
 end
 
 function getBoxEntry(point)
+	point = snapToGrid(point)
 	-- Check if spot contains a box.
 	local bt_xyz = g_boxTable
 	local bt_yz = bt_xyz[point.x]
@@ -346,12 +379,16 @@ function moveBox(boxEntity, newPosition, oldPosition)
 		if bt_yz.entries == 0 then
 			bt_yz.entries = nil
 
-			bt_xyz[oldPosition.z] = nil
+			bt_xyz[oldPosition.x] = nil
 		end
 	end
 
 	-- Create new entry.
 	createBoxEntry(boxEntity, newPosition)
+
+	-- if G_SERVER then
+	-- 	sendEvent('move box', {oldPosition=oldPosition, newPosition=newPosition})
+	-- end
 end
 
 function processBoxes(boxes)
@@ -362,4 +399,33 @@ function processBoxes(boxes)
 		moveBox(boxes[i].entity, boxes[i].position, oldPosition)
 		entity_setPosition(boxes[i].entity, boxes[i].position)
 	end
+end
+
+
+function createBox(position, materialName)
+	local box = {}
+	local boxEntity, e = entity_createEntity(g_entity_type_model)
+	e = entity_linkChild(g_cameraEntity, boxEntity)
+	e = entity_linkChild(boxEntity, boxModel)
+	box.entity = boxEntity
+
+	entity_setScale(boxEntity, g_boxes_scale)
+	box.position = position
+	entity_setPosition(boxEntity, box.position)
+	entity_setOrientation(boxEntity, {w=1, x=0, y=0, z=0})
+
+	createBoxEntry(boxEntity, box.position)
+
+	box.velocity = {x=0, y=0, z=0}
+	box.aabb = G_BOX_BB
+
+	box.materialName = materialName
+
+	push(g_boxes, box)
+	g_boxes_length = #g_boxes
+
+	if G_CLIENT then
+		e = entity_linkMaterial(boxEntity, g_materials[materialName])
+	end
+	return e
 end

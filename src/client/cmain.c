@@ -27,6 +27,7 @@
 #include "../common/str2.h"
 #include "material.h"
 #include "../common/memory.h"
+#include "../common/random.h"
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
@@ -231,6 +232,8 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	int error;
 	
 	char *tempString = NULL;
+
+	(void) random_init();
 	
 	error = PHYSFS_init(argv[0]);
 	if (!error) {

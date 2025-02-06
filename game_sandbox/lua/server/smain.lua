@@ -1,7 +1,81 @@
+G_SERVER=true
 
 -- `include` is the engine's version of `require`.
 include "../common/common.lua"
 include "../common/loadworld.lua"
+
+g_eventQueues = {}
+
+function sendEvent(command, data)
+	for i = 1,maxClients,1 do
+		if connectedClients[i] then
+			sendEventToClient(i, command, data)
+		end
+	end
+end
+
+function sendEventToClient(clientNumber, command, data)
+	local event = {command=command, data=data}
+	if not g_eventQueues[clientNumber] then
+		g_eventQueues[clientNumber] = {}
+	end
+	push(g_eventQueues[clientNumber], event)
+end
+
+function sendQueuedEvents()
+	for i = 1,maxClients,1 do
+		if connectedClients[i] then
+			if not g_eventQueues[i] then
+				g_eventQueues[i] = {}
+			end
+			serverState[i].events = g_eventQueues[i]
+			g_eventQueues[i] = {}
+		end
+	end
+end
+
+-- function loadBoxes()
+-- 	for i = 1,g_boxes_length,1 do
+-- 		local box = {}
+-- 		local boxEntity, e = entity_createEntity(g_entity_type_model)
+-- 		e = entity_linkChild(g_cameraEntity, boxEntity)
+-- 		e = entity_linkChild(boxEntity, boxModel)
+-- 		box.entity = boxEntity
+
+-- 		entity_setScale(boxEntity, g_boxes_scale)
+-- 		box.position = snapToGrid({x=((i-1)%10 - 4.5)*g_gridSpacing,
+-- 								   y=((((i-1)-(i-1)%10)/10)%10 - 4.5)*g_gridSpacing,
+-- 								   z=(((i-1)-(i-1)%10-(i-1)%100)/100 - 4.5)*g_gridSpacing})
+-- 		entity_setPosition(boxEntity, box.position)
+-- 		entity_setOrientation(boxEntity, {w=1, x=0, y=0, z=0})
+
+-- 		createBoxEntry(boxEntity, box.position)
+
+-- 		box.velocity = {x=0, y=0, z=0}
+-- 		box.aabb = G_BOX_BB
+
+-- 		g_boxes[i] = box
+-- 	end
+-- end
+
+
+function consoleCommandCreateBox()
+	local position = {x=0, y=0, z=0}
+	local boxNumber = getBoxEntry(position)
+	if boxNumber then
+		info("createBox", "Cannot spawn box. Another box is currently at the origin.")
+	else
+		local materialName = g_materialNames[random()%#g_materialNames + 1]
+		createBox(position, materialName)
+		sendEvent("create box", {position=position, materialName=materialName})
+		info("createBox", "Created box at origin.")
+	end
+end
+
+function setupConsoleCommands()
+	createConsoleCommand("create_box", "consoleCommandCreateBox")
+end
+
 
 function clientConnect(clientNumber)
 	connectedClients[clientNumber] = true
@@ -15,6 +89,7 @@ function clientConnect(clientNumber)
 
 	-- Inform the client how many total clients there may be.
 	serverState[clientNumber].maxClients = maxClients
+	serverState[clientNumber].events = {}
 
 	-- Set the physics state.
 	serverState[clientNumber].position = {x=0, y=0, z=g_boundingBoxRadius/2-3}
@@ -26,6 +101,8 @@ function clientConnect(clientNumber)
 	serverState[clientNumber].collided = false
 	serverState[clientNumber].grounded = false
 	serverState[clientNumber].aabb = G_PLAYER_BB
+
+	serverState[clientNumber].boxesCreated = false
 end
 
 function clientDisconnect(clientNumber)
@@ -44,25 +121,41 @@ function startup()
 	end
 	numClients = 0
 
+	setupConsoleCommands()
+
 	-- file = l_vfs_getFileText("src/sgame/smain.lua")
 	-- l_puts(file)
 
-	-- Entity list constant indices
-
-	-- Textures
-
 	info("startup", "Loading world tree")
     loadWorld()
+	-- loadBoxes()
 
 	info("startup", "Starting game")
 end
 
 function main()
-	-- Main program loop.
-
 	-- Process clients
 	for i = 1,maxClients,1 do
 		if connectedClients[i] then
+			if not serverState[i].boxesCreated then
+				for box_index = 1,g_boxes_length,1 do
+					puts(toString(g_boxes[box_index].position.x).." "..toString(g_boxes[box_index].position.y).." "..toString(g_boxes[box_index].position.z))
+					puts(toString(box_index))
+					puts(toString(g_boxes[box_index].materialName))
+					sendEventToClient(i,
+									  "create initial box",
+									  {position=g_boxes[box_index].position,
+									   materialName=g_boxes[box_index].materialName})
+				end
+				if g_boxes_length == 0 then
+					sendEventToClient(i, "no initial boxes", nil)
+				end
+				puts("")
+			end
+			if clientState[i].boxesCreated then
+				serverState[i].boxesCreated = true
+			end
+
 			-- Inform the client how many clients there are.
 			serverState[i].numClients = numClients
 
@@ -134,6 +227,9 @@ function main()
 
 	-- Process boxes
 	processBoxes(g_boxes)
+
+
+	sendQueuedEvents()
 end
 
 function shutdown()

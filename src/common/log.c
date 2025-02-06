@@ -170,7 +170,7 @@ int l_log_info(lua_State *l) {
 	}
 	sprintf(buf, infomessage, function, message);
 	
-	printf(buf);
+	printf("%s", buf);
 
 	free(buf);
  cleanup:
@@ -181,8 +181,17 @@ int l_log_info(lua_State *l) {
 int l_log_warning(lua_State *l) {
 	int e = ERR_OK;
 
-	const char *function = lua_tostring(l, 1);
-	const char *message = lua_tostring(l, 2);
+	const char *function = NULL;
+	const char *message = NULL;
+
+	if (!lua_isstring(l, 1) || !lua_isstring(l, 2)) {
+		error("Arguments must be strings", "");
+		e = ERR_GENERIC;
+		goto cleanup;
+	}
+
+	function = lua_tostring(l, 1);
+	message = lua_tostring(l, 2);
 
 	const char *infomessage = COLOR_CYAN"Lua "COLOR_MAGENTA"Warning: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
 	size_t buf_length = strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1;
@@ -194,7 +203,7 @@ int l_log_warning(lua_State *l) {
 	}
 	sprintf(buf, infomessage, function, message);
 	
-	fprintf(stderr, buf);
+	fprintf(stderr, "%s", buf);
 
 	free(buf);
  cleanup:
@@ -205,8 +214,17 @@ int l_log_warning(lua_State *l) {
 int l_log_error(lua_State *l) {
 	int e = ERR_OK;
 
-	const char *function = lua_tostring(l, 1);
-	const char *message = lua_tostring(l, 2);
+	const char *function = NULL;
+	const char *message = NULL;
+
+	if (!lua_isstring(l, 1) || !lua_isstring(l, 2)) {
+		error("Arguments must be strings", "");
+		e = ERR_GENERIC;
+		goto cleanup;
+	}
+
+	function = lua_tostring(l, 1);
+	message = lua_tostring(l, 2);
 
 	const char *infomessage = COLOR_CYAN"Lua "COLOR_YELLOW"Error: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
 	size_t buf_length = strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1;
@@ -218,7 +236,7 @@ int l_log_error(lua_State *l) {
 	}
 	sprintf(buf, infomessage, function, message);
 	
-	fprintf(stderr, buf);
+	fprintf(stderr, "%s", buf);
 	
 	free(buf);
  cleanup:
@@ -229,8 +247,17 @@ int l_log_error(lua_State *l) {
 int l_log_critical_error(lua_State *l) {
 	int e = ERR_OK;
 
-	const char *function = lua_tostring(l, 1);
-	const char *message = lua_tostring(l, 2);
+	const char *function = NULL;
+	const char *message = NULL;
+
+	if (!lua_isstring(l, 1) || !lua_isstring(l, 2)) {
+		error("Arguments must be strings", "");
+		e = ERR_GENERIC;
+		goto cleanup;
+	}
+
+	function = lua_tostring(l, 1);
+	message = lua_tostring(l, 2);
 
 	const char *infomessage = COLOR_CYAN"Lua "COLOR_GREEN"Critical error: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
 	size_t buf_length = strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1;
@@ -242,7 +269,7 @@ int l_log_critical_error(lua_State *l) {
 	}
 	sprintf(buf, infomessage, function, message);
 	
-	fprintf(stderr, buf);
+	fprintf(stderr, "%s", buf);
 	
 	free(buf);
  cleanup:

@@ -26,6 +26,7 @@
 #endif
 #include "../common/str2.h"
 #include "../common/memory.h"
+#include "../common/random.h"
 
 int l_main_checkQuit(lua_State *luaState);
 
@@ -131,6 +132,8 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
 	char *tempString = NULL;
+
+	(void) random_init();
 	
 	// Start the VFS.
 	

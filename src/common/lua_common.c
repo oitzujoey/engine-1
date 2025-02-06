@@ -19,6 +19,7 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_cos,              .name = "cos"},
 	{.func = l_common_round,            .name = "round"},
 	{.func = l_common_abs,              .name = "abs"},
+	{.func = l_common_random,           .name = "random"},
 	// {.func = l_loadObj,                 .name = "loadObj"},
 	{.func = l_log_info,                .name = "info"},
 	{.func = l_log_warning,             .name = "warning"},
@@ -47,6 +48,18 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = NULL,                  .name = NULL}
 };
 
+
+int l_common_random(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 0) {
+		error("`random` does not accept any arguments", "");
+		lua_error(l);
+	}
+
+	(void) lua_pushinteger(l, random());
+
+	return 1;
+}
 
 int l_common_abs(lua_State *l) {
 	int argc = lua_gettop(l);

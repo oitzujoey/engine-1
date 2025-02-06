@@ -1,3 +1,5 @@
+G_CLIENT=true
+
 include "../common/common.lua"
 include "../client/keys.lua"
 include "../common/loadworld.lua"
@@ -8,6 +10,50 @@ g_mouse = {}
 g_sensitivity = 1.0
 
 g_cursorOffset = {x=0, y=0, z=100}
+
+
+g_initialBoxesCreated = false
+function processEvents()
+	local createdBoxes = false
+	if not serverState.events then return end
+	local events_length = #serverState.events
+	for i = 1,events_length,1 do
+		local event = serverState.events[i]
+		local c = event.command
+		local d = event.data
+		if c == "create box" then
+			createBox(d.position, d.materialName)
+		elseif c == "create initial box" then
+			if not g_initialBoxesCreated then
+				createBox(d.position, d.materialName)
+				createdBoxes = true
+			end
+		elseif c == "no initial boxes" then
+			if not g_initialBoxesCreated then
+				createdBoxes = true
+			end
+		else
+			warning("processEvents", "Unrecognized event \""..c.."\"")
+		end
+	end
+	if createdBoxes then
+		clientState.boxesCreated = true
+		g_initialBoxesCreated = true
+	end
+	serverState.events = {}
+end
+
+
+function dumpBoxes()
+	for i = 1,g_boxes_length,1 do
+		local box = g_boxes[i]
+		puts("box {")
+		local p = box.position
+		puts(toString(p.x).." "..toString(p.y).." "..toString(p.z))
+		puts("}")
+	end
+end
+
 
 function startup()
 	local e
@@ -28,21 +74,51 @@ function startup()
 		if e ~= 0 then return nil, e end
 		return material, nil
 	end
-	redMaterial, error = loadTexture("red")
-	greenMaterial, error = loadTexture("green")
-	blueMaterial, error = loadTexture("blue")
-	whiteMaterial, error = loadTexture("white")
-	blackMaterial, error = loadTexture("black")
-	cyanMaterial, error = loadTexture("cyan")
-	magentaMaterial, error = loadTexture("magenta")
-	yellowMaterial, error = loadTexture("yellow")
+
+	function loadMaterial(name)
+		local material, e = loadTexture(name)
+		g_materials[name] = material
+		return material, e
+	end
+
+	redMaterial, error = loadMaterial("red")
+	greenMaterial, error = loadMaterial("green")
+	blueMaterial, error = loadMaterial("blue")
+	whiteMaterial, error = loadMaterial("white")
+	blackMaterial, error = loadMaterial("black")
+	cyanMaterial, error = loadMaterial("cyan")
+	magentaMaterial, error = loadMaterial("magenta")
+	yellowMaterial, error = loadMaterial("yellow")
+
 	cardboardBoxMaterial, error = loadTexture("box")
 
-	sandboxMaterial, error = loadTexture("lava")
-	e = model_linkDefaultMaterial(g_sandboxModel, sandboxMaterial)
+	-- World box
+	local sandboxModel, e = mesh_load("blender/sandbox")
+	if e ~= 0 then quit() end
+	local sandboxEntity, e = entity_createEntity(g_entity_type_model)
+	e = entity_linkChild(g_cameraEntity, sandboxEntity)
+	if e ~= 0 then quit() end
+	e = entity_linkChild(sandboxEntity, sandboxModel)
+	if e ~= 0 then quit() end
+	entity_setScale(sandboxEntity, 10*g_boundingBoxRadius)
+	entity_setOrientation(sandboxEntity, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
+	local sandboxMaterial, e = loadTexture("lava")
+	e = model_linkDefaultMaterial(sandboxModel, sandboxMaterial)
 
-	groundMaterial, error = loadTexture("floor")
-	e = model_linkDefaultMaterial(g_planeModel, groundMaterial)
+	-- Ground
+	local planeModel, e = mesh_load("blender/plane")
+	if e ~= 0 then quit() end
+	local planeEntity, e = entity_createEntity(g_entity_type_model)
+	e = entity_linkChild(g_cameraEntity, planeEntity)
+	if e ~= 0 then quit() end
+	e = entity_linkChild(planeEntity, planeModel)
+	if e ~= 0 then quit() end
+	entity_setScale(planeEntity, g_boundingBoxRadius + g_gridSpacing/2)
+	entity_setPosition(planeEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2 + g_gridSpacing/2)})
+	entity_setOrientation(planeEntity, {w=1, x=1, y=0, z=0})
+	local groundMaterial, e = loadTexture("floor")
+	e = model_linkDefaultMaterial(planeModel, groundMaterial)
+	if e ~= 0 then quit() end
 
 	cursorMaterial, error = loadTexture("cursor")
 	g_cursorEntity = modelEntity_create({x=0, y=0, z=0}, {w=1, x=0, y=0, z=0}, g_boxes_scale * 1.1)
@@ -80,6 +156,8 @@ function startup()
 	keys_createMouseBind("mouse_motion")
 	-- q
 	cfg2_setVariable("bind k_113 quit")
+
+	createConsoleCommand("dump_boxes", "dumpBoxes")
 
 	-- Create keys/buttons
 	clientState.keys = {}
@@ -130,6 +208,8 @@ function main()
 		init()
 		return
 	end
+
+	processEvents()
 
 	clientState.mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
 
