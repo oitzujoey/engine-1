@@ -870,6 +870,12 @@ For placing a block, I could create a placeholder block of an unusual texture to
 Player movement should be synchronized though to some extent. I'm not exactly sure how to synchronize that. Does the client calculate the error for a past snapshot and then apply that error to all newer snapshots?
 
 
+The server will send events to all clients.
+
+
+I could have a QR code in game that links to instructions on my website.
+
+
 
 
 Stuff I need to add before public release:
@@ -881,9 +887,11 @@ Stuff I need to document:
     Rmsh & script
     Cmsh & script
     Lua's `include`, especially its relative path behavior.
+    All Lua functions
+    All cvars and console language
+    Key binding
 
 Stuff I need to add:
-    Textures
     Collision detection
     Dynamic lighting
     Light maps
