@@ -876,6 +876,12 @@ The server will send events to all clients.
 I could have a QR code in game that links to instructions on my website.
 
 
+Maybe player models could be Minecraft-style slimes? Those are fun.
+
+
+The server is dropping packets because instead of collecting them, it just overwrites the last parsed one. I think the client does this too, but I think it's running at a higher framerate.
+
+
 
 
 Stuff I need to add before public release:

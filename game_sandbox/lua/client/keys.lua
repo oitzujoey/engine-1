@@ -145,6 +145,19 @@ function key_strafeRight_d()
 	end
 end
 
+
+function key_color1_d() Keys.color = 1 end
+function key_color2_d() Keys.color = 2 end
+function key_color3_d() Keys.color = 3 end
+function key_color4_d() Keys.color = 4 end
+function key_color5_d() Keys.color = 5 end
+function key_color6_d() Keys.color = 6 end
+function key_color7_d() Keys.color = 7 end
+function key_color8_d() Keys.color = 8 end
+function key_color9_d() Keys.color = 9 end
+function key_color0_d() Keys.color = 10 end
+
+
 function key_strafeRight_u()
 	Keys.strafeRight = false
 	clientState.keys.strafeRight = false

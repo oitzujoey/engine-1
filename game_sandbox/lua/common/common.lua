@@ -6,6 +6,7 @@ g_worldEntity = 0
 
 g_models = {}
 g_entities = {}
+
 g_materialNames = {
 	"red",
 	"blue",
@@ -21,6 +22,8 @@ g_materialNames = {
 g_materials = {}
 
 g_frame = 1
+
+g_cursorOffset = {x=0, y=0, z=100}
 
 Vec3_xn = {x=-1, y=0, z=0}
 Vec3_xp = {x=1, y=0, z=0}
@@ -431,25 +434,36 @@ end
 
 function changeBoxMaterial(box, materialName)
 	-- Delete.
+	local e
 	local box_entity = box.entity
-	e = entity_deleteEntity(box_entity)
-	if e ~= 0 then return e end
-	local e = entity_unlinkChild(g_cameraEntity, box_entity)
-	if e ~= 0 then return e end
+	if G_CLIENT then
+		e = entity_deleteEntity(box_entity)
+		if e ~= 0 then return e end
+		e = entity_unlinkChild(g_cameraEntity, box_entity)
+		if e ~= 0 then return e end
 
-	-- Create.
-	box_entity, e = entity_createEntity(g_entity_type_model)
-	if e ~= 0 then return e end
-	box.entity = box_entity
-	e = entity_linkChild(g_cameraEntity, box_entity)
-	if e ~= 0 then return e end
-	e = entity_linkChild(box_entity, boxModel)
-	if e ~= 0 then return e end
-	entity_setScale(box_entity, g_boxes_scale)
-	entity_setPosition(box_entity, box.position)
-	entity_setOrientation(box_entity, {w=1, x=0, y=0, z=0})
+		-- Create.
+		box_entity, e = entity_createEntity(g_entity_type_model)
+		if e ~= 0 then return e end
+		box.entity = box_entity
+		e = entity_linkChild(g_cameraEntity, box_entity)
+		if e ~= 0 then return e end
+		e = entity_linkChild(box_entity, boxModel)
+		if e ~= 0 then return e end
+		entity_setScale(box_entity, g_boxes_scale)
+		entity_setPosition(box_entity, box.position)
+		entity_setOrientation(box_entity, {w=1, x=0, y=0, z=0})
+	end
 
 	-- Set material.
 	box.materialName = materialName
-	return entity_linkMaterial(box_entity, g_materials[materialName])
+	if G_CLIENT then
+		e = entity_linkMaterial(box_entity, g_materials[materialName])
+	end
+	return e
+end
+
+
+function calculateCursorPosition(position, orientation)
+	return snapToGrid(vec3_add(position, vec3_rotate(g_cursorOffset, orientation)))
 end

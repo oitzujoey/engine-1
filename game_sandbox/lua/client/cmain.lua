@@ -9,8 +9,6 @@ g_mouse = {}
 
 g_sensitivity = 1.0
 
-g_cursorOffset = {x=0, y=0, z=100}
-
 
 g_initialBoxesCreated = false
 function processEvents()
@@ -32,6 +30,8 @@ function processEvents()
 			if not g_initialBoxesCreated then
 				createdBoxes = true
 			end
+		elseif c == "change box color" then
+			changeBoxMaterial(g_boxes[getBoxEntry(d.position)], d.color)
 		else
 			warning("processEvents", "Unrecognized event \""..c.."\"")
 		end
@@ -148,6 +148,17 @@ function startup()
 	keys_createFullBind("k_119", "key_forward",	"key_forward_d", "key_forward_u")
 	-- s
 	keys_createFullBind("k_115", "key_backward", "key_backward_d", "key_backward_u")
+	-- Box colors
+	keys_createHalfBind("k_49", "key_color1", "key_color1_d")
+	keys_createHalfBind("k_50", "key_color2", "key_color2_d")
+	keys_createHalfBind("k_51", "key_color3", "key_color3_d")
+	keys_createHalfBind("k_52", "key_color4", "key_color4_d")
+	keys_createHalfBind("k_53", "key_color5", "key_color5_d")
+	keys_createHalfBind("k_54", "key_color6", "key_color6_d")
+	keys_createHalfBind("k_55", "key_color7", "key_color7_d")
+	keys_createHalfBind("k_56", "key_color8", "key_color8_d")
+	keys_createHalfBind("k_57", "key_color9", "key_color9_d")
+	keys_createHalfBind("k_48", "key_color0", "key_color0_d")
 	-- Left mouse
 	keys_createFullBind("m_1", "mouse_leftButton", "mouse_leftPress", "mouse_leftRelease")
 	-- Right mouse
@@ -169,6 +180,7 @@ function startup()
 	clientState.keys.strafeRight = false
 	clientState.keys.forward = false
 	clientState.keys.backward = false
+	clientState.keys.color = nil
 
 	Keys.up = false
 	Keys.down = false
@@ -178,6 +190,7 @@ function startup()
 	Keys.strafeRight = false
 	Keys.forward = false
 	Keys.backward = false
+	Keys.color = nil
 
 	g_mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
 	clientState.mouse = g_mouse
@@ -226,11 +239,12 @@ function main()
 		entity_setPosition(g_cameraEntity, position)
 	end
 
-	local cursorPosition = snapToGrid(vec3_add(serverState.position,
-											   vec3_rotate(g_cursorOffset, serverState.orientation)))
-	entity_setPosition(g_cursorEntity, cursorPosition)
+	entity_setPosition(g_cursorEntity, calculateCursorPosition(serverState.position, serverState.orientation))
 
 	processBoxes(g_boxes)
+
+	clientState.keys.color = Keys.color
+	Keys.color = nil
 
 	g_frame = g_frame + 1
 end

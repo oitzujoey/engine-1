@@ -137,6 +137,7 @@ function main()
 	-- Process clients
 	for i = 1,maxClients,1 do
 		if connectedClients[i] then
+			-- Send boxes to clients when they connect.
 			if not serverState[i].boxesCreated then
 				for box_index = 1,g_boxes_length,1 do
 					puts(toString(g_boxes[box_index].position.x).." "..toString(g_boxes[box_index].position.y).." "..toString(g_boxes[box_index].position.z))
@@ -160,6 +161,16 @@ function main()
 			serverState[i].numClients = numClients
 
 			local keys = clientState[i].keys
+
+			if keys.color then
+				local cursorPosition = calculateCursorPosition(serverState[i].position, serverState[i].orientation)
+				local occupied, box_index = isOccupied(cursorPosition)
+				if occupied then
+					local color = g_materialNames[keys.color]
+					changeBoxMaterial(g_boxes[box_index], color)
+					sendEvent("change box color", {position=cursorPosition, color=color})
+				end
+			end
 
 			local scale = 0.90
 			serverState[i].velocity.x = serverState[i].velocity.x * scale
