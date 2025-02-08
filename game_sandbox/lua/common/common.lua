@@ -433,8 +433,9 @@ function createBox(position, materialName)
 end
 
 function changeBoxMaterial(box, materialName)
+	if not g_materials[materialName] then return 0 end
 	-- Delete.
-	local e
+	local e = 0
 	local box_entity = box.entity
 	if G_CLIENT then
 		e = entity_deleteEntity(box_entity)
