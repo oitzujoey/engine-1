@@ -61,8 +61,8 @@ end
 
 function consoleCommandCreateBox()
 	local position = {x=0, y=0, z=0}
-	local boxNumber = getBoxEntry(position)
-	if boxNumber then
+	local box_index = getBoxEntry(position)
+	if box_index then
 		info("createBox", "Cannot spawn box. Another box is currently at the origin.")
 	else
 		local materialName = g_materialNames[random()%#g_materialNames + 1]

@@ -124,13 +124,13 @@ function startup()
 	g_cursorEntity = modelEntity_create({x=0, y=0, z=0}, {w=1, x=0, y=0, z=0}, g_boxes_scale * 1.1)
 	e = entity_linkMaterial(g_cursorEntity, cursorMaterial)
 
-	do
-		local e = nil
-		for i = 1,g_boxes_length,1 do
-			local material = cardboardBoxMaterial
-			e = entity_linkMaterial(g_boxes[i].entity, material)
-		end
-	end
+	-- do
+	-- 	local e = nil
+	-- 	for i = 1,g_boxes_length,1 do
+	-- 		local material = cardboardBoxMaterial
+	-- 		e = entity_linkMaterial(g_boxes[i].entity, material)
+	-- 	end
+	-- end
 
 	-- Left arrow
 	keys_createFullBind("k_1073741903", "key_left",			"key_left_d",		"key_left_u")

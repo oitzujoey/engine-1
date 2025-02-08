@@ -134,7 +134,7 @@ end
 -- nil`.
 function isOccupied(point)
 	function negative() return false, nil end
-	function affirmative(boxNumber) return true, boxNumber end
+	function affirmative(box_index) return true, box_index end
 	function outOfBounds() return true, nil end
 	local boundingBoxRadius = g_boundingBoxRadius
 	-- Only work with grid coordinates.
@@ -147,9 +147,9 @@ function isOccupied(point)
 	if point.z > boundingBoxRadius/2 then return outOfBounds() end
 	if point.z < -boundingBoxRadius/2 then return outOfBounds() end
 	-- Check if spot contains a box.
-	local boxNumber = getBoxEntry(point)
-	if boxNumber then
-		return affirmative(boxNumber)
+	local box_index = getBoxEntry(point)
+	if box_index then
+		return affirmative(box_index)
 	else
 		return negative()
 	end
@@ -189,7 +189,7 @@ function traceComponent(endComponent, componentName, startPosition, entityMin, e
 	local position = {x=startPosition.x, y=startPosition.y, z=startPosition.z}
 	for gridOffset = 1,iterations,1 do
 		position[componentName] = startPosition[componentName] + g_gridSpacing * gridOffset * sign
-		local occupied, boxEntity = isOccupied(position)
+		local occupied, box_index = isOccupied(position)
 		if occupied then
 			local backOff = 0.001
 			return true, startPosition[componentName] + g_gridSpacing * (gridOffset - 0.5 - backOff) * sign - extreme
@@ -299,7 +299,7 @@ function playerMoveAndCollide(state)
 end
 
 
-function createBoxEntry(boxEntity, point)
+function createBoxEntry(box_index, point)
 	point = snapToGrid(point)
 	local bt_xyz = g_boxTable
 	local bt_yz = bt_xyz[point.x]
@@ -320,7 +320,7 @@ function createBoxEntry(boxEntity, point)
 		error("moveBox", "Box is already occupied.")
 		return
 	end
-	bt_z[point.z] = boxEntity
+	bt_z[point.z] = box_index
 	bt_z.entries = bt_z.entries + 1
 end
 
@@ -335,11 +335,11 @@ function getBoxEntry(point)
 	local spot = bt_z[point.z]
 	if spot == nil then return nil end
 	-- Success.
-	local boxNumber = spot
-	return boxNumber
+	local box_index = spot
+	return box_index
 end
 
-function moveBox(boxEntity, newPosition, oldPosition)
+function moveBox(box_index, newPosition, oldPosition)
 	oldPosition = snapToGrid(oldPosition)
 	newPosition = snapToGrid(newPosition)
 
@@ -360,10 +360,10 @@ function moveBox(boxEntity, newPosition, oldPosition)
 		error("moveBox", "Box does not have z-axis entry.")
 		return
 	end
-	local boxNumber = spot
+	local box_index = spot
 
 	-- Double check that we are moving the right box.
-	if boxNumber ~= boxEntity then
+	if box_index ~= box_index then
 		error("moveBox", "The box being moved is not the box that is at this point.")
 		return
 	end
@@ -384,7 +384,7 @@ function moveBox(boxEntity, newPosition, oldPosition)
 	end
 
 	-- Create new entry.
-	createBoxEntry(boxEntity, newPosition)
+	createBoxEntry(box_index, newPosition)
 
 	-- if G_SERVER then
 	-- 	sendEvent('move box', {oldPosition=oldPosition, newPosition=newPosition})
@@ -396,7 +396,7 @@ function processBoxes(boxes)
 		boxes[i].velocity.z = boxes[i].velocity.z + G_GRAVITY
 		oldPosition = boxes[i].position
 		boxes[i] = boxMoveAndCollide(boxes[i])
-		moveBox(boxes[i].entity, boxes[i].position, oldPosition)
+		moveBox(i, boxes[i].position, oldPosition)
 		entity_setPosition(boxes[i].entity, boxes[i].position)
 	end
 end
@@ -414,8 +414,6 @@ function createBox(position, materialName)
 	entity_setPosition(boxEntity, box.position)
 	entity_setOrientation(boxEntity, {w=1, x=0, y=0, z=0})
 
-	createBoxEntry(boxEntity, box.position)
-
 	box.velocity = {x=0, y=0, z=0}
 	box.aabb = G_BOX_BB
 
@@ -423,9 +421,35 @@ function createBox(position, materialName)
 
 	push(g_boxes, box)
 	g_boxes_length = #g_boxes
+	createBoxEntry(g_boxes_length, box.position)
 
 	if G_CLIENT then
 		e = entity_linkMaterial(boxEntity, g_materials[materialName])
 	end
 	return e
+end
+
+function changeBoxMaterial(box, materialName)
+	-- Delete.
+	local box_entity = box.entity
+	e = entity_deleteEntity(box_entity)
+	if e ~= 0 then return e end
+	local e = entity_unlinkChild(g_cameraEntity, box_entity)
+	if e ~= 0 then return e end
+
+	-- Create.
+	box_entity, e = entity_createEntity(g_entity_type_model)
+	if e ~= 0 then return e end
+	box.entity = box_entity
+	e = entity_linkChild(g_cameraEntity, box_entity)
+	if e ~= 0 then return e end
+	e = entity_linkChild(box_entity, boxModel)
+	if e ~= 0 then return e end
+	entity_setScale(box_entity, g_boxes_scale)
+	entity_setPosition(box_entity, box.position)
+	entity_setOrientation(box_entity, {w=1, x=0, y=0, z=0})
+
+	-- Set material.
+	box.materialName = materialName
+	return entity_linkMaterial(box_entity, g_materials[materialName])
 end
