@@ -107,44 +107,6 @@ typedef struct {
 	int models_length_actual;
 } modelList_t;
 
-/* Wavefront OBJ structure */
-/* ======================= */
-
-typedef struct {
-    int geometric_vertex;
-    int texture_vertex;
-    int vertex_normal;
-} face_t;
-
-typedef struct {
-    face_t *faces;
-    int faces_length;
-} faceset_t;
-
-typedef struct {
-    char *object_name;
-    char *material_library;
-    vec4_t *geometric_vertices;
-    int geometric_vertices_length;
-    vec3_t *texture_vertices;
-    int texture_vertices_length;
-    vec3_t *vertex_normals;
-    int vertex_normals_length;
-    char *material_name;
-    int smoothing_group;
-    /* Note: Width will come before length. */
-    faceset_t *facesets;
-    int facesets_length;
-} obj_t;
-
-
-/* Wavefront MTL structure */
-/* ======================= */
-
-typedef struct {
-    char *material_name;
-} mtl_t;
-
 
 
 /* cfg2.h */
