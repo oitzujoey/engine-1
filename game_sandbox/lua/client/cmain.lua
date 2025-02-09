@@ -83,14 +83,7 @@ function startup()
 
 	-- Load a .png texture from "textures/".
 	function loadTexture(name)
-		local e = false
-		material, e = material_create()
-		if e ~= 0 then return nil, e end
-		texture, e = material_loadTexture("textures/"..name..".png")
-		if e ~= 0 then return nil, e end
-		e = material_linkTexture(material, texture)
-		if e ~= 0 then return nil, e end
-		return material, nil
+		return material_create("textures/"..name..".png")
 	end
 
 	function loadMaterial(name)

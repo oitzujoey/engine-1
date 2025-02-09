@@ -895,6 +895,9 @@ change box color {position, color} Write to database.
 And that is all. The server doesn't even need to know where the client is. This means I don't have to worry about client-side prediction! I do have to simulate boxes on the server though so that clients selecting boxes don't select air when they think they are selecting a box. Boxes actually need to fall on the server.
 
 
+Alpha gives transparency. Translucency is alpha, plus a blur.
+
+
 Stuff I need to add before public release:
     Authentication
     Lighting? -- Probably not. No light would probably make the world show up better.

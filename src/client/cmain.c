@@ -42,8 +42,6 @@ luaCFunc_t luaClientFunctions[] = {
 	// {.func = getInput,              .name = "getInput"},
 	// {.func = l_cnetwork_receive,    .name = "l_snetwork_receive"},
 	{.func = l_material_create,             .name = "material_create"},
-	{.func = l_material_linkTexture,        .name = "material_linkTexture"},
-	{.func = l_material_loadTexture,        .name = "material_loadTexture"},
 	{.func = l_model_linkDefaultMaterial,   .name = "model_linkDefaultMaterial"},
 	{.func = l_entity_linkMaterial,         .name = "entity_linkMaterial"},
 	{.func = NULL,                          .name = NULL}

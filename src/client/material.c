@@ -82,7 +82,7 @@ static inline bool material_textureIndexExists(const GLuint textureIndex) {
 	return (textureIndex < g_textures_length) && (textureIndex >= 0);
 }
 
-static inline void material_linkTexture(const material_list_t materialList, const ptrdiff_t materialIndex, GLuint textureIndex) {
+static void material_linkTexture(const material_list_t materialList, const ptrdiff_t materialIndex, GLuint textureIndex) {
 
 	materialList.materials[materialIndex].texture = textureIndex;
 }
@@ -191,140 +191,44 @@ static int material_loadTexture(GLuint *textureIndex, const char* const filePath
 /* ============ */
 
 int l_material_create(lua_State *luaState) {
-	int error = ERR_CRITICAL;
-	
-	ptrdiff_t materialIndex = 0;
-	
-	if (lua_gettop(luaState) != 0) {
-		critical_error("Function does not take arguments.", "");
-		error = ERR_CRITICAL;
-		goto cleanup_l;
+	int e = ERR_OK;
+
+	GLuint textureIndex = 0;
+
+	if (lua_gettop(luaState) != 1) {
+		critical_error("Function requires 1 argument.", "");
+		e = ERR_CRITICAL;
+		goto cleanup;
+	}
+
+	if (!lua_isstring(luaState, -1)) {
+		critical_error("Argument 1 should be a string, not a %s.", lua_typename(luaState, lua_type(luaState, -1)));
+		e = ERR_CRITICAL;
+		goto cleanup;
 	}
 	
-	error = material_create(&g_materialList, &materialIndex);
-	if (error) {
-		goto cleanup_l;
-	}
-	
-	error = ERR_OK;
-	cleanup_l:
-	
-	if (error >= ERR_CRITICAL) {
+	e = material_loadTexture(&textureIndex, lua_tostring(luaState, -1));
+	if (e) goto cleanup;
+
+	ptrdiff_t materialIndex = -1;
+	e = material_create(&g_materialList, &materialIndex);
+	if (e) goto cleanup;
+
+	(void) material_linkTexture(g_materialList, materialIndex, textureIndex);
+
+ cleanup:
+	if (e >= ERR_CRITICAL) {
 		lua_error(luaState);
 	}
-	
-	if (error) {
+
+	if (e) {
 		lua_pushinteger(luaState, -1);
 	}
 	else {
 		lua_pushinteger(luaState, materialIndex);
 	}
-	
-	lua_pushinteger(luaState, error);
-	
-	return 2;
-}
 
-int l_material_linkTexture(lua_State *luaState) {
-	int error = ERR_CRITICAL;
-	
-	ptrdiff_t materialIndex = 0;
-	GLuint textureIndex = 0;
-	
-	if (lua_gettop(luaState) != 2) {
-		critical_error("Function requires 2 arguments.", "");
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	if (!lua_isinteger(luaState, 1)) {
-		critical_error("Argument 1 should be an integer, not a %s.", lua_typename(luaState, lua_type(luaState, -1)));
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	materialIndex = lua_tointeger(luaState, 1);
-	if (!material_indexExists(g_materialList, materialIndex)) {
-		error("Bad material index %i.", materialIndex);
-		error = ERR_GENERIC;
-		goto cleanup_l;
-	}
-	
-	if (!lua_isinteger(luaState, 2)) {
-		critical_error("Argument 2 should be an integer, not a %s.", lua_typename(luaState, lua_type(luaState, -1)));
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	textureIndex = lua_tointeger(luaState, 2);
-	if (!material_textureIndexExists(materialIndex)) {
-		error("Bad texture index %i.", textureIndex);
-		error = ERR_GENERIC;
-		goto cleanup_l;
-	}
-	
-	material_linkTexture(g_materialList, materialIndex, textureIndex);
-	
-	error = ERR_OK;
-	cleanup_l:
-	
-	if (error >= ERR_CRITICAL) {
-		lua_error(luaState);
-	}
-	
 	lua_pushinteger(luaState, error);
-	
-	return 1;
-}
 
-int l_material_loadTexture(lua_State *luaState) {
-	int error = ERR_CRITICAL;
-	
-	GLuint textureIndex = 0;
-	const char *filePath = NULL;
-	
-	if (lua_gettop(luaState) != 1) {
-		critical_error("Function requires 1 argument.", "");
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	// if (!lua_isinteger(luaState, -2)) {
-	// 	critical_error("Argument 2 should be an integer, not a %s.", lua_typename(luaState, lua_type(luaState, -2)));
-	// 	error = ERR_CRITICAL;
-	// 	goto cleanup_l;
-	// }
-	
-	// textureIndex = lua_tointeger(luaState, -2);
-	
-	if (!lua_isstring(luaState, -1)) {
-		critical_error("Argument 1 should be a string, not a %s.", lua_typename(luaState, lua_type(luaState, -1)));
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	filePath = lua_tostring(luaState, -1);
-	
-	error = material_loadTexture(&textureIndex, filePath);
-	if (error) {
-		goto cleanup_l;
-	}
-	
-	error = ERR_OK;
-	cleanup_l:
-	
-	if (error >= ERR_CRITICAL) {
-		lua_error(luaState);
-	}
-	
-	if (error) {
-		lua_pushinteger(luaState, -1);
-	}
-	else {
-		lua_pushinteger(luaState, textureIndex);
-	}
-	
-	lua_pushinteger(luaState, error);
-	
 	return 2;
 }
