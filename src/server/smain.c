@@ -182,20 +182,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 #endif
 
 	// Execute main autoexec.
-	
-	/*
-	I thought of a potential problem, and you may have as well. What happens if
-	I load the autoexec and execute it, but the mods it loads doesn't have an
-	autoexec? This would mean that the autoexec is saved in memory, even after
-	the directory has been unmounted. The final merged mod would have the system
-	autoexec.
-	This should not be a problem since the autoexec is somewhat public anyway,
-	and what makes the initial autoexec special is not the content but the
-	permissions it has. So for now, I will remain content with the fact that
-	this file may exist in the game directory. Just try not to execute it as
-	supervisor.
-	*/
-	
+
 	// Mount engine directory.
 	error = PHYSFS_mount("./", "", true);
 	if (!error) {
