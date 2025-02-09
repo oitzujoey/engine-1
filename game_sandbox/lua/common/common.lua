@@ -24,6 +24,7 @@ g_materials = {}
 g_frame = 1
 
 g_cursorOffset = {x=0, y=0, z=100}
+g_backOff = 0.001
 
 Vec3_xn = {x=-1, y=0, z=0}
 Vec3_xp = {x=1, y=0, z=0}
@@ -79,6 +80,10 @@ function vec3_norm2(a)
 	return a.x*a.x + a.y*a.y + a.z*a.z
 end
 
+function vec3_equal(a, b)
+	return a.x==b.x and a.y==b.y and a.z==b.z
+end
+
 function aaToQuat(axisAngle)
 	local angle = axisAngle.w
 	local w_part = cos(angle/2)
@@ -103,6 +108,12 @@ function modelEntity_create(position, orientation, scale)
 	entity_setPosition(entity, position)
 	entity_setOrientation(entity, orientation)
 	return entity
+end
+
+function modelEntity_delete(entity)
+	local e = entity_deleteEntity(entity)
+	if e ~= 0 then return e end
+	return entity_unlinkChild(g_cameraEntity, entity)
 end
 
 
@@ -194,8 +205,7 @@ function traceComponent(endComponent, componentName, startPosition, entityMin, e
 		position[componentName] = startPosition[componentName] + g_gridSpacing * gridOffset * sign
 		local occupied, box_index = isOccupied(position)
 		if occupied then
-			local backOff = 0.001
-			return true, startPosition[componentName] + g_gridSpacing * (gridOffset - 0.5 - backOff) * sign - extreme
+			return true, startPosition[componentName] + g_gridSpacing * (gridOffset - 0.5 - g_backOff) * sign - extreme
 		end
 	end
 	return false, endComponent - extreme
@@ -229,7 +239,6 @@ function boxMoveAndCollide(state)
 		end
 		position[component] = endComponent
 	end
-	local delta = vec3_subtract(position, oldPosition)
 	state.position = position
 	state.velocity = newVelocity
 	return state
@@ -350,24 +359,24 @@ function moveBox(box_index, newPosition, oldPosition)
 	local bt_xyz = g_boxTable
 	local bt_yz = bt_xyz[oldPosition.x]
 	if bt_yz == nil then
-		error("moveBox", "Box does not have x-axis entry.")
+		warning("moveBox", "Box does not have x-axis entry.")
 		return
 	end
 	local bt_z = bt_yz[oldPosition.y]
 	if bt_z == nil then
-		error("moveBox", "Box does not have y-axis entry.")
+		warning("moveBox", "Box does not have y-axis entry.")
 		return
 	end
 	local spot = bt_z[oldPosition.z]
 	if spot == nil then
-		error("moveBox", "Box does not have z-axis entry.")
+		warning("moveBox", "Box does not have z-axis entry.")
 		return
 	end
 	local box_index = spot
 
 	-- Double check that we are moving the right box.
 	if box_index ~= box_index then
-		error("moveBox", "The box being moved is not the box that is at this point.")
+		warning("moveBox", "The box being moved is not the box that is at this point.")
 		return
 	end
 

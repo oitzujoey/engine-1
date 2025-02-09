@@ -47,10 +47,18 @@ function server_processEvents(client_index)
 		if c == "change box color" then
 			local occupied, box_index = isOccupied(d.position)
 			if occupied then
-				puts("g_boxes[box_index]: "..toString(g_boxes[box_index]))
-				puts("d.color: "..toString(d.color))
 				changeBoxMaterial(g_boxes[box_index], d.color)
 				sendEvent("change box color", {position=d.position, color=d.color})
+			end
+		elseif c == "move box" then
+			local start_occupied, box_index = isOccupied(d.start_position)
+			local end_occupied, _ = isOccupied(d.end_position)
+			-- Must be a box within the bounds of the map.
+			if start_occupied and box_index and not end_occupied then
+				local box_index = getBoxEntry(d.start_position)
+				g_boxes[box_index].position = d.end_position
+				moveBox(box_index, d.end_position, d.start_position)
+				sendEvent("move box", {start_position=d.start_position, end_position=d.end_position})
 			end
 		else
 			warning("processEvents", "Unrecognized event \""..c.."\"")

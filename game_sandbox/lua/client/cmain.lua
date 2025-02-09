@@ -6,6 +6,9 @@ include "../common/loadworld.lua"
 
 g_sensitivity = 1.0
 
+g_cursorScale = 1.05
+g_selectionScale = 1.1
+
 Keys = {}
 g_mouse = {}
 g_eventQueue = {}
@@ -43,6 +46,10 @@ function processEvents()
 			end
 		elseif c == "change box color" then
 			changeBoxMaterial(g_boxes[getBoxEntry(d.position)], d.color)
+		elseif c == "move box" then
+			local box_index = getBoxEntry(d.start_position)
+			g_boxes[box_index].position = d.end_position
+			moveBox(box_index, d.end_position, d.start_position)
 		else
 			warning("processEvents", "Unrecognized event \""..c.."\"")
 		end
@@ -131,17 +138,11 @@ function startup()
 	e = model_linkDefaultMaterial(planeModel, groundMaterial)
 	if e ~= 0 then quit() end
 
-	cursorMaterial, error = loadTexture("cursor")
-	g_cursorEntity = modelEntity_create({x=0, y=0, z=0}, {w=1, x=0, y=0, z=0}, g_boxes_scale * 1.1)
-	e = entity_linkMaterial(g_cursorEntity, cursorMaterial)
+	g_cursorMaterial, error = loadTexture("cursor")
+	g_cursorEntity = modelEntity_create({x=0, y=0, z=0}, {w=1, x=0, y=0, z=0}, g_boxes_scale * g_cursorScale)
+	e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
 
-	-- do
-	-- 	local e = nil
-	-- 	for i = 1,g_boxes_length,1 do
-	-- 		local material = cardboardBoxMaterial
-	-- 		e = entity_linkMaterial(g_boxes[i].entity, material)
-	-- 	end
-	-- end
+	g_selectionMaterial, error = loadTexture("selection")
 
 	-- a
 	keys_createFullBind("k_97", "key_strafeLeft", "key_strafeLeft_d", "key_strafeLeft_u")
@@ -199,6 +200,7 @@ function startup()
 	g_backward = false
 	g_strafeLeft = false
 	g_strafeRight = false
+	g_selectCube = false
 
 	g_mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
 
@@ -211,31 +213,65 @@ function startup()
 	g_playerState.euler = {yaw=0, pitch=0}
 	g_playerState.aabb = G_PLAYER_BB
 
+	g_selectedBox = nil
+
 	info("startup", "Starting game")
 end
 
-
-initialized = false
-function init()
-	if serverState.maxClients ~= nil then
-		clientEntities = {}
-		for j = 1,serverState.maxClients,1 do
-			clientEntities[j] = nil
-		end
-
-		initialized = true
-	end
-end
-
-
 function main()
-	local error
-	if not initialized then
-		init()
-		return
-	end
+	local e
 
 	processEvents()
+
+
+	-- Box manipulation
+
+	local cursorPosition = calculateCursorPosition(g_playerState.position, g_playerState.orientation)
+
+	-- Change box color
+	if Keys.color then
+		local color = g_materialNames[Keys.color]
+		if color then
+			client_sendEvent("change box color", {position=cursorPosition, color=color})
+		end
+	end
+	Keys.color = nil
+
+	-- Move box
+	if g_selectCube then
+		g_selectCube = false
+		local occupied, _ = isOccupied(cursorPosition)
+		if g_selectedPosition and not occupied then
+			e = modelEntity_delete(g_selectionEntity)
+			if e ~= 0 then quit() end
+			client_sendEvent("move box",
+							 {start_position=g_selectedPosition,
+							  end_position={x=cursorPosition.x, y=cursorPosition.y, z=cursorPosition.z + g_backOff}})
+			g_selectedPosition = nil
+		elseif not g_selectedPosition and occupied then
+			g_selectedPosition = cursorPosition
+			g_selectionEntity = modelEntity_create(g_selectedPosition,
+												   {w=1, x=0, y=0, z=0},
+												   g_boxes_scale * g_selectionScale)
+			e = entity_linkMaterial(g_selectionEntity, g_selectionMaterial)
+		end
+	end
+
+	-- Cursor
+	if g_selectedPosition and vec3_equal(cursorPosition, g_selectedPosition) then
+		if g_cursorEntity then
+			modelEntity_delete(g_cursorEntity)
+			g_cursorEntity = nil
+		end
+	else
+		if g_cursorEntity then
+			entity_setPosition(g_cursorEntity, cursorPosition)
+		else
+			g_cursorEntity = modelEntity_create(cursorPosition, {w=1, x=0, y=0, z=0}, g_boxes_scale * g_cursorScale)
+			e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
+		end
+	end
+		
 
 	-- Movement
 
@@ -295,17 +331,6 @@ function main()
 	entity_setPosition(g_cameraEntity,
 					   {x=-g_playerState.position.x, y=-g_playerState.position.y, z=-g_playerState.position.z})
 
-	local cursorPosition = calculateCursorPosition(g_playerState.position, g_playerState.orientation)
-
-	entity_setPosition(g_cursorEntity, cursorPosition)
-
-	if Keys.color then
-		local color = g_materialNames[Keys.color]
-		if color then
-			client_sendEvent("change box color", {position=cursorPosition, color=color})
-		end
-	end
-	Keys.color = nil
 
 	processBoxes(g_boxes)
 

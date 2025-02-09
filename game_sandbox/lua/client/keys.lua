@@ -103,7 +103,7 @@ function key_color0_d() Keys.color = 10 end
 
 
 function mouse_leftPress()
-	info("mouse_leftPress", "Mouse press!")
+	g_selectCube = true
 end
 
 function mouse_leftRelease()
