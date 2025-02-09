@@ -34,6 +34,36 @@ function sendQueuedEvents()
 	end
 end
 
+
+g_initialBoxesCreated = false
+function server_processEvents(client_index)
+	local createdBoxes = false
+	if not clientState[client_index].events then return end
+	local events_length = #clientState[client_index].events
+	for i = 1,events_length,1 do
+		local event = clientState[client_index].events[i]
+		local c = event.command
+		local d = event.data
+		if c == "change box color" then
+			local occupied, box_index = isOccupied(d.position)
+			if occupied then
+				puts("g_boxes[box_index]: "..toString(g_boxes[box_index]))
+				puts("d.color: "..toString(d.color))
+				changeBoxMaterial(g_boxes[box_index], d.color)
+				sendEvent("change box color", {position=d.position, color=d.color})
+			end
+		else
+			warning("processEvents", "Unrecognized event \""..c.."\"")
+		end
+	end
+	if createdBoxes then
+		clientState.boxesCreated = true
+		g_initialBoxesCreated = true
+	end
+	clientState[client_index].events = {}
+end
+
+
 -- function loadBoxes()
 -- 	for i = 1,g_boxes_length,1 do
 -- 		local box = {}
@@ -90,18 +120,6 @@ function clientConnect(clientNumber)
 	-- Inform the client how many total clients there may be.
 	serverState[clientNumber].maxClients = maxClients
 	serverState[clientNumber].events = {}
-
-	-- Set the physics state.
-	serverState[clientNumber].position = {x=0, y=0, z=g_boundingBoxRadius/2-3}
-	serverState[clientNumber].orientation = aaToQuat({w=G_PI/2, x=1, y=0, z=0})
-	serverState[clientNumber].euler = {}
-	serverState[clientNumber].euler.yaw = 0.0
-	serverState[clientNumber].euler.pitch = 0.0
-	serverState[clientNumber].velocity = {x=0, y=0, z=0}
-	serverState[clientNumber].collided = false
-	serverState[clientNumber].grounded = false
-	serverState[clientNumber].aabb = G_PLAYER_BB
-
 	serverState[clientNumber].boxesCreated = false
 end
 
@@ -140,9 +158,6 @@ function main()
 			-- Send boxes to clients when they connect.
 			if not serverState[i].boxesCreated then
 				for box_index = 1,g_boxes_length,1 do
-					puts(toString(g_boxes[box_index].position.x).." "..toString(g_boxes[box_index].position.y).." "..toString(g_boxes[box_index].position.z))
-					puts(toString(box_index))
-					puts(toString(g_boxes[box_index].materialName))
 					sendEventToClient(i,
 									  "create initial box",
 									  {position=g_boxes[box_index].position,
@@ -151,95 +166,16 @@ function main()
 				if g_boxes_length == 0 then
 					sendEventToClient(i, "no initial boxes", nil)
 				end
-				puts("")
 			end
 			if clientState[i].boxesCreated then
 				serverState[i].boxesCreated = true
 			end
 
-			-- Inform the client how many clients there are.
-			serverState[i].numClients = numClients
-
-			local keys = clientState[i].keys
-
-			if keys.color then
-				local cursorPosition = calculateCursorPosition(serverState[i].position, serverState[i].orientation)
-				local occupied, box_index = isOccupied(cursorPosition)
-				if occupied then
-					local color = g_materialNames[keys.color]
-					changeBoxMaterial(g_boxes[box_index], color)
-					sendEvent("change box color", {position=cursorPosition, color=color})
-				end
-			end
-
-			local scale = 0.90
-			serverState[i].velocity.x = serverState[i].velocity.x * scale
-			serverState[i].velocity.y = serverState[i].velocity.y * scale
-
-			if serverState[i].grounded then
-				if keys.jump then
-					serverState[i].velocity.z = serverState[i].velocity.z + G_JUMPVELOCITY
-				end
-			end
-			
-			local yaw_x, yaw_y = 0, 0
-			if keys.forward then
-				yaw_x = yaw_x + sin(serverState[i].euler.yaw)
-				yaw_y = yaw_y - cos(serverState[i].euler.yaw)
-			end
-			if keys.backward then
-				yaw_x = yaw_x - sin(serverState[i].euler.yaw)
-				yaw_y = yaw_y + cos(serverState[i].euler.yaw)
-			end
-			if keys.strafeLeft then
-				yaw_x = yaw_x - cos(serverState[i].euler.yaw)
-				yaw_y = yaw_y - sin(serverState[i].euler.yaw)
-			end
-			if keys.strafeRight then
-				yaw_x = yaw_x + cos(serverState[i].euler.yaw)
-				yaw_y = yaw_y + sin(serverState[i].euler.yaw)
-			end
-			serverState[i].velocity = vec3_add(serverState[i].velocity, {x=yaw_x, y=yaw_y, z=0})
-
-			if (clientState[i].mouse.delta_y and clientState[i].mouse.delta_y ~= 0) then
-				serverState[i].euler.pitch = serverState[i].euler.pitch + clientState[i].mouse.delta_y/1000.0
-			end
-			if (clientState[i].mouse.delta_x and clientState[i].mouse.delta_x ~= 0) then
-				serverState[i].euler.yaw = serverState[i].euler.yaw + clientState[i].mouse.delta_x/1000.0
-			end
-
-			-- Constrain up-down view to not go past vertical.
-			if serverState[i].euler.pitch > G_PI/2 then serverState[i].euler.pitch = G_PI/2 end
-			if serverState[i].euler.pitch < -G_PI/2 then serverState[i].euler.pitch = -G_PI/2 end
-
-			serverState[i].velocity.z = serverState[i].velocity.z + G_GRAVITY
-
-			serverState[i].orientation = hamiltonProduct(eulerToQuat(serverState[i].euler),
-														 aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
-			serverState[i] = playerMoveAndCollide(serverState[i])
+			server_processEvents(i)
 		end
 	end
 
-	for i = 1,maxClients,1 do
-		if connectedClients[i] then
-			-- Send other clients' state to the client.
-            serverState[i].otherClients = {}
-			for j = 1,maxClients,1 do
-				if connectedClients[j] and j ~= i then
-					serverState[i].otherClients[j] = {}
-					serverState[i].otherClients[j].position = serverState[j].position
-					serverState[i].otherClients[j].orientation = serverState[j].orientation
-                else
-                    serverState[i].otherClients[j] = nil
-				end
-			end
-		end
-	end
-
-	-- Process boxes
 	processBoxes(g_boxes)
-
-
 	sendQueuedEvents()
 end
 

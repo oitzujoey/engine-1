@@ -4,10 +4,21 @@ include "../common/common.lua"
 include "../client/keys.lua"
 include "../common/loadworld.lua"
 
+g_sensitivity = 1.0
+
 Keys = {}
 g_mouse = {}
+g_eventQueue = {}
 
-g_sensitivity = 1.0
+function client_sendEvent(command, data)
+	local event = {command=command, data=data}
+	push(g_eventQueue, event)
+end
+
+function client_sendQueuedEvents()
+	clientState.events = g_eventQueue
+	g_eventQueue = {}
+end
 
 
 g_initialBoxesCreated = false
@@ -132,14 +143,6 @@ function startup()
 	-- 	end
 	-- end
 
-	-- Left arrow
-	keys_createFullBind("k_1073741903", "key_left",			"key_left_d",		"key_left_u")
-	-- Right arrow
-	keys_createFullBind("k_1073741904", "key_right",		"key_right_d",		"key_right_u")
-	-- Up arrow
-	keys_createFullBind("k_1073741906", "key_up",			"key_up_d",			"key_up_u")
-	-- Down arrow
-	keys_createFullBind("k_1073741905", "key_down",			"key_down_d",		"key_down_u")
 	-- a
 	keys_createFullBind("k_97", "key_strafeLeft", "key_strafeLeft_d", "key_strafeLeft_u")
 	-- d
@@ -191,12 +194,22 @@ function startup()
 	Keys.forward = false
 	Keys.backward = false
 	Keys.color = nil
+	g_jump = false
+	g_forward = false
+	g_backward = false
+	g_strafeLeft = false
+	g_strafeRight = false
 
 	g_mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
-	clientState.mouse = g_mouse
 
-	orientation = {w=1, x=0, y=0, z=0}
-	position = {x=0, y=0, z=0}
+	g_playerState = {}
+	g_playerState.orientation = {w=1, x=0, y=0, z=0}
+	g_playerState.position = {x=0, y=0, z=0}
+	g_playerState.velocity = {x=0, y=0, z=0}
+	g_playerState.grounded = false
+	g_playerState.collided = false
+	g_playerState.euler = {yaw=0, pitch=0}
+	g_playerState.aabb = G_PLAYER_BB
 
 	info("startup", "Starting game")
 end
@@ -224,29 +237,82 @@ function main()
 
 	processEvents()
 
-	clientState.mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
+	-- Movement
 
-	-- Display self.
-	if (serverState.position ~= nil) then
-		position.x = -serverState.position.x
-		position.y = -serverState.position.y
-		position.z = -serverState.position.z
-		orientation.w = serverState.orientation.w
-		orientation.x = -serverState.orientation.x
-		orientation.y = -serverState.orientation.y
-		orientation.z = -serverState.orientation.z
-		entity_setOrientation(g_worldEntity, orientation)
-		entity_setPosition(g_cameraEntity, position)
+	-- Friction
+	local scale = 0.90
+	g_playerState.velocity.x = g_playerState.velocity.x * scale
+	g_playerState.velocity.y = g_playerState.velocity.y * scale
+
+	-- Jumping
+	if g_playerState.grounded then
+		if g_jump then
+			g_playerState.velocity.z = g_playerState.velocity.z + G_JUMPVELOCITY
+		end
 	end
 
-	entity_setPosition(g_cursorEntity, calculateCursorPosition(serverState.position, serverState.orientation))
+	-- Horizontal movement
+	local yaw_x, yaw_y = 0, 0
+	if g_forward then
+		yaw_x = yaw_x + sin(g_playerState.euler.yaw)
+		yaw_y = yaw_y - cos(g_playerState.euler.yaw)
+	end
+	if g_backward then
+		yaw_x = yaw_x - sin(g_playerState.euler.yaw)
+		yaw_y = yaw_y + cos(g_playerState.euler.yaw)
+	end
+	if g_strafeLeft then
+		yaw_x = yaw_x - cos(g_playerState.euler.yaw)
+		yaw_y = yaw_y - sin(g_playerState.euler.yaw)
+	end
+	if g_strafeRight then
+		yaw_x = yaw_x + cos(g_playerState.euler.yaw)
+		yaw_y = yaw_y + sin(g_playerState.euler.yaw)
+	end
+	g_playerState.velocity = vec3_add(g_playerState.velocity, {x=yaw_x, y=yaw_y, z=0})
+
+	if (g_mouse.delta_y and g_mouse.delta_y ~= 0) then
+		g_playerState.euler.pitch = g_playerState.euler.pitch + g_mouse.delta_y/1000.0
+	end
+	if (g_mouse.delta_x and g_mouse.delta_x ~= 0) then
+		g_playerState.euler.yaw = g_playerState.euler.yaw + g_mouse.delta_x/1000.0
+	end
+
+	-- Constrain up-down view to not go past vertical.
+	if g_playerState.euler.pitch > G_PI/2 then g_playerState.euler.pitch = G_PI/2 end
+	if g_playerState.euler.pitch < -G_PI/2 then g_playerState.euler.pitch = -G_PI/2 end
+
+	g_playerState.velocity.z = g_playerState.velocity.z + G_GRAVITY
+
+	g_playerState.orientation = hamiltonProduct(eulerToQuat(g_playerState.euler), aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
+	g_playerState = playerMoveAndCollide(g_playerState)
+
+	-- Display self.
+	entity_setOrientation(g_worldEntity, {w=g_playerState.orientation.w,
+										  x=-g_playerState.orientation.x,
+										  y=-g_playerState.orientation.y,
+										  z=-g_playerState.orientation.z})
+	entity_setPosition(g_cameraEntity,
+					   {x=-g_playerState.position.x, y=-g_playerState.position.y, z=-g_playerState.position.z})
+
+	local cursorPosition = calculateCursorPosition(g_playerState.position, g_playerState.orientation)
+
+	entity_setPosition(g_cursorEntity, cursorPosition)
+
+	if Keys.color then
+		local color = g_materialNames[Keys.color]
+		if color then
+			client_sendEvent("change box color", {position=cursorPosition, color=color})
+		end
+	end
+	Keys.color = nil
 
 	processBoxes(g_boxes)
 
-	clientState.keys.color = Keys.color
-	Keys.color = nil
+	client_sendQueuedEvents()
 
 	g_frame = g_frame + 1
+	g_mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
 end
 
 function shutdown()

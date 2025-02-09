@@ -23,125 +23,69 @@ Key bind functions are run before networking happens.
 `main` is run after networking happens.
 --]]
 
-function key_right_d()
-	Keys.right = true
-	if not clientState.keys.right then
-		clientState.keys.right = true
-		clientState.keys.left = false
-	end
-end
-
-function key_right_u()
-	Keys.right = false
-	clientState.keys.right = false
-	if Keys.left then
-		clientState.keys.left = true
-	end
-end
-
-function key_left_d()
-	Keys.left = true
-	if not clientState.keys.left then
-		clientState.keys.left = true
-		clientState.keys.right = false
-	end
-end
-
-function key_left_u()
-	Keys.left = false
-	clientState.keys.left = false
-	if Keys.right then
-		clientState.keys.right = true
-	end
-end
-
-function key_up_d()
-	Keys.up = true
-	if not clientState.keys.up then
-		clientState.keys.up = true
-		clientState.keys.down = false
-	end
-end
-
-function key_up_u()
-	Keys.up = false
-	clientState.keys.up = false
-	if Keys.down then
-		clientState.keys.down = true
-	end
-end
-
-function key_down_d()
-	Keys.down = true
-	if not clientState.keys.down then
-		clientState.keys.down = true
-		clientState.keys.up = false
-	end
-end
-
-function key_down_u()
-	Keys.down = false
-	clientState.keys.down = false
-	if Keys.up then
-		clientState.keys.up = true
-	end
-end
-
 
 function key_forward_d()
 	Keys.forward = true
-	if not clientState.keys.forward then
-		clientState.keys.forward = true
-		clientState.keys.backward = false
+	if not g_forward then
+		g_forward = true
+		g_backward = false
 	end
 end
 
 function key_forward_u()
 	Keys.forward = false
-	clientState.keys.forward = false
+	g_forward = false
 	if Keys.backward then
-		clientState.keys.backward = true
+		g_backward = true
 	end
 end
 
 function key_backward_d()
 	Keys.backward = true
-	if not clientState.keys.backward then
-		clientState.keys.backward = true
-		clientState.keys.forward = false
+	if not g_backward then
+		g_backward = true
+		g_forward = false
 	end
 end
 
 function key_backward_u()
 	Keys.backward = false
-	clientState.keys.backward = false
+	g_backward = false
 	if Keys.forward then
-		clientState.keys.forward = true
+		g_forward = true
 	end
 end
 
 
 function key_strafeLeft_d()
 	Keys.strafeLeft = true
-	if not clientState.keys.strafeLeft then
-		clientState.keys.strafeLeft = true
-		clientState.keys.strafeRight = false
+	if not g_strafeLeft then
+		g_strafeLeft = true
+		g_strafeRight = false
 	end
 end
 
 function key_strafeLeft_u()
 	Keys.strafeLeft = false
-	clientState.keys.strafeLeft = false
+	g_strafeLeft = false
 	if Keys.strafeRight then
-		clientState.keys.strafeRight = true
+		g_strafeRight = true
 	end
 end
 
 function key_strafeRight_d()
 	Keys.strafeRight = true
-	if not clientState.keys.strafeRight then
-		clientState.keys.strafeRight = true
-		clientState.keys.strafeLeft = false
+	if not g_strafeRight then
+		g_strafeRight = true
+		g_strafeLeft = false
+	end
+end
+
+function key_strafeRight_u()
+	Keys.strafeRight = false
+	g_strafeRight = false
+	if Keys.strafeLeft then
+		g_strafeLeft = true
 	end
 end
 
@@ -158,15 +102,6 @@ function key_color9_d() Keys.color = 9 end
 function key_color0_d() Keys.color = 10 end
 
 
-function key_strafeRight_u()
-	Keys.strafeRight = false
-	clientState.keys.strafeRight = false
-	if Keys.strafeLeft then
-		clientState.keys.strafeLeft = true
-	end
-end
-
-
 function mouse_leftPress()
 	info("mouse_leftPress", "Mouse press!")
 end
@@ -176,17 +111,16 @@ function mouse_leftRelease()
 end
 
 function mouse_rightPress()
-	clientState.keys.jump = true
+	g_jump = true
 end
 
 function mouse_rightRelease()
-	clientState.keys.jump = false
+	g_jump = false
 end
 
 function mouse_motion(motionEvent)
-	g_mouse = motionEvent
-	clientState.mouse = {x=motionEvent.x,
-						 y=motionEvent.y,
-						 delta_x=motionEvent.delta_x*g_sensitivity,
-						 delta_y=motionEvent.delta_y*g_sensitivity}
+	g_mouse = {x=motionEvent.x,
+			   y=motionEvent.y,
+			   delta_x=motionEvent.delta_x*g_sensitivity,
+			   delta_y=motionEvent.delta_y*g_sensitivity}
 end

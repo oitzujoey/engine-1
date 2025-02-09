@@ -882,6 +882,17 @@ Maybe player models could be Minecraft-style slimes? Those are fun.
 The server is dropping packets because instead of collecting them, it just overwrites the last parsed one. I think the client does this too, but I think it's running at a higher framerate.
 
 
+When the player picks up the box, it should be shown inside the cursor. It should be hidden from all other players. When the player places the box, all other players should see it disappear.
+
+Perhaps don't even do collision handling on the server? Maybe it should all be client side and the server and client only communicate in order to color and move boxes. It's not like you can cheat in this "game".
+
+Events:
+create box {position, color} Write to database.
+create initial box {position, color}
+move box {start position, end position} Write to database.
+change box color {position, color} Write to database.
+
+And that is all. The server doesn't even need to know where the client is. This means I don't have to worry about client-side prediction! I do have to simulate boxes on the server though so that clients selecting boxes don't select air when they think they are selecting a box. Boxes actually need to fall on the server.
 
 
 Stuff I need to add before public release:
