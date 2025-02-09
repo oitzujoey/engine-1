@@ -307,6 +307,7 @@ typedef enum {
 typedef struct {
 #ifdef CLIENT
 	GLuint texture;
+	bool transparent;
 #else
 	// Make the compiler happy.
 	bool dummy;

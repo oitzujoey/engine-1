@@ -14,8 +14,8 @@ size_t g_textures_length;
 
 
 static void material_loadTexturemissingTexture(GLuint *textureIndex);
-static int material_create(material_list_t *, ptrdiff_t *);
-static inline void material_linkTexture(const material_list_t, const ptrdiff_t, GLuint);
+static int material_create(material_list_t *, ptrdiff_t *, GLuint, bool);
+static void material_linkTexture(const material_list_t, const ptrdiff_t, GLuint);
 
 
 int material_initList(material_list_t *materialList) {
@@ -28,9 +28,9 @@ int material_initList(material_list_t *materialList) {
 		GLuint textureIndex;
 		ptrdiff_t materialIndex;
 		(void) material_loadTexturemissingTexture(&textureIndex);
-		int e = material_create(&g_materialList, &materialIndex);
+		// Default material is opaque.
+		int e = material_create(&g_materialList, &materialIndex, textureIndex, false);
 		if (e) return e;
-		(void) material_linkTexture(g_materialList, materialIndex, textureIndex);
 	}
 
 	return ERR_OK;
@@ -43,47 +43,43 @@ void material_freeList(material_list_t *materialList) {
 
 static void material_init(material_t *material) {
 	material->texture = 0;
+	material->transparent = false;
 }
 
 // static void material_free(material_t *material) {
 	
 // }
 
-static int material_create(material_list_t *materialList, ptrdiff_t *materialIndex) {
-	int error = ERR_OK;
+static int material_create(material_list_t *materialList, ptrdiff_t *materialIndex, GLuint textureIndex, bool transparent) {
+	int e = ERR_OK;
 
 	materialList->materials_length++;
 	materialList->materials = realloc(materialList->materials, materialList->materials_length * sizeof(material_t));
 	if (materialList->materials == NULL) {
 		outOfMemory();
-		error = ERR_OUTOFMEMORY;
-		goto cleanup_l;
+		e = ERR_OUTOFMEMORY;
+		goto cleanup;
 	}
-	
-	material_init(&materialList->materials[materialList->materials_length - 1]);
-	
-	cleanup_l:
-	
-	if (error) {
-		*materialIndex = -1;
-	}
-	else {
-		*materialIndex = materialList->materials_length - 1;
-	}
-	
-	return error;
+
+	size_t lastIndex = materialList->materials_length - 1;
+	(void) material_init(&materialList->materials[lastIndex]);
+	materialList->materials[lastIndex].transparent = transparent;
+	(void) material_linkTexture(*materialList, lastIndex, textureIndex);
+
+ cleanup:
+	*materialIndex = e ? -1 : lastIndex;
+	return e;
 }
 
 bool material_indexExists(const material_list_t materialList, const ptrdiff_t materialIndex) {
 	return (materialIndex < materialList.materials_length) && (materialIndex >= 0);
 }
 
-static inline bool material_textureIndexExists(const GLuint textureIndex) {
+static bool material_textureIndexExists(const GLuint textureIndex) {
 	return (textureIndex < g_textures_length) && (textureIndex >= 0);
 }
 
 static void material_linkTexture(const material_list_t materialList, const ptrdiff_t materialIndex, GLuint textureIndex) {
-
 	materialList.materials[materialIndex].texture = textureIndex;
 }
 
@@ -111,7 +107,7 @@ static void material_loadTexturemissingTexture(GLuint *textureIndex) {
 	g_textures_length++;
 }
 
-static int material_loadTexture(GLuint *textureIndex, const char* const filePath) {
+static int material_loadTexture(GLuint *textureIndex, bool *transparent, const char* const filePath) {
 	int error = ERR_CRITICAL;
 	
 	// Load image file.
@@ -160,9 +156,13 @@ static int material_loadTexture(GLuint *textureIndex, const char* const filePath
 
 	if (channels == 3) {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+		// Opaque.
+		*transparent = false;
 	}
 	else if (channels == 4) {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		// Transparent, meaning this texture has an alpha channel.
+		*transparent = true;
 	}
 	else {
 		error("Unsupported number of channels: %i", channels);
@@ -206,20 +206,18 @@ int l_material_create(lua_State *luaState) {
 		e = ERR_CRITICAL;
 		goto cleanup;
 	}
-	
-	e = material_loadTexture(&textureIndex, lua_tostring(luaState, -1));
+
+	bool transparent = false;
+	e = material_loadTexture(&textureIndex, &transparent, lua_tostring(luaState, -1));
 	if (e) goto cleanup;
 
 	ptrdiff_t materialIndex = -1;
-	e = material_create(&g_materialList, &materialIndex);
+	e = material_create(&g_materialList, &materialIndex, textureIndex, transparent);
 	if (e) goto cleanup;
-
-	(void) material_linkTexture(g_materialList, materialIndex, textureIndex);
+	printf("transparency: %s\n", transparent ? "transparent" : "opaque");
 
  cleanup:
-	if (e >= ERR_CRITICAL) {
-		lua_error(luaState);
-	}
+	if (e >= ERR_CRITICAL) lua_error(luaState);
 
 	if (e) {
 		lua_pushinteger(luaState, -1);
