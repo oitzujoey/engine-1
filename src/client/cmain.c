@@ -127,7 +127,7 @@ const cfg2_var_init_t g_clientVarInit[] = {
 static void main_housekeeping(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
-    error = render(g_entityList.entities[0]);
+    error = render(&g_entityList.entities[0]);
     // if (error) {
     //     goto cleanup_l;
     // }

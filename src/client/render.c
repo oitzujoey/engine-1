@@ -408,14 +408,15 @@ int render_initOpenGL(void) {
 	return error;
 }
 
-int renderModels(entity_t entity, vec3_t position, quat_t orientation, vec_t scale, ptrdiff_t material_index) {
+int renderModels(entity_t *entity, vec3_t position, quat_t orientation, vec_t scale, ptrdiff_t material_index) {
 	int error = ERR_CRITICAL;
 
 	// TODO: Only allow one model in a model entity.
 	// For each model...
-	for (int j = 0; j < entity.children_length; j++) {
-		
-		int modelIndex = entity.children[j];
+	size_t children_length = entity->children_length;
+	ptrdiff_t *children = entity->children;
+	for (int j = 0; j < children_length; j++) {
+		int modelIndex = children[j];
 		model_t model = g_modelList.models[modelIndex];
 
 		// TODO: Fix frustum culling.
@@ -475,7 +476,7 @@ int renderModels(entity_t entity, vec3_t position, quat_t orientation, vec_t sca
 	return error;
 }
 
-int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation, vec_t scale, ptrdiff_t material_index) {
+int renderEntity(entity_t *entity, vec3_t *position, quat_t *orientation, vec_t scale, ptrdiff_t material_index) {
 	int error = ERR_CRITICAL;
 
 	vec3_t localPosition;
@@ -483,32 +484,34 @@ int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation, vec_t s
 	vec_t localScale;
 	ptrdiff_t local_material_index;
 	
-	if (!entity.inUse) {
+	if (!entity->inUse) {
 		// Don't draw deleted entities.
-		warning("Attempted to draw deleted entity %i.", (int) (&entity - g_entityList.entities));
+		warning("Attempted to draw deleted entity %i.", (int) (entity - g_entityList.entities));
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
-	if (!entity.shown) {
+	if (!entity->shown) {
 		// This is done client side because the entity doesn't contain any useful information.
 		error = ERR_OK;
 		goto cleanup_l;
 	}
 
-	vec3_copy(&localPosition, &entity.position);
+	vec3_copy(&localPosition, &entity->position);
 	vec3_rotate(&localPosition, orientation);
 	vec3_add(&localPosition, position, &localPosition);
-	quat_hamilton(&localOrientation, orientation, &entity.orientation);
-	localScale = scale * entity.scale;
-	if (material_index < 0 && entity.materials_length) material_index = entity.materials[0];
+	quat_hamilton(&localOrientation, orientation, &entity->orientation);
+	localScale = scale * entity->scale;
+	if (material_index < 0 && entity->materials_length) material_index = entity->materials[0];
 
-	if (entity.childType == entity_childType_model) {
+	if (entity->childType == entity_childType_model) {
 		error = renderModels(entity, localPosition, localOrientation, localScale, material_index);
 	}
-	else if (entity.childType == entity_childType_entity) {
-		for (int i = 0; i < entity.children_length; i++) {
-			error = renderEntity(g_entityList.entities[entity.children[i]],
+	else if (entity->childType == entity_childType_entity) {
+		size_t children_length = entity->children_length;
+		ptrdiff_t *children = entity->children;
+		for (int i = 0; i < children_length; i++) {
+			error = renderEntity(&g_entityList.entities[children[i]],
 			                     &localPosition,
 			                     &localOrientation,
 			                     localScale,
@@ -522,7 +525,7 @@ int renderEntity(entity_t entity, vec3_t *position, quat_t *orientation, vec_t s
 	return error;
 }
 
-int render(entity_t entity) {
+int render(entity_t *entity) {
 	int error = ERR_CRITICAL;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
