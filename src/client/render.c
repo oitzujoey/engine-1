@@ -206,7 +206,6 @@ int render_initOpenGL(void) {
 	glFrontFace(GL_CCW);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND);
 	
 	// glDepthRange(0, 1);
 	
@@ -614,7 +613,9 @@ int render(entity_t *entity) {
 	e = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}}, 1.0, -1);
 
 	// Render transparent models.
+	glEnable(GL_BLEND);
 	renderRenderObjects(&g_transparencyRenderObjects);
+	glDisable(GL_BLEND);
 
 	// Destroy renderObjects and the array that contains them.
 	e = g_renderObjectArena.quit(g_renderObjectArena.context);
