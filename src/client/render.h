@@ -26,8 +26,8 @@ typedef struct {
 	quat_t orientation;
 	vec3_t position;
 	vec_t scale;
-	ptrdiff_t material_index;
-	GLuint g_shaderProgram;
+	material_t *material;
+	GLuint shaderProgram;
 } renderObject_t;
 
 #endif // RENDER_H

@@ -11,6 +11,7 @@
 #include "../common/obj.h"
 #include "../common/vector.h"
 #include "../common/arena.h"
+#include "../common/array.h"
 
 extern material_list_t g_materialList;
 
@@ -33,6 +34,8 @@ float g_points[] = {
 	0, 0.5, 0
 };
 Allocator g_renderObjectArena;
+
+array_t g_transparencyRenderObjects;
 
 
 static const char *render_glGetErrorString(GLenum glError) {
@@ -90,10 +93,6 @@ int render_callback_updateLogFileName(cfg2_var_t *var) {
 int render_initOpenGL(void) {
 	int error = ERR_CRITICAL;
 	GLenum glError = GL_NO_ERROR;
-
-	// TODO: This should be run every frame, not at initialization. Move it.
-	error = allocator_create_stdlibArena(&g_renderObjectArena);
-	if (error) return error;
 
 	info("Initializing OpenGL.", "");
 	
@@ -463,9 +462,10 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 			(void) quat_copy(&ro->orientation, &orientation);
 			(void) vec3_copy(&ro->position, position);
 			ro->scale = scale;
-			ro->material_index = material_index;
-			ro->g_shaderProgram = g_shaderProgram[0];
-			return e;
+			ro->material = material;
+			ro->shaderProgram = g_shaderProgram[0];
+
+			return array_push(&g_transparencyRenderObjects, &ro);
 		}
 		
 		/* Render */
@@ -551,8 +551,53 @@ int renderEntity(entity_t *entity, vec3_t *position, quat_t *orientation, vec_t 
 	return error;
 }
 
+void renderRenderObject(renderObject_t *renderObject) {
+	// We don't do frustum culling here because we should have already done it in the tree traversal.
+
+	/* Render */
+
+	glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
+	glBufferData(GL_ARRAY_BUFFER, renderObject->glVertices_length * sizeof(float), renderObject->glVertices, GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
+	glBufferData(GL_ARRAY_BUFFER, renderObject->glNormals_length * sizeof(float), renderObject->glNormals, GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, g_texCoordVbo);
+	glBufferData(GL_ARRAY_BUFFER, renderObject->glTexCoords_length * sizeof(float), renderObject->glTexCoords, GL_DYNAMIC_DRAW);
+
+	glUniform4f(g_orientationUniform,
+				renderObject->orientation.v[0],
+				renderObject->orientation.v[1],
+				renderObject->orientation.v[2],
+				renderObject->orientation.s
+				);
+	glUniform3f(g_positionUniform,
+				renderObject->position[0],
+				renderObject->position[1],
+				renderObject->position[2]);
+	glUniform1f(g_scaleUniform, renderObject->scale);
+
+	glUseProgram(renderObject->shaderProgram);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, renderObject->material->texture);
+	glBindVertexArray(g_vao);
+	// glVertices_length is always a multiple of three.
+	glDrawArrays(GL_TRIANGLES, 0, renderObject->glVertices_length / 3);
+}
+
+int renderRenderObjects(array_t *renderObjects) {
+	size_t renderObjects_length = array_length(renderObjects);
+	for (size_t i = 0; i < renderObjects_length; i++) {
+		// I could write `renderObjects + i`, but this hints to the reader that it's a pointer.
+		renderObject_t *renderObject;
+		int e = array_getElement(renderObjects, &renderObject, i);
+		if (e) return e;
+		renderRenderObject(renderObject);
+	}
+}
+
 int render(entity_t *entity) {
-	int error = ERR_CRITICAL;
+	int e = ERR_CRITICAL;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
@@ -560,13 +605,23 @@ int render(entity_t *entity) {
 	
 	// Set FOV.
 	glUniform1f(g_screenHeightUniform, 16.0f/9.0f);
-	
+
+	// TODO: This should be run every frame, not at initialization. Move it.
+	e = allocator_create_stdlibArena(&g_renderObjectArena);
+	(void) array_init(&g_transparencyRenderObjects, &g_renderObjectArena, sizeof(renderObject_t *));
+
 	// Render world entity.
-	error = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}}, 1.0, -1);
-	
+	e = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}}, 1.0, -1);
+
+	// Render transparent models.
+	renderRenderObjects(&g_transparencyRenderObjects);
+
+	// Destroy renderObjects and the array that contains them.
+	e = g_renderObjectArena.quit(g_renderObjectArena.context);
+
 	/* Show */
 	
 	SDL_GL_SwapWindow(g_window);
 	
-	return error;
+	return e;
 }

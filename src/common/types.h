@@ -319,4 +319,4 @@ typedef struct {
 	size_t materials_length;
 } material_list_t;
 
-#endif
+#endif // TYPES_H

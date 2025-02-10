@@ -79,7 +79,7 @@ int allocator_arena_quit(void *allocator) {
 	size_t allocations_length = arena->allocations_length;
 	void **allocations = arena->allocations;
 	for (size_t i = 0; i < allocations_length; i++) {
-		int e = host->free(host->context, &arena->allocations[i]);
+		int e = host->free(host->context, &allocations[i]);
 		if (e) return e;
 	}
 	return host->free(host->context, (void **) &arena);
