@@ -10,6 +10,7 @@
 #include "../common/entity.h"
 #include "../common/obj.h"
 #include "../common/vector.h"
+#include "../common/arena.h"
 
 extern material_list_t g_materialList;
 
@@ -31,6 +32,7 @@ float g_points[] = {
 	0.5, -0.5, 0,
 	0, 0.5, 0
 };
+Allocator g_renderObjectArena;
 
 
 static const char *render_glGetErrorString(GLenum glError) {
@@ -88,7 +90,11 @@ int render_callback_updateLogFileName(cfg2_var_t *var) {
 int render_initOpenGL(void) {
 	int error = ERR_CRITICAL;
 	GLenum glError = GL_NO_ERROR;
-	
+
+	// TODO: This should be run every frame, not at initialization. Move it.
+	error = allocator_create_stdlibArena(&g_renderObjectArena);
+	if (error) return error;
+
 	info("Initializing OpenGL.", "");
 	
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -408,8 +414,10 @@ int render_initOpenGL(void) {
 	return error;
 }
 
-int renderModels(entity_t *entity, vec3_t position, quat_t orientation, vec_t scale, ptrdiff_t material_index) {
-	int error = ERR_CRITICAL;
+// Note: `position` is `vec3_t *` and not `vec3_t` because `vec3_t` it decayed to a pointer. I'm not entirely clear on
+// why this happens. It's possible that arrays always decay when passed to functions.
+int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t scale, ptrdiff_t material_index) {
+	int e = ERR_OK;
 
 	// TODO: Only allow one model in a model entity.
 	// For each model...
@@ -417,7 +425,10 @@ int renderModels(entity_t *entity, vec3_t position, quat_t orientation, vec_t sc
 	ptrdiff_t *children = entity->children;
 	for (int j = 0; j < children_length; j++) {
 		int modelIndex = children[j];
-		model_t model = g_modelList.models[modelIndex];
+		model_t *model = &g_modelList.models[modelIndex];
+		// TODO: Change this from texture #1 to whatever texture is called for.
+		if (material_index < 0) material_index = model->defaultMaterials[0];
+		material_t *material = &g_materialList.materials[material_index];
 
 		// TODO: Fix frustum culling.
 		/* // Make sure model is inside the frustum. */
@@ -437,17 +448,36 @@ int renderModels(entity_t *entity, vec3_t position, quat_t orientation, vec_t sc
 		/* 	printf("CONTINUE %i\n", modelIndex); */
 		/* 	continue; */
 		/* } */
+
+		if (material->transparent) {
+			// Defer rendering to the transparency pass.
+			renderObject_t *ro = NULL;
+			e = g_renderObjectArena.alloc(g_renderObjectArena.context, (void **) &ro, sizeof(renderObject_t));
+			if (e) return e;
+			ro->glVertices_length = model->glVertices_length;
+			ro->glVertices = model->glVertices;
+			ro->glNormals_length = model->glNormals_length;
+			ro->glNormals = model->glNormals;
+			ro->glTexCoords_length = model->glTexCoords_length;
+			ro->glTexCoords = model->glTexCoords;
+			(void) quat_copy(&ro->orientation, &orientation);
+			(void) vec3_copy(&ro->position, position);
+			ro->scale = scale;
+			ro->material_index = material_index;
+			ro->g_shaderProgram = g_shaderProgram[0];
+			return e;
+		}
 		
 		/* Render */
 		
 		glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
-		glBufferData(GL_ARRAY_BUFFER, model.glVertices_length * sizeof(float), model.glVertices, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, model->glVertices_length * sizeof(float), model->glVertices, GL_DYNAMIC_DRAW);
 		
 		glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
-		glBufferData(GL_ARRAY_BUFFER, model.glNormals_length * sizeof(float), model.glNormals, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, model->glNormals_length * sizeof(float), model->glNormals, GL_DYNAMIC_DRAW);
 
 		glBindBuffer(GL_ARRAY_BUFFER, g_texCoordVbo);
-		glBufferData(GL_ARRAY_BUFFER, model.glTexCoords_length * sizeof(float), model.glTexCoords, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, model->glTexCoords_length * sizeof(float), model->glTexCoords, GL_DYNAMIC_DRAW);
 
 		glUniform4f(g_orientationUniform, 
 			orientation.v[0],
@@ -456,24 +486,20 @@ int renderModels(entity_t *entity, vec3_t position, quat_t orientation, vec_t sc
 			orientation.s
 		);
 		glUniform3f(g_positionUniform, 
-			position[0],
-			position[1],
-			position[2]
-		);
+		            (*position)[0],
+		            (*position)[1],
+		            (*position)[2]);
 		glUniform1f(g_scaleUniform, scale);
 		
 		glUseProgram(g_shaderProgram[0]);
 		glActiveTexture(GL_TEXTURE0);
-		// TODO: Change this from texture #1 to whatever texture is called for.
-		if (material_index < 0) material_index = model.defaultMaterials[0];
-		glBindTexture(GL_TEXTURE_2D, g_materialList.materials[material_index].texture);
+		glBindTexture(GL_TEXTURE_2D, material->texture);
 		glBindVertexArray(g_vao);
 		// glVertices_length is always a multiple of three.
-		glDrawArrays(GL_TRIANGLES, 0, model.glVertices_length / 3);
+		glDrawArrays(GL_TRIANGLES, 0, model->glVertices_length / 3);
 	}
 	
-	error = ERR_OK;
-	return error;
+	return e;
 }
 
 int renderEntity(entity_t *entity, vec3_t *position, quat_t *orientation, vec_t scale, ptrdiff_t material_index) {
@@ -505,7 +531,7 @@ int renderEntity(entity_t *entity, vec3_t *position, quat_t *orientation, vec_t 
 	if (material_index < 0 && entity->materials_length) material_index = entity->materials[0];
 
 	if (entity->childType == entity_childType_model) {
-		error = renderModels(entity, localPosition, localOrientation, localScale, material_index);
+		error = renderModels(entity, &localPosition, localOrientation, localScale, material_index);
 	}
 	else if (entity->childType == entity_childType_entity) {
 		size_t children_length = entity->children_length;

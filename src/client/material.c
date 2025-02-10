@@ -214,7 +214,6 @@ int l_material_create(lua_State *luaState) {
 	ptrdiff_t materialIndex = -1;
 	e = material_create(&g_materialList, &materialIndex, textureIndex, transparent);
 	if (e) goto cleanup;
-	printf("transparency: %s\n", transparent ? "transparent" : "opaque");
 
  cleanup:
 	if (e >= ERR_CRITICAL) lua_error(luaState);
