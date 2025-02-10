@@ -247,6 +247,10 @@ function main()
 												   {w=1, x=0, y=0, z=0},
 												   g_boxes_scale * g_selectionScale)
 			e = entity_linkMaterial(g_selectionEntity, g_selectionMaterial)
+		elseif g_selectedPosition and occupied and vec3_equal(cursorPosition, g_selectedPosition) then
+			e = modelEntity_delete(g_selectionEntity)
+			if e ~= 0 then quit() end
+			g_selectedPosition = nil
 		end
 	end
 
