@@ -103,139 +103,6 @@ static void cnetwork_connect(ENetEvent event) {
 	info("Successfully connected to %s:%u", g_clientState.serverAddressString, event.peer->address.port);
 }
 
-static int cnetwork_receiveEntities(ENetEvent event, lua_State *luaState) {
-	int error = ERR_CRITICAL;
-	
-	ENetPacket *packet;
-	// int length;
-	// const enet_uint8 *data;
-	ptrdiff_t data_index = 0;
-	uint32_t checksum, calculatedChecksum;
-	static uint32_t lastPacketID = 0;
-	uint32_t packetID;
-	
-	packet = event.packet;
-	// data = packet->data;
-	// length = packet->dataLength;
-	
-	// if (data - packet->data >= length) {
-	// 	error("Malformed entity packet", "");
-	// 	error = ERR_GENERIC;
-	// 	goto cleanup_l;
-	// }
-	
-	// network_dumpBufferUint8(packet->data, packet->dataLength);
-	
-	memcpy(&checksum, packet->data, sizeof(uint32_t));
-	// data += sizeof(uint32_t);
-	// data_length = length - sizeof(uint32_t);
-	data_index += sizeof(uint32_t);
-	
-	error = network_packetRead_uint32(&packetID, 1, packet->data, &data_index, packet->dataLength);
-	if (error) {
-		goto cleanup_l;
-	}
-	
-	// Server state
-	
-	/* Stack
-	*/
-	
-	// // Find the table.
-	// error = lua_getglobal(luaState, NETWORK_LUA_SERVERSTATE_NAME);
-	// if (error != LUA_TTABLE) {
-	// 	// It should have been created by `cnetwork_init`.
-	// 	critical_error("Lua file does not contain the table \"%s\".", NETWORK_LUA_SERVERSTATE_NAME);
-	// 	error = ERR_CRITICAL;
-	// 	goto cleanup_l;
-	// }
-	
-	/* Stack
-	-1  global table
-	*/
-	
-	error = network_packetRead_lua_object(luaState, packet, &data_index);
-	if (error) {
-		goto cleanup_l;
-	}
-	
-	// lua_common_printTable(luaState);
-	
-	lua_setglobal(luaState, NETWORK_LUA_SERVERSTATE_NAME);
-	// Pop string "serverState".
-	lua_pop(luaState, 1);
-	
-	/* Stack
-	-1  table (actual table)
-	-2  key (global table name)
-	-3  global table
-	*/
-	
-	// lua_pushinteger(luaState, clientNumber + 1);
-	
-	/* Stack
-	-1  key (client number, int)
-	-2  table (actual table)
-	-3  key (global table name, string)
-	-4  global table
-	*/
-	
-	// lua_copy(luaState, -1, -3);
-	
-	/* Stack
-	-1  key (client number, int)
-	-2  table (actual table)
-	-3  key (client number, int)
-	-4  global table
-	*/
-	
-	// lua_pop(luaState, 1);
-	
-	/* Stack
-	-1  table (actual table)
-	-2  key (client number, int)
-	-3  global table
-	*/
-	
-	// lua_settable(luaState, -3);
-	
-	/* Stack
-	-1  global table
-	*/
-	
-	// int top = lua_gettop(luaState);
-	// for (int i = 1; i < top; i++)
-	// 	printf("%i : %s\n", -i, lua_typename(luaState, lua_type(luaState, -i)));
-	
-	
-	// lua_pop(luaState, 1);
-	
-	/* Stack
-	*/
-	
-	
-	if (lastPacketID + 1 < packetID) {
-		warning("Lost %lu packets.", packetID - lastPacketID - 1);
-	}
-	else if (lastPacketID + 1 < packetID) {
-		warning("Possibly %lu out-of-order packets.", lastPacketID + 1 - packetID);
-	}
-	
-	lastPacketID = packetID;
-	
-	// Calculate the checksum while ignoring the recorded checksum.
-	calculatedChecksum = network_generateChecksum(packet->data + sizeof(uint32_t), packet->dataLength - sizeof(uint32_t));
-	
-	if (checksum != calculatedChecksum) {
-		warning("Calculated bad checksum of %0X. Should be %0X", calculatedChecksum, checksum);
-	}
-	
-	error = ERR_OK;
-	cleanup_l:
-	
-	return error;
-}
-
 /*
 Here we are going to find the "clientState" table and convert it to a byte
 array. This is very similar to how the entities are sent to the client.
@@ -301,36 +168,66 @@ static int cnetwork_sendState(lua_State *luaState) {
 }
 
 static int cnetwork_receive(ENetEvent event, lua_State *luaState) {
-	int error = ERR_CRITICAL;
-	
-	char *string = NULL;
-	
+	int e = ERR_OK;
+
+	ENetPacket *packet;
+	// int length;
+	// const enet_uint8 *data;
+	ptrdiff_t data_index = 0;
+	uint32_t checksum, calculatedChecksum;
+	static uint32_t lastPacketID = 0;
+	uint32_t packetID;
+
 	if (g_clientState.connectionState != cnetwork_connectionState_connected) {
-		error = ERR_OK;
-		goto cleanup_l;
+		goto cleanup;
 	}
-	
-	switch (event.channelID) {
-	case ENET_CHANNEL0:
-		error = cnetwork_receiveEntities(event, luaState);
-		if (error) {
-			goto cleanup_l;
-		}
-		break;
-	case ENET_CHANNEL1:
-		string = (char *) event.packet->data;
-		str2_print(string);
-		break;
-	default:
-		error("Bad ENet channel %i.", event.channelID);
+
+	packet = event.packet;
+
+	(void) memcpy(&checksum, packet->data, sizeof(uint32_t));
+	data_index += sizeof(uint32_t);
+
+	error = network_packetRead_uint32(&packetID, 1, packet->data, &data_index, packet->dataLength);
+	if (error) goto cleanup;
+
+	// Server state
+
+	// stack: serverState::Table
+
+	error = network_packetRead_lua_object(luaState, packet, &data_index);
+	if (error) goto cleanup;
+	// stack: serverState
+
+	// Add to the array of messages.
+	// stack: serverState global-name? object
+	(void) lua_pushinteger(luaState, lua_rawlen(luaState, -3) + 1);
+	// stack: serverState global-name? object #serverState+1
+	(void) lua_pushvalue(luaState, -2);
+	// stack: serverState global-name? object #serverState+1 object
+	(void) lua_settable(luaState, -5);
+	// stack: serverState global-name? object
+	(void) lua_pop(luaState, 2);
+	// stack: serverState
+
+	if (lastPacketID + 1 < packetID) {
+		warning("Lost %lu packets.", packetID - lastPacketID - 1);
 	}
-	
-	error = ERR_OK;
-	cleanup_l:
-	
-	enet_packet_destroy(event.packet);
-	
-	return error;
+	else if (lastPacketID + 1 < packetID) {
+		warning("Possibly %lu out-of-order packets.", lastPacketID + 1 - packetID);
+	}
+
+	lastPacketID = packetID;
+
+	// Calculate the checksum while ignoring the recorded checksum.
+	calculatedChecksum = network_generateChecksum(packet->data + sizeof(uint32_t), packet->dataLength - sizeof(uint32_t));
+
+	if (checksum != calculatedChecksum) {
+		warning("Calculated bad checksum of %0X. Should be %0X", calculatedChecksum, checksum);
+	}
+
+ cleanup:
+	(void) enet_packet_destroy(event.packet);
+	return e;
 }
 
 static void cnetwork_disconnect(ENetEvent event) {
@@ -406,7 +303,11 @@ int cnetwork_runEvents(lua_State *luaState) {
 			goto cleanup_l;
 		}
 	}
-	
+
+	// Empty serverState.
+	(void) lua_createtable(luaState, MAX_CLIENTS, 0);
+	// stack: serverState::Table
+
 	do {
 		enetStatus = enet_host_service(g_clientHost, &event, 0);
 		
@@ -416,10 +317,10 @@ int cnetwork_runEvents(lua_State *luaState) {
 				cnetwork_connect(event);
 				break;
 			case ENET_EVENT_TYPE_RECEIVE:
+				// stack: serverState::Table
 				error = cnetwork_receive(event, luaState);
-				if (error > ERR_GENERIC) {
-					goto cleanup_l;
-				}
+				if (error > ERR_GENERIC) goto cleanup_l;
+				// stack: serverState
 				break;
 			case ENET_EVENT_TYPE_DISCONNECT:
 				cnetwork_disconnect(event);
@@ -436,7 +337,10 @@ int cnetwork_runEvents(lua_State *luaState) {
 			goto cleanup_l;
 		}
 	} while (enetStatus != 0);
-	
+
+	// Set serverState.
+	(void) lua_setglobal(luaState, NETWORK_LUA_SERVERSTATE_NAME);
+
 	error = ERR_OK;
 	cleanup_l:
 	return error;

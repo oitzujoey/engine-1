@@ -158,10 +158,6 @@ function main()
 	-- Process clients
 	for i = 1,maxClients,1 do
 		if connectedClients[i] then
-			puts("client: "..toString(i))
-			puts("serverState: "..toString(serverState))
-			puts("serverState["..toString(i).."]: "..toString(serverState[i]))
-			puts("serverState["..toString(i).."].boxesCreated: "..toString(serverState[i].boxesCreated))
 			-- Send boxes to clients when they connect.
 			if not serverState[i].boxesCreated then
 				for box_index = 1,g_boxes_length,1 do

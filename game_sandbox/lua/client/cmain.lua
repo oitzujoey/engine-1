@@ -25,12 +25,12 @@ end
 
 
 g_initialBoxesCreated = false
-function processEvents()
+function processEvents(events)
 	local createdBoxes = false
-	if not serverState.events then return end
-	local events_length = #serverState.events
+	if not events then return end
+	local events_length = #events
 	for i = 1,events_length,1 do
-		local event = serverState.events[i]
+		local event = events[i]
 		local c = event.command
 		local d = event.data
 		if c == "create box" then
@@ -58,7 +58,6 @@ function processEvents()
 		clientState.boxesCreated = true
 		g_initialBoxesCreated = true
 	end
-	serverState.events = {}
 end
 
 
@@ -214,7 +213,11 @@ end
 function main()
 	local e
 
-	processEvents()
+	local messages = serverState
+	local messages_length = #messages
+	for messages_index = 1,messages_length,1 do
+		processEvents(messages[messages_index].events)
+	end
 
 
 	-- Box manipulation
