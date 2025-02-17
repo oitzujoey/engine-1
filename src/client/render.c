@@ -605,7 +605,6 @@ int render(entity_t *entity) {
 	// Set FOV.
 	glUniform1f(g_screenHeightUniform, 16.0f/9.0f);
 
-	// TODO: This should be run every frame, not at initialization. Move it.
 	e = allocator_create_stdlibArena(&g_renderObjectArena);
 	(void) array_init(&g_transparencyRenderObjects, &g_renderObjectArena, sizeof(renderObject_t *));
 
