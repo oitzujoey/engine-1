@@ -49,6 +49,7 @@ function server_processEvents(events, client_index)
 			if occupied then
 				changeBoxMaterial(g_boxes[box_index], d.color)
 				sendEvent("change box color", {position=d.position, color=d.color})
+				-- TODO: Write to database.
 			end
 		elseif c == "move box" then
 			local start_occupied, box_index = isOccupied(d.start_position)
@@ -59,6 +60,7 @@ function server_processEvents(events, client_index)
 				g_boxes[box_index].position = d.end_position
 				moveBox(box_index, d.end_position, d.start_position)
 				sendEvent("move box", {start_position=d.start_position, end_position=d.end_position})
+				-- TODO: Write to database.
 			end
 		else
 			warning("processEvents", "Unrecognized event \""..c.."\"")
@@ -66,6 +68,7 @@ function server_processEvents(events, client_index)
 	end
 end
 
+-- Keeping the code below because it could be used to create the boxes on first run.
 
 -- function loadBoxes()
 -- 	for i = 1,g_boxes_length,1 do
