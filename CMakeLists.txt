@@ -56,6 +56,7 @@ add_compile_options(-DLINUX)
 add_executable(sengine-1)
 add_executable(cengine-1)
 add_executable(engine-1-runner)
+add_executable(sqlite3)
 
 target_compile_options(sengine-1 PRIVATE -DSERVER)
 target_compile_options(cengine-1 PRIVATE -DCLIENT)
