@@ -898,6 +898,16 @@ And that is all. The server doesn't even need to know where the client is. This 
 Alpha gives transparency. Translucency is alpha, plus a blur.
 
 
+server
+ serverState
+ clientState[numClients][snaps]
+client
+ clientState
+ serverState[snaps]
+
+
+
+
 Stuff I need to add before public release:
     Authentication
     Lighting? -- Probably not. No light would probably make the world show up better.

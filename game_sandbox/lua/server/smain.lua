@@ -35,13 +35,13 @@ function sendQueuedEvents()
 end
 
 
-g_initialBoxesCreated = false
-function server_processEvents(client_index)
+-- This function can be run multiple times a frame.
+function server_processEvents(events, client_index)
 	local createdBoxes = false
-	if not clientState[client_index].events then return end
-	local events_length = #clientState[client_index].events
+	if not events then return end
+	local events_length = #events
 	for i = 1,events_length,1 do
-		local event = clientState[client_index].events[i]
+		local event = events[i]
 		local c = event.command
 		local d = event.data
 		if c == "change box color" then
@@ -64,11 +64,6 @@ function server_processEvents(client_index)
 			warning("processEvents", "Unrecognized event \""..c.."\"")
 		end
 	end
-	if createdBoxes then
-		clientState.boxesCreated = true
-		g_initialBoxesCreated = true
-	end
-	clientState[client_index].events = {}
 end
 
 
@@ -163,6 +158,10 @@ function main()
 	-- Process clients
 	for i = 1,maxClients,1 do
 		if connectedClients[i] then
+			puts("client: "..toString(i))
+			puts("serverState: "..toString(serverState))
+			puts("serverState["..toString(i).."]: "..toString(serverState[i]))
+			puts("serverState["..toString(i).."].boxesCreated: "..toString(serverState[i].boxesCreated))
 			-- Send boxes to clients when they connect.
 			if not serverState[i].boxesCreated then
 				for box_index = 1,g_boxes_length,1 do
@@ -175,11 +174,22 @@ function main()
 					sendEventToClient(i, "no initial boxes", nil)
 				end
 			end
-			if clientState[i].boxesCreated then
-				serverState[i].boxesCreated = true
+
+			-- Now here's the trick. We may receive lots of messages, or we may receive none.
+			local messages = clientState[i]
+			local messages_length = #messages
+			if not serverState[i].boxesCreated then
+				for messages_index = 1,messages_length,1 do
+					if messages[messages_index].boxesCreated then
+						serverState[i].boxesCreated = true
+					end
+				end
 			end
 
-			server_processEvents(i)
+			local events
+			for messages_index = 1,messages_length,1 do
+				server_processEvents(messages[messages_index].events, i)
+			end
 		end
 	end
 

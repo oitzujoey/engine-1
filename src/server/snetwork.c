@@ -111,7 +111,7 @@ static int snetwork_connect(ENetEvent event, lua_State *luaState) {
 }
 
 static int snetwork_receive(ENetEvent event, lua_State *luaState) {
-	int error = ERR_CRITICAL;
+	int e = ERR_OK;
 
 	// info("Received packet of length %u from %X:%u on channel %u", event.packet->dataLength, event.peer->address.host, event.peer->address.port, event.channelID);
 	ENetPeer *peer = event.peer;
@@ -127,88 +127,44 @@ static int snetwork_receive(ENetEvent event, lua_State *luaState) {
 		// Not a currently connected client.
 		error("Unconnected client sent message to server. Ignoring packet.", "");
 		enet_packet_destroy(packet);
-		error = ERR_GENERIC;
-		goto cleanup_l;
+		e = ERR_GENERIC;
+		goto cleanup;
 	}
 	
 	clientNumber = *((int *) peer->data);
-	
-	/* Stack
-	*/
-	
-	// Find the table.
-	error = lua_getglobal(luaState, NETWORK_LUA_CLIENTSTATE_NAME);
-	if (error != LUA_TTABLE) {
-		// It should have been created by `cnetwork_init`.
-		critical_error("Lua file does not contain the table \"%s\".", NETWORK_LUA_CLIENTSTATE_NAME);
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	/* Stack
-	-1  global table
-	*/
-	
-	error = network_packetRead_lua_object(luaState, packet, &packetIndex);
-	if (error) {
-		goto cleanup_l;
-	}
-	
-	/* Stack
-	-1  table (actual table)
-	-2  key (global table name)
-	-3  global table
-	*/
-	
-	lua_pushinteger(luaState, clientNumber + 1);
-	
-	/* Stack
-	-1  key (client number, int)
-	-2  table (actual table)
-	-3  key (global table name, string)
-	-4  global table
-	*/
-	
-	lua_copy(luaState, -1, -3);
-	
-	/* Stack
-	-1  key (client number, int)
-	-2  table (actual table)
-	-3  key (client number, int)
-	-4  global table
-	*/
-	
-	lua_pop(luaState, 1);
-	
-	/* Stack
-	-1  table (actual table)
-	-2  key (client number, int)
-	-3  global table
-	*/
-	
-	lua_settable(luaState, -3);
-	
-	/* Stack
-	-1  global table
-	*/
-	
-	// int top = lua_gettop(luaState);
-	// for (int i = 1; i < top; i++)
-	// 	printf("%i : %s\n", -i, lua_typename(luaState, lua_type(luaState, -i)));
-	
-	// lua_common_printTable(luaState);
-	
-	lua_pop(luaState, 1);
-	
-	/* Stack
-	*/
-	
-	enet_packet_destroy(packet);
-	
-	error = ERR_OK;
-	cleanup_l:
-	
-	return error;
+
+	// Fetch message buffer table for client.
+	// stack: clientStates[MAX_CLIENTS]::Table[Table]
+	(void) lua_pushinteger(luaState, clientNumber + 1);
+	// stack: clientStates clientNumber
+	(void) lua_gettable(luaState, -2);
+	// stack: clientStates clientState
+
+	// Pass: Nothing.
+	// Return: global-name? object
+	e = network_packetRead_lua_object(luaState, packet, &packetIndex);
+	if (e) goto cleanup;
+	// stack: clientStates clientState key object
+	(void) lua_pushinteger(luaState, lua_rawlen(luaState, -3) + 1);
+	// stack: clientStates clientState key object #clientState+1
+	(void) lua_pushvalue(luaState, -2);
+	// stack: clientStates clientState key object #clientState+1 object
+	(void) lua_settable(luaState, -5);
+	// stack: clientStates clientState key object
+	(void) lua_pop(luaState, 2);
+	// stack: clientStates clientState
+	(void) lua_pushinteger(luaState, clientNumber + 1);
+	// stack: clientStates clientState clientNumber
+	(void) lua_pushvalue(luaState, -2);
+	// stack: clientStates clientState clientNumber clientState
+	(void) lua_settable(luaState, -4);
+	// stack: clientStates clientState
+	(void) lua_pop(luaState, 1);
+	// stack: clientStates[MAX_CLIENTS]::Table[Table]
+
+	(void) enet_packet_destroy(packet);
+
+ cleanup: return e;
 }
 
 static int snetwork_disconnect(ENetEvent event, lua_State *luaState) {
@@ -394,7 +350,21 @@ int snetwork_runEvents(lua_State *luaState) {
 	if (error) {
 		goto cleanup_l;
 	}
-	
+
+	// Empty clientState.
+	(void) lua_createtable(luaState, MAX_CLIENTS, 0);
+	// stack: clientState::Table
+	// Create a state buffer for each client.
+	for (lua_Integer i = 1; i <= MAX_CLIENTS; i++) {
+		(void) lua_pushinteger(luaState, i);
+		// stack: clientState i
+		(void) lua_newtable(luaState);
+		// stack: clientState i {}
+		(void) lua_settable(luaState, -3);
+		// stack: clientState[i]::Table[Table]
+	}
+	// stack: clientState[MAX_CLIENTS]::Table[Table]
+
 	// Run event actions.
 	do {
 		enetStatus = enet_host_service(g_server.host, &event, 0);
@@ -408,10 +378,12 @@ int snetwork_runEvents(lua_State *luaState) {
 				}
 				break;
 			case ENET_EVENT_TYPE_RECEIVE:
+				// stack: clientState[MAX_CLIENTS]::Table[Table]
 				error = snetwork_receive(event, luaState);
 				if (error >= ERR_CRITICAL) {
 					goto cleanup_l;
 				}
+				// stack: clientState
 				break;
 			case ENET_EVENT_TYPE_DISCONNECT:
 				error = snetwork_disconnect(event, luaState);
@@ -431,7 +403,10 @@ int snetwork_runEvents(lua_State *luaState) {
 			goto cleanup_l;
 		}
 	} while (enetStatus != 0);
-	
+
+	// Set clientState.
+	(void) lua_setglobal(luaState, NETWORK_LUA_CLIENTSTATE_NAME);
+
 	error = ERR_OK;
 	cleanup_l:
 	return error;
