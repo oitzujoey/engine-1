@@ -125,8 +125,8 @@ end
 g_gridSpacing = 40
 g_boundingBoxRadius = g_gridSpacing * 20
 g_boxTable = {}
-G_GRAVITY = -1.0e0
-G_JUMPVELOCITY = 3.0e1
+G_GRAVITY = -0.4
+G_JUMPVELOCITY = 7.0
 G_PLAYER_BB = {mins={x=-g_gridSpacing*0.4, y=-g_gridSpacing*0.4, z=-0.7*g_gridSpacing},
 			   maxs={x=g_gridSpacing*0.4, y=g_gridSpacing*0.4, z=0.2*g_gridSpacing}}
 G_BOX_BB = {mins={x=-g_gridSpacing/2, y=-g_gridSpacing/2, z=-g_gridSpacing/2},
