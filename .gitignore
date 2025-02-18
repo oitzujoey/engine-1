@@ -25,3 +25,4 @@ build
 *.blend1
 *.out
 .*
+*.db-journal

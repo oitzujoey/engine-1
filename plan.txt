@@ -912,6 +912,43 @@ For now, I will assume the database already exists.
 The database must have an alphanumeric name and be in the root of the workspace. The .db extension is automatically appended to the name. The reason for this is that it's not easy to make SQLite use Physfs, and it's not easy to tell whether a file read using Physfs exists in a zip file or on the file system.
 
 
+e = str4_format(&path, "%4/%4/%s.db", &g_workspace, &g_game, lua_tostring(l, 1));
+
+
+How the database was created:
+CREATE TABLE boxes (
+	id INTEGER  PRIMARY KEY,
+    color TEXT,
+    x REAL,
+    y REAL,
+    z REAL
+) STRICT;
+-- Optional:
+CREATE INDEX position ON boxes(x, y, z);
+
+SELECT * FROM boxes WHERE id == $id;
+
+INSERT INTO boxes(color, x, y, z) VALUES ($color, $position.x, $position.y, $position.z);
+
+UPDATE boxes SET color = $color WHERE id == $id;
+UPDATE boxes SET x = $position.x, y = $position.y, z = $position.z WHERE id == $id;
+UPDATE boxes SET x = $position.x, y = $position.y, z = $position.z WHERE x == $oldPosition.x AND y == $oldPosition.y AND z == $oldPosition.z;
+
+
+How to map SQLite tables to Lua tables?
+
+Type Box = struct {
+	int id;
+    Str4 color;
+    double x;
+    double y;
+    double z;
+};
+Type Boxes = Box[];
+
+
+SQLite REAL is stored as `double`, which is the same as what Lua stores. So moving numbers between Lua and SQLite shouldn't introduce conversion errors.
+
 
 
 Stuff I need to add before public release:

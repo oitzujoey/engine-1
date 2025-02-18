@@ -94,6 +94,19 @@ end
 -- 	end
 -- end
 
+-- function loadBoxes()
+-- 	local boxDescriptors = sqlite_eval('SELECT * FROM boxes WHERE id == $id;')
+-- 	local boxDescriptors_length = #boxDescriptors
+-- 	for i = 1,boxDescriptors_length,1 do
+-- 		local boxDescriptor = boxDescriptors[i]
+-- 		local color = boxDescriptor.color
+-- 		local x = boxDescriptor.x
+-- 		local y = boxDescriptor.y
+-- 		local z = boxDescriptor.z
+-- 		createBox(color, {x=x, y=y, z=z})
+-- 	end
+-- end
+
 
 function consoleCommandCreateBox()
 	local position = {x=0, y=0, z=0}
@@ -104,6 +117,7 @@ function consoleCommandCreateBox()
 		local materialName = g_materialNames[random()%#g_materialNames + 1]
 		createBox(position, materialName)
 		sendEvent("create box", {position=position, materialName=materialName})
+		-- sqlite_eval('INSERT INTO boxes(color, x, y, z) VALUES ("red", 0, 0, 0);')
 		info("createBox", "Created box at origin.")
 	end
 end
