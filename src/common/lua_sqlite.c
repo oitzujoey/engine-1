@@ -53,6 +53,9 @@ int l_sqlite_open(lua_State *l) {
 	}
 	info("Opened database \"%s\".", dbName.str);
 
+	e = stringArena.quit(stringArena.context);
+	if (e) goto cleanup;
+
  cleanup:
 	(void) lua_pushnil(l);
 	return 1;
