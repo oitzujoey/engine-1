@@ -9,14 +9,36 @@
 #include "cfg2.h"
 #include "str2.h"
 #include "memory.h"
+#include "arena.h"
 
 
 // @TODO: See how `g_mods` contains an array of mods? This was misguided and it should only have one mod.
-char *g_workspace = NULL;
+Str4 g_workspace;
+Str4 g_game;
 vfs_mods_t g_mods = {
 	.mods = NULL,
 	.mods_length = 0
 };
+
+
+int vfs_init(uint8_t *argv0) {
+	int e = ERR_OK;
+
+	static Allocator allocator;
+	allocator = allocator_create_stdlib();
+	g_workspace = str4_create(&allocator);
+	g_game = str4_create(&allocator);
+
+	e = PHYSFS_init((char *) argv0);
+	if (!e) {
+		critical_error("Could not start PhysFS: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		e = ERR_CRITICAL;
+		goto cleanup;
+	}
+	e = ERR_OK;
+
+ cleanup: return e;
+}
 
 
 /* Config commands */
@@ -125,28 +147,70 @@ static int vfs_PHYSFS_saveScriptFilesEnumerator(void *data, const char *origdir,
 /* vfs_callback_loadMod
 Loads a mod. *.cfg and *.lua are read into memory.
 */
-int vfs_callback_loadMod(cfg2_var_t *var, const char *command, lua_State *luaState) {
-	int error = ERR_CRITICAL;
-	
-	if (!strcmp(command, "")) {
-		return ERR_OK;
+int vfs_callback_loadGame(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	int e = ERR_OK;
+
+	if (!strcmp(command, "")) return ERR_OK;
+
+	Allocator arena;
+	e = allocator_create_stdlibArena(&arena);
+	if (e) goto cleanup;
+
+	size_t command_length = strlen(command);
+
+	(void) str4_copyC(&g_game, (uint8_t *) command, command_length);
+	e = g_game.error;
+	if (e) goto cleanup;
+
+	if (g_game.error) {
+		e = g_game.error;
+		goto cleanup;
 	}
-	
-	// Add directory to search path.
-	
+
 	// All mods will be mounted to the root directory.
-	error = PHYSFS_mount(command, "", true);
-	if (!error) {
-		error("Could not add directory \"%s\" to the search path: %s", command, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+	e = PHYSFS_mount(command, "", true);
+	if (!e) {
+		error("Could not add directory \"%s\" to the search path: %s",
+		      command,
+		      PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 	}
-	
+	else {
+		info("Mounted \"%s\".", command);
+	}
+	e = ERR_OK;
+
+	if (g_workspace.str_length == 0) {
+		warning("Workspace is not set, so a directory for the current game will not be created in the workspace.", "");
+	}
+	else {
+		Str4 slash = STR4("/");
+		Str4 fullWorkspacePath = str4_create(&arena);
+		(void) str4_append(&fullWorkspacePath, &g_workspace);
+		(void) str4_append(&fullWorkspacePath, &slash);
+		(void) str4_append(&fullWorkspacePath, &g_game);
+		e = fullWorkspacePath.error;
+		if (e) goto cleanup;
+		e = PHYSFS_mount((char *) fullWorkspacePath.str, "", true);
+		if (!e) {
+			error("Could not add workspace directory \"%s\" to the search path: %s",
+			      fullWorkspacePath,
+			      PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		}
+		else {
+			info("Mounted \"%s\".", fullWorkspacePath.str);
+		}
+		e = ERR_OK;
+		e = arena.quit(arena.context);
+		if (e) goto cleanup;
+	}
+
 	// Make space for the next mod.
 	
 	g_mods.mods_length++;
 	g_mods.mods = realloc(g_mods.mods, g_mods.mods_length * sizeof(vfs_mod_t));
 	if (g_mods.mods == NULL) {
-		error = ERR_OUTOFMEMORY;
-		goto cleanup_l;
+		e = ERR_OUTOFMEMORY;
+		goto cleanup;
 	}
 	g_mods.mods[g_mods.mods_length - 1].files = NULL;
 	g_mods.mods[g_mods.mods_length - 1].filenames = NULL;
@@ -156,17 +220,17 @@ int vfs_callback_loadMod(cfg2_var_t *var, const char *command, lua_State *luaSta
 	
 	info("Searching for scripts in mod \"%s\"", command);
 	
-	error = PHYSFS_enumerate(command, vfs_PHYSFS_saveScriptFilesEnumerator, NULL);
-	if (!error) {
-		error("Could not enumerate files in directory \"%s\": %s", command, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-		error = ERR_CRITICAL;
-		goto cleanup_l;
+	e = PHYSFS_enumerate(command, vfs_PHYSFS_saveScriptFilesEnumerator, NULL);
+	if (!e) {
+		error("Could not enumerate files in directory \"%s\": %s",
+		      command,
+		      PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		e = ERR_CRITICAL;
+		goto cleanup;
 	}
-	
-	error = ERR_OK;
-	cleanup_l:
-	
-	return error;
+	e = ERR_OK;
+
+ cleanup: return e;
 }
 
 
@@ -174,8 +238,9 @@ int vfs_callback_loadMod(cfg2_var_t *var, const char *command, lua_State *luaSta
 /* ================ */
 
 int vfs_callback_setWorkspace(cfg2_var_t *var, const char *command, lua_State *luaState) {
-	g_workspace = var->string;
-	if (strcmp(g_workspace, "") && !PHYSFS_setWriteDir(g_workspace)) {
+	if (strlen(var->string) == 0) return ERR_OK;
+	str4_copyC(&g_workspace, (uint8_t *) var->string, strlen(var->string));
+	if ((g_workspace.str_length != 0) && !PHYSFS_setWriteDir((char *) g_workspace.str)) {
 		error("Could not set workspace to \"%s\": %s", g_workspace, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		return ERR_GENERIC;
 	}

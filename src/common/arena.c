@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "common.h"
+#include "log.h"
 
 int allocator_create_stdlibArena(Allocator *arena) {
 	static Allocator host_allocator = {.context=NULL,
@@ -16,7 +17,10 @@ int allocator_create_arena(Allocator *arena, Allocator *host_allocator) {
 
 	Arena *internal_arena = NULL;
 	e = host_allocator->alloc(host_allocator->context, (void **) &internal_arena, sizeof(Arena));
-	if (e) return ERR_OUTOFMEMORY;
+	if (e) {
+		outOfMemory();
+		return ERR_OUTOFMEMORY;
+	}
 
 	internal_arena->allocations = NULL;
 	internal_arena->allocations_length = 0;

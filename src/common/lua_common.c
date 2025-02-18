@@ -11,6 +11,7 @@
 #include "lua_sandbox.h"
 #include "str2.h"
 #include "parse_mesh.h"
+#include "lua_sqlite.h"
 
 luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_puts,             .name = "puts"},
@@ -25,7 +26,6 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_log_warning,             .name = "warning"},
 	{.func = l_log_error,               .name = "error"},
 	{.func = l_log_critical_error,      .name = "critical_error"},
-	// {.func = l_vfs_getFileText,         .name = "vfs_getFileText"},
 	{.func = l_obj_loadOoliteDAT,       .name = "loadOoliteModel"},
 	{.func = l_cmsh_load,               .name = "cmsh_load"},
 	{.func = l_rmsh_load,               .name = "rmsh_load"},
@@ -44,7 +44,7 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_aaNormalize,             .name = "aaNormalize"},
 	{.func = l_cfg2_setVariable,        .name = "cfg2_setVariable"},
 	{.func = l_cfg2_setCallback,        .name = "cfg2_setCallback"},
-	// {.func = l_cnetwork_receive,    .name = "l_snetwork_receive"},
+	{.func = l_sqlite_open,             .name = "sqlite_open"},
 	{.func = NULL,                  .name = NULL}
 };
 

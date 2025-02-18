@@ -26,6 +26,7 @@ Str4 str4_createConstant(const uint8_t *str, size_t str_length);
 void str4_copyC(Str4 *str4, const uint8_t *str, size_t str_length);
 void str4_copy(Str4 *destination, Str4 *source);
 void str4_concatenate(Str4 *destination, Str4 *left, Str4 *right);
+void str4_append(Str4 *destination, Str4 *right);
 
 #define STR4(c_string) str4_createConstant(((const uint8_t *) (c_string)), (sizeof(c_string) - 1))
 

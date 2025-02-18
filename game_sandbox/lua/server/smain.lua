@@ -147,8 +147,7 @@ function startup()
 
 	setupConsoleCommands()
 
-	-- file = l_vfs_getFileText("src/sgame/smain.lua")
-	-- l_puts(file)
+	g_db = sqlite_open("server")
 
 	info("startup", "Loading world tree")
     loadWorld()

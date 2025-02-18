@@ -136,13 +136,9 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	(void) random_init();
 	
 	// Start the VFS.
-	
-	error = PHYSFS_init(argv[0]);
-	if (!error) {
-		critical_error("Could not start PhysFS: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
+
+	error = vfs_init((uint8_t *) argv[0]);
+	if (error) goto cleanup_l;
 	
 	// Start config system.
 	
@@ -233,7 +229,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	
 	// Check for the workspace.
 	
-	if ((g_workspace == NULL) || !strcmp(g_workspace, "")) {
+	if (g_workspace.str_length == 0) {
 		log_critical_error(__func__, "\"workspace\" has not been set.");
 		error = ERR_GENERIC;
 		goto cleanup_l;

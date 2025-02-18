@@ -906,6 +906,12 @@ client
  serverState[snaps]
 
 
+For now, I will assume the database already exists.
+
+
+The database must have an alphanumeric name and be in the root of the workspace. The .db extension is automatically appended to the name. The reason for this is that it's not easy to make SQLite use Physfs, and it's not easy to tell whether a file read using Physfs exists in a zip file or on the file system.
+
+
 
 
 Stuff I need to add before public release:

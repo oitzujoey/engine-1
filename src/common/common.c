@@ -240,7 +240,7 @@ const cfg2_var_init_t g_commonVarInit[] = {
 		.permissionWrite = cfg2_admin_game,
 		.permissionDelete = cfg2_admin_supervisor,
 		.permissionCallback = cfg2_admin_supervisor,
-		.callback = vfs_callback_loadMod
+		.callback = vfs_callback_loadGame
 	},
 	{
 		.name = "command",
