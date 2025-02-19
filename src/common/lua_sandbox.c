@@ -26,13 +26,6 @@ static const luaL_Reg luaLibs[] = {
 	{NULL, NULL}
 };
 
-uint32_t lua_luaTimeout(uint32_t interval, void *param) {
-	luaTimeout_t *luaTimeout = param;
-	error("Lua function \"%s\" timed out.", luaTimeout->functionName);
-	lua_error(luaTimeout->luaState);
-	return 0;
-}
-
 
 
 static int l_lua_sandbox_include(lua_State *luaState) {
@@ -106,18 +99,14 @@ static int l_lua_sandbox_include(lua_State *luaState) {
 	};
 	
 	info("Loading %s", luaFilePath);
-	
-	SDL_TimerID timerId = SDL_AddTimer(100, lua_luaTimeout, &luaTimeout);
-	
+
 	error = lua_pcall(luaState, 0, 0, 0);
 	if (error) {
 		lua_sandbox_handleError(luaState);
 		error("Initial run of Lua exited with error %s", luaError[error]);
 		lua_error(luaState);
 	}
-	
-	SDL_RemoveTimer(timerId);
-	
+
 	MEMORY_FREE(&fileText);
 	MEMORY_FREE(&luaFilePath);
 	
@@ -140,12 +129,8 @@ int lua_runFunction(lua_State *luaState, const char *functionName, uint32_t time
 		error = ERR_CRITICAL;
 		goto cleanup_l;
 	}
-	
-	SDL_TimerID timerId = SDL_AddTimer(timeout, lua_luaTimeout, &luaTimeout);
-	
+
 	error = lua_pcall(luaState, 0, 0, 0);
-	// lua_call(luaState, 0, 0);
-	SDL_RemoveTimer(timerId);
 	if (error) {
 		lua_sandbox_handleError(luaState);
 		error("Lua function \"%s\" exited with error %s", luaTimeout.functionName, luaError[error]);
@@ -226,9 +211,7 @@ int lua_sandbox_init(lua_State **Lua, const char *filename) {
 	};
 	
 	info("Loading %s", filename);
-	
-	SDL_TimerID timerId = SDL_AddTimer(100, lua_luaTimeout, &luaTimeout);
-	
+
 	error = lua_pcall(*Lua, 0, 0, 0);
 	if (error) {
 		lua_sandbox_handleError(*Lua);
@@ -236,9 +219,7 @@ int lua_sandbox_init(lua_State **Lua, const char *filename) {
 		error = ERR_CRITICAL;
 		return ERR_GENERIC;
 	}
-	
-	SDL_RemoveTimer(timerId);
-	
+
 	error = ERR_OK;
 	cleanup_l:
 	

@@ -336,6 +336,7 @@ function createBoxEntry(box_index, point)
 	bt_z.entries = bt_z.entries + 1
 end
 
+-- Returns the index of the box at that point, or nil if a box doesn't exist there.
 function getBoxEntry(point)
 	point = snapToGrid(point)
 	-- Check if spot contains a box.
@@ -406,19 +407,28 @@ end
 function processBoxes(boxes)
 	for i = 1,g_boxes_length,1 do
 		boxes[i].velocity.z = boxes[i].velocity.z + G_GRAVITY
-		oldPosition = boxes[i].position
+		local oldPosition = boxes[i].position
 		boxes[i] = boxMoveAndCollide(boxes[i])
-		moveBox(i, boxes[i].position, oldPosition)
+		local newPosition = boxes[i].position
+		moveBox(i, newPosition, oldPosition)
+		if G_SERVER then
+			local id = boxes[i].id
+			local nx = newPosition.x
+			local ny = newPosition.y
+			local nz = newPosition.z
+			sqlite_exec(g_db, "UPDATE boxes SET x = "..nx..", y = "..ny..", z = "..nz.." WHERE id == "..id..";")
+		end
 		entity_setPosition(boxes[i].entity, boxes[i].position)
 	end
 end
 
 
-function createBox(position, materialName)
+function createBox(id, position, materialName)
 	local box = {}
 	local boxEntity, e = entity_createEntity(g_entity_type_model)
 	e = entity_linkChild(g_cameraEntity, boxEntity)
 	e = entity_linkChild(boxEntity, boxModel)
+	box.id = id
 	box.entity = boxEntity
 
 	entity_setScale(boxEntity, g_boxes_scale)

@@ -97,6 +97,7 @@ static int snetwork_connect(ENetEvent event, lua_State *luaState) {
 	
 	g_clients[index].peer = peer;
 	g_clients[index].inUse = true;
+	g_clients[index].disconnectPending = false;
 	g_server.connectedClients++;
 	
 	peer->data = malloc(sizeof(int));
@@ -121,11 +122,8 @@ static int snetwork_connect(ENetEvent event, lua_State *luaState) {
 	}
 	
 	lua_pushinteger(luaState, index + 1);
-	
-	SDL_TimerID timerId = SDL_AddTimer(100, lua_luaTimeout, &luaTimeout);
-	
+
 	error = lua_pcall(luaState, 1, 0, 0);
-	SDL_RemoveTimer(timerId);
 	if (error) {
 		lua_sandbox_handleError(luaState);
 		error("Lua function \"%s\" exited with error %s", luaTimeout.functionName, luaError[error]);
@@ -232,11 +230,8 @@ static int snetwork_disconnect(ENetEvent event, lua_State *luaState) {
 	}
 	
 	lua_pushinteger(luaState, index + 1);
-	
-	SDL_TimerID timerId = SDL_AddTimer(100, lua_luaTimeout, &luaTimeout);
-	
+
 	error = lua_pcall(luaState, 1, 0, 0);
-	SDL_RemoveTimer(timerId);
 	if (error) {
 		lua_sandbox_handleError(luaState);
 		error("Lua function \"%s\" exited with error %s", luaTimeout.functionName, luaError[error]);

@@ -48,9 +48,15 @@ function server_processEvents(events, client_index)
 		if c == "change box color" then
 			local occupied, box_index = isOccupied(d.position)
 			if occupied then
-				changeBoxMaterial(g_boxes[box_index], d.color)
-				sendEvent("change box color", {position=d.position, color=d.color})
-				-- TODO: Write to database.
+				local c = d.color
+				local p = d.position
+				local x = p.x
+				local y = p.y
+				local z = p.z
+				changeBoxMaterial(g_boxes[box_index], c)
+				sendEvent("change box color", {position=p, color=c})
+				local id = g_boxes[getBoxEntry(p)].id
+				sqlite_exec(g_db, "UPDATE boxes SET color = '"..c.."' WHERE id == "..id..";")
 			end
 		elseif c == "move box" then
 			local start_occupied, box_index = isOccupied(d.start_position)
@@ -61,7 +67,13 @@ function server_processEvents(events, client_index)
 				g_boxes[box_index].position = d.end_position
 				moveBox(box_index, d.end_position, d.start_position)
 				sendEvent("move box", {start_position=d.start_position, end_position=d.end_position})
-				-- TODO: Write to database.
+				do
+					local id = g_boxes[box_index].id
+					local nx = d.end_position.x
+					local ny = d.end_position.y
+					local nz = d.end_position.z
+					sqlite_exec(g_db, "UPDATE boxes SET x = "..nx..", y = "..ny..", z = "..nz.." WHERE id == "..id..";")
+				end
 			end
 		else
 			warning("processEvents", "Unrecognized event \""..c.."\"")
@@ -95,18 +107,17 @@ end
 -- 	end
 -- end
 
--- function loadBoxes()
--- 	local boxDescriptors = sqlite_eval('SELECT * FROM boxes WHERE id == $id;')
--- 	local boxDescriptors_length = #boxDescriptors
--- 	for i = 1,boxDescriptors_length,1 do
--- 		local boxDescriptor = boxDescriptors[i]
--- 		local color = boxDescriptor.color
--- 		local x = boxDescriptor.x
--- 		local y = boxDescriptor.y
--- 		local z = boxDescriptor.z
--- 		createBox(color, {x=x, y=y, z=z})
--- 	end
--- end
+function loadBoxes()
+	local boxDescriptors, e = sqlite_exec(g_db, 'SELECT * FROM boxes;')
+	local boxDescriptors_length = #boxDescriptors
+	for i = 1,boxDescriptors_length,1 do
+		local boxDescriptor = boxDescriptors[i]
+		local x = boxDescriptor.x
+		local y = boxDescriptor.y
+		local z = boxDescriptor.z
+		createBox(boxDescriptor.id, {x=x, y=y, z=z}, boxDescriptor.color)
+	end
+end
 
 
 function consoleCommandCreateBox()
@@ -116,9 +127,11 @@ function consoleCommandCreateBox()
 		info("createBox", "Cannot spawn box. Another box is currently at the origin.")
 	else
 		local materialName = g_materialNames[random()%#g_materialNames + 1]
-		createBox(position, materialName)
+		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z) VALUES ('red', 0, 0, 0);")
+		local result = sqlite_exec(g_db, "SELECT id FROM boxes WHERE x == 0 AND y == 0 AND z == 0;")
+		local id = result[1].id
+		createBox(id, position, materialName)
 		sendEvent("create box", {position=position, materialName=materialName})
-		-- sqlite_eval('INSERT INTO boxes(color, x, y, z) VALUES ("red", 0, 0, 0);')
 		info("createBox", "Created box at origin.")
 	end
 end
@@ -147,6 +160,8 @@ end
 
 function clientDisconnect(clientNumber)
 	g_clients[clientNumber].connected = false
+	g_clients[clientNumber].authenticated = false
+	serverState[clientNumber] = {}
 	numClients = numClients - 1
 	info("clientDisconnect", "Client " .. clientNumber .. " disconnected.")
 end
@@ -163,22 +178,12 @@ function startup()
 
 	setupConsoleCommands()
 
-	-- g_db = sqlite_open("server")
-	-- g_secretsDb = sqlite_open("secrets")
-
-
-
-	g_db = sqlite_open("test")
-	local query = "SELECT * FROM vectors;"
-	-- local query = 'SELECT password FROM users WHERE name == "'..username..'"'
-	puts(query)
-	sqlite_exec(g_db, query)
-
-
+	g_db = sqlite_open("server")
+	g_secretsDb = sqlite_open("secrets")
 
 	info("startup", "Loading world tree")
     loadWorld()
-	-- loadBoxes()
+	loadBoxes()
 
 	info("startup", "Starting game")
 end
@@ -215,10 +220,10 @@ function clientMain(clientIndex)
 end
 
 function main()
+	local e
 	-- Process clients
 	for i = 1,maxClients,1 do
 		if g_clients[i].connected then
-			puts("g_clients["..toString(i).."].authenticated: "..toString(g_clients[i].authenticated))
 			if g_clients[i].authenticated then
 				clientMain(i)
 			else
@@ -226,12 +231,27 @@ function main()
 					-- OK to hard code index because the client will be constantly streaming the identity to us.
 					local username = clientState[i][1].username
 					local password = clientState[i][1].password
-					puts("username: "..toString(username))
-					puts("password: "..toString(password))
-					local query = 'SELECT password FROM users WHERE name == "'..username..'"'
-					puts("query: "..query)
-					sqlite_eval(g_secretsDb, query)
-					network_disconnect(i)
+					local query = "SELECT password FROM users WHERE name == '"..username.."'"
+					local identities, e = sqlite_exec(g_secretsDb, query)
+					if e ~= 0 then warning("main", "QUERY FAILED") end
+					local identities_length = #identities
+					if identities_length > 1 then
+						error("main", "Multiple copies of user in database!")
+					elseif identities_length < 1 then
+						warning("main", "Login attempt from unrecognized user: \""..username..'".')
+					else
+						identity = identities[1]
+						if password == identity.password then
+							info("main", username.." logged in.")
+							g_clients[i].authenticated = true
+						else
+							warning("main", username.." submitted the wrong password.")
+							-- Haha look at all these trailing parentheses
+						end
+					end
+					if not g_clients[i].authenticated then
+						network_disconnect(i)
+					end
 				end
 			end
 		end
@@ -244,5 +264,5 @@ end
 function shutdown()
 	info("shutdown", "Server quit");
 	sqlite_close(g_db)
-	-- sqlite_close(g_secretsDb)
+	sqlite_close(g_secretsDb)
 end

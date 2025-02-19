@@ -83,10 +83,13 @@ int l_sqlite_open(lua_State *l) {
 int l_sqlite_exec(lua_State *l) {
 	int e = ERR_OK;
 
-	int argc = lua_gettop(l);
-	if (argc != 2) {
-		error("Requires 2 arguments: database, query", "");
-		lua_error(l);
+	int stackTop = lua_gettop(l);
+	{
+		int argc = stackTop;
+		if (argc != 2) {
+			error("Requires 2 arguments: database, query", "");
+			lua_error(l);
+		}
 	}
 	if (!lua_isuserdata(l, 1)) {
 		error("Database must be a database object.", "");
@@ -99,7 +102,12 @@ int l_sqlite_exec(lua_State *l) {
 	sqlite3 **dbContainer = lua_touserdata(l, 1);
 	size_t query_c_length;
 	const char *query_c = lua_tolstring(l, 2, &query_c_length);
-	/* char *errorMessage = NULL; */
+
+	if (!lua_checkstack(l, 5)) {
+		error("Not enough room on Lua's stack to push the query result.", "");
+		e = ERR_GENERIC;
+		goto cleanup;
+	}
 
 	sqlite3_stmt *statement;
 	int sqlite_e = sqlite3_prepare_v2(*dbContainer, query_c, query_c_length, &statement, NULL);
@@ -108,6 +116,10 @@ int l_sqlite_exec(lua_State *l) {
 		goto cleanup;
 	}
 
+	(void) lua_newtable(l);
+	// stack: {}
+
+	int row_index = 0;
 	while (true) {
 		sqlite_e = sqlite3_step(statement);
 		if (sqlite_e == SQLITE_DONE) {
@@ -115,35 +127,58 @@ int l_sqlite_exec(lua_State *l) {
 			break;
 		}
 		else if (sqlite_e == SQLITE_ROW) {
-			puts("ROW");
+			(void) lua_pushinteger(l, row_index + 1);
+			// stack: result row_index
+			(void) lua_newtable(l);
+			// stack: result row_index row
+
 			int column_count = sqlite3_column_count(statement);
 			for (int column_index = 0; column_index < column_count; column_index++) {
 				const char *column_name = sqlite3_column_name(statement, column_index);
+
+				// stack: result row_index row
+				(void) lua_pushstring(l, column_name);
+				// stack: result row_index row column_index
+
 				switch (sqlite3_column_type(statement, column_index)) {
 				case SQLITE_INTEGER:{
-					const sqlite3_int64 value = sqlite3_column_int64(statement, column_index);
-					printf("%s: %lli\n", column_name, value);
+					// SQLite returns `long long` for _int64, at least on my platform.
+					const long long value = sqlite3_column_int64(statement, column_index);
+					// Lua also uses long long for integers, at least on my platform.
+					(void) lua_pushinteger(l, value);
+					// stack: result row_index row column_index integer
 					break;
 				}
 				case SQLITE_FLOAT:{
 					const double value = sqlite3_column_double(statement, column_index);
-					printf("%s: %lf\n", column_name, value);
+					// Lua uses `double` for non-integer numbers, at least on my platform.
+					(void) lua_pushnumber(l, value);
+					// stack: result row_index row column_index double
 					break;
 				}
 				case SQLITE_TEXT: {
 					const uint8_t *value = sqlite3_column_text(statement, column_index);
-					printf("%s: \"%s\"\n", column_name, (char *) value);
+					(void) lua_pushstring(l, (const char *) value);
+					// stack: result row_index row column_index string
 					break;
 				}
 				case SQLITE_BLOB:
-					printf("%s: BLOB\n", column_name);
+					(void) lua_pushnil(l);
+					// stack: result row_index row column_index nil
 					break;
 				case SQLITE_NULL:{
-					printf("%s: NULL\n", column_name);
+					(void) lua_pushnil(l);
+					// stack: result row_index row column_index nil
 					break;
 				}
 				}
+				// stack: result row_index row column_index value
+				(void) lua_settable(l, -3);
+				// stack: result row_index row
 			}
+			// stack: result row_index row
+			(void) lua_settable(l, -3);
+			// stack: result
 		}
 		else {
 			error("Failed to get result of query \"%s\". SQLite error message: \"%s\"",
@@ -151,13 +186,19 @@ int l_sqlite_exec(lua_State *l) {
 			      sqlite3_errmsg(*dbContainer));
 			break;
 		}
+		row_index++;
 	}
 	if (sqlite_e != SQLITE_OK) goto cleanup;
 
  cleanup:
 	if (statement != NULL) (void) sqlite3_finalize(statement);
+	if (sqlite_e) {
+		// Remove any junk we pushed on the stack that still remains.
+		(void) lua_settop(l, stackTop);
+		// Push an empty table as the result.
+		(void) lua_newtable(l);
+	}
 	if (e) lua_error(l);
-	(void) lua_pushnil(l);
 	(void) lua_pushinteger(l, sqlite_e);
 	return 2;
 }

@@ -244,7 +244,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	/*  As of SDL v2.0.14:
 		Allocates 220 bytes that SDL_Quit doesn't free.
 		I don't think I can do anything about it. */
-	error = SDL_Init(SDL_INIT_TIMER);
+	error = SDL_Init(0);
 	if (error != 0) {
 		critical_error("SDL_Init returned %s", SDL_GetError());
 		return ERR_CRITICAL;
@@ -305,7 +305,6 @@ int main(int argc, char *argv[]) {
 	char *luaFilePath = NULL;
 	cfg2_var_t *lua_main_v;
 	char *tempString = NULL;
-	SDL_TimerID timerId;
 	bool proceed;
 	
 	info("Starting engine-1 v0.0 (Server)", "");
@@ -397,24 +396,17 @@ int main(int argc, char *argv[]) {
 	// Run the main game.
 	
 	while (!g_cfg2.quit) {
-	
-		// Set timeout
-	
 		proceed = false;
-		timerId = SDL_AddTimer(g_cfg2.maxFramerate, main_callback_block, &proceed);
-	
+
         main_housekeeping(luaState);
-        
+
 		error = lua_runFunction(luaState, "main", MAIN_LUA_MAIN_TIMEOUT);
 		if (error) {
 			error = ERR_CRITICAL;
 			goto cleanup_l;
 		}
-		
-        while (!proceed) {
-	        SDL_Delay(1);
-        }
-		SDL_RemoveTimer(timerId);
+
+		SDL_Delay(10);
 	}
 	
 	// Run shutdown.

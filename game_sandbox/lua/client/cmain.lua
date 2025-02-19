@@ -34,10 +34,10 @@ function processEvents(events)
 		local c = event.command
 		local d = event.data
 		if c == "create box" then
-			createBox(d.position, d.materialName)
+			createBox(nil, d.position, d.materialName)
 		elseif c == "create initial box" then
 			if not g_initialBoxesCreated then
-				createBox(d.position, d.materialName)
+				createBox(nil, d.position, d.materialName)
 				createdBoxes = true
 			end
 		elseif c == "no initial boxes" then
@@ -236,7 +236,6 @@ function main()
 		clientState.username = g_username
 		clientState.password = g_password
 	end
-	clientState.test = "test"
 
 	local messages = serverState
 	local messages_length = #messages

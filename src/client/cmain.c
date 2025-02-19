@@ -175,7 +175,7 @@ int windowInit(void) {
 	g_window = NULL;
 	// g_screenSurface = NULL;
 
-	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) < 0) {
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER) < 0) {
 		fprintf(stderr, "Error: SDL could not initialize | SDL_Error %s\n", SDL_GetError());
 		error = ERR_GENERIC;
 		goto cleanup_l;
@@ -399,7 +399,6 @@ int main (int argc, char *argv[]) {
 	const char *luaFileName = "cmain.lua";
 	char *luaFilePath = NULL;
 	cfg2_var_t *v_luaMain;
-	SDL_TimerID timerId;
 	bool proceed;
 	
 	info("Starting engine-1 v0.0 (Client)", "");
@@ -464,24 +463,13 @@ int main (int argc, char *argv[]) {
 	// Run the main game.
 	
 	while (!g_cfg2.quit) {
-	
-		proceed = false;
-		timerId = SDL_AddTimer(g_cfg2.maxFramerate, main_callback_block, &proceed);
-	
         main_housekeeping(luaState);
-        
-		// Set timeout
-	
-		error = lua_runFunction(luaState, "main", MAIN_LUA_MAIN_TIMEOUT);
+
+        error = lua_runFunction(luaState, "main", MAIN_LUA_MAIN_TIMEOUT);
 		if (error) {
 			error = ERR_CRITICAL;
 			goto cleanup_l;
 		}
-		
-        while (!proceed) {
-	        SDL_Delay(1);
-        }
-		SDL_RemoveTimer(timerId);
 	}
 	
 	// Run shutdown.
