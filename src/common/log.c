@@ -259,7 +259,7 @@ int l_log_critical_error(lua_State *l) {
 	function = lua_tostring(l, 1);
 	message = lua_tostring(l, 2);
 
-	const char *infomessage = COLOR_CYAN"Lua "COLOR_GREEN"Critical error: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
+	const char *infomessage = COLOR_CYAN"Lua "COLOR_RED"Critical error: "COLOR_BLUE"(%s)"COLOR_NORMAL" %s\n";
 	size_t buf_length = strlen(infomessage) + strlen(function) + strlen(message) - 4 + 1;
 	char *buf = malloc(buf_length * sizeof(char));
 	if (!buf && buf_length) {

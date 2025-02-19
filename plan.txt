@@ -950,6 +950,20 @@ Type Boxes = Box[];
 SQLite REAL is stored as `double`, which is the same as what Lua stores. So moving numbers between Lua and SQLite shouldn't introduce conversion errors.
 
 
+CREATE TABLE users (
+	id INTEGER  PRIMARY KEY,
+    name TEXT,
+    password TEXT
+) STRICT;
+
+And obviously I can't commit this table. :)
+
+
+I don't I need to bother with transactions because I'm only doing updates to one row at a time.
+
+
+
+
 
 Stuff I need to add before public release:
     Database
