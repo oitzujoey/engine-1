@@ -293,7 +293,8 @@ int render_initOpenGL(void) {
 		"  vec4 glPosition = projectionMatrix * vec4(vertex, 1.0);"
 		"  gl_Position = glPosition;\n"
 		"  float powerFactor = 1.01;"
-		"  color = pow(powerFactor, -abs(glPosition.z))/powerFactor * rotate(normal, orientation);\n"
+		"  float mixing = 0.5;"
+		"  color = (pow(powerFactor, -abs(glPosition.z))/powerFactor * (1.0 - mixing) + mixing) * rotate(normal, orientation);\n"
 		"  textureCoordinate = texCoord;\n"
 		"}\n";
 	
