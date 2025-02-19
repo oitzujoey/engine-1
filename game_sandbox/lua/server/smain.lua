@@ -66,8 +66,20 @@ function server_processEvents(events, client_index)
 				local box_index = getBoxEntry(d.start_position)
 				g_boxes[box_index].position = d.end_position
 				moveBox(box_index, d.end_position, d.start_position)
+				g_boxes[box_index].needsUpdate = true
 				sendEvent("move box", {start_position=d.start_position, end_position=d.end_position})
-				do
+
+				-- Enable physics for box above. We could do all boxes above, but I noticed that the boxes don't move until
+				-- the box below them moves entirely out of the way, meaning that the box above doesn't move immediately,
+				-- `needsUpdate` is set to false, and the box ends up *never* moving.
+				local snappedPosition = snapToGrid(d.start_position)
+				snappedPosition.z = snappedPosition.z + g_gridSpacing
+				local above_box_index = getBoxEntry(snappedPosition)
+				if above_box_index then
+					g_boxes[above_box_index].needsUpdate = true
+				end
+
+				do -- Update database
 					local id = g_boxes[box_index].id
 					local nx = d.end_position.x
 					local ny = d.end_position.y
@@ -83,29 +95,14 @@ end
 
 -- Keeping the code below because it could be used to create the boxes on first run.
 
--- function loadBoxes()
--- 	for i = 1,g_boxes_length,1 do
--- 		local box = {}
--- 		local boxEntity, e = entity_createEntity(g_entity_type_model)
--- 		e = entity_linkChild(g_cameraEntity, boxEntity)
--- 		e = entity_linkChild(boxEntity, boxModel)
--- 		box.entity = boxEntity
-
--- 		entity_setScale(boxEntity, g_boxes_scale)
--- 		box.position = snapToGrid({x=((i-1)%10 - 4.5)*g_gridSpacing,
--- 								   y=((((i-1)-(i-1)%10)/10)%10 - 4.5)*g_gridSpacing,
--- 								   z=(((i-1)-(i-1)%10-(i-1)%100)/100 - 4.5)*g_gridSpacing})
--- 		entity_setPosition(boxEntity, box.position)
--- 		entity_setOrientation(boxEntity, {w=1, x=0, y=0, z=0})
-
--- 		createBoxEntry(boxEntity, box.position)
-
--- 		box.velocity = {x=0, y=0, z=0}
--- 		box.aabb = G_BOX_BB
-
--- 		g_boxes[i] = box
--- 	end
--- end
+function initializeBoxes()
+	for i = 1,1000,1 do
+		local p = snapToGrid({x=((i-1)%10 - 4.5)*g_gridSpacing,
+							  y=((((i-1)-(i-1)%10)/10)%10 - 4.5)*g_gridSpacing,
+							  z=(((i-1)-(i-1)%10-(i-1)%100)/100 - 4.5)*g_gridSpacing})
+		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z) VALUES ('red', "..p.x..", "..p.y..", "..p.z..");")
+	end
+end
 
 function loadBoxes()
 	local boxDescriptors, e = sqlite_exec(g_db, 'SELECT * FROM boxes;')
@@ -138,6 +135,7 @@ end
 
 function setupConsoleCommands()
 	createConsoleCommand("create_box", "consoleCommandCreateBox")
+	createConsoleCommand("initialize_boxes", "initializeBoxes")
 end
 
 

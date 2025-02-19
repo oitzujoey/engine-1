@@ -47,9 +47,23 @@ function processEvents(events)
 		elseif c == "change box color" then
 			changeBoxMaterial(g_boxes[getBoxEntry(d.position)], d.color)
 		elseif c == "move box" then
+			-- Move box.
 			local box_index = getBoxEntry(d.start_position)
 			g_boxes[box_index].position = d.end_position
 			moveBox(box_index, d.end_position, d.start_position)
+			-- Enable physics.
+			g_boxes[box_index].needsUpdate = true
+			entity_setPosition(g_boxes[box_index].entity, g_boxes[box_index].position)
+
+			-- Enable physics for box above. We could do all boxes above, but I noticed that the boxes don't move until
+			-- the box below them moves entirely out of the way, meaning that the box above doesn't move immediately,
+			-- `needsUpdate` is set to false, and the box ends up *never* moving.
+			local snappedPosition = snapToGrid(d.start_position)
+			snappedPosition.z = snappedPosition.z + g_gridSpacing
+			local above_box_index = getBoxEntry(snappedPosition)
+			if above_box_index then
+				g_boxes[above_box_index].needsUpdate = true
+			end
 		else
 			warning("processEvents", "Unrecognized event \""..c.."\"")
 		end
@@ -99,6 +113,7 @@ function startup()
 	cyanMaterial, error = loadMaterial("cyan")
 	magentaMaterial, error = loadMaterial("magenta")
 	yellowMaterial, error = loadMaterial("yellow")
+	clearMaterial, error = loadMaterial("clear")
 
 	cardboardBoxMaterial, error = loadTexture("box")
 

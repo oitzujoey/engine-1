@@ -14,10 +14,10 @@ g_materialNames = {
 	"yellow",
 	"cyan",
 	"magenta",
-	-- "orange",
 	-- "purple",
 	"black",
-	"white"
+	"white",
+	"clear"
 }
 g_materials = {}
 
@@ -355,30 +355,33 @@ end
 function moveBox(box_index, newPosition, oldPosition)
 	oldPosition = snapToGrid(oldPosition)
 	newPosition = snapToGrid(newPosition)
+	if oldPosition.x == newPosition.x and oldPosition.y == newPosition.y and oldPosition.z == newPosition.z then
+		return false
+	end
 
 	-- Find the current box entry.
 	local bt_xyz = g_boxTable
 	local bt_yz = bt_xyz[oldPosition.x]
 	if bt_yz == nil then
 		warning("moveBox", "Box does not have x-axis entry.")
-		return
+		return false
 	end
 	local bt_z = bt_yz[oldPosition.y]
 	if bt_z == nil then
 		warning("moveBox", "Box does not have y-axis entry.")
-		return
+		return false
 	end
 	local spot = bt_z[oldPosition.z]
 	if spot == nil then
 		warning("moveBox", "Box does not have z-axis entry.")
-		return
+		return false
 	end
 	local box_index = spot
 
 	-- Double check that we are moving the right box.
 	if box_index ~= box_index then
 		warning("moveBox", "The box being moved is not the box that is at this point.")
-		return
+		return false
 	end
 
 	-- Delete existing entry.
@@ -402,23 +405,39 @@ function moveBox(box_index, newPosition, oldPosition)
 	-- if G_SERVER then
 	-- 	sendEvent('move box', {oldPosition=oldPosition, newPosition=newPosition})
 	-- end
+
+	return true
 end
 
 function processBoxes(boxes)
 	for i = 1,g_boxes_length,1 do
-		boxes[i].velocity.z = boxes[i].velocity.z + G_GRAVITY
-		local oldPosition = boxes[i].position
-		boxes[i] = boxMoveAndCollide(boxes[i])
-		local newPosition = boxes[i].position
-		moveBox(i, newPosition, oldPosition)
-		if G_SERVER then
-			local id = boxes[i].id
-			local nx = newPosition.x
-			local ny = newPosition.y
-			local nz = newPosition.z
-			sqlite_exec(g_db, "UPDATE boxes SET x = "..nx..", y = "..ny..", z = "..nz.." WHERE id == "..id..";")
+		if boxes[i].needsUpdate then
+			boxes[i].velocity.z = boxes[i].velocity.z + G_GRAVITY
+			local oldPosition = boxes[i].position
+			boxes[i] = boxMoveAndCollide(boxes[i])
+			local newPosition = boxes[i].position
+			if vec3_equal(oldPosition, newPosition) then
+				boxes[i].needsUpdate = false
+			end
+			local moved = moveBox(i, newPosition, oldPosition)
+			if moved then
+				-- Enable physics for box above.
+				local snappedPosition = snapToGrid(oldPosition)
+				snappedPosition.z = snappedPosition.z + g_gridSpacing
+				local above_box_index = getBoxEntry(snappedPosition)
+				if above_box_index then
+					g_boxes[above_box_index].needsUpdate = true
+				end
+			end
+			if G_SERVER and moved then
+				local id = boxes[i].id
+				local nx = newPosition.x
+				local ny = newPosition.y
+				local nz = newPosition.z
+				sqlite_exec(g_db, "UPDATE boxes SET x = "..nx..", y = "..ny..", z = "..nz.." WHERE id == "..id..";")
+			end
+			entity_setPosition(boxes[i].entity, boxes[i].position)
 		end
-		entity_setPosition(boxes[i].entity, boxes[i].position)
 	end
 end
 
@@ -430,6 +449,8 @@ function createBox(id, position, materialName)
 	e = entity_linkChild(boxEntity, boxModel)
 	box.id = id
 	box.entity = boxEntity
+	-- Enable gravity.
+	box.needsUpdate = true
 
 	entity_setScale(boxEntity, g_boxes_scale)
 	box.position = position
