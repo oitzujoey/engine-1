@@ -169,7 +169,7 @@ function startup()
 
 
 	g_db = sqlite_open("test")
-	local query = "UPDATE vectors SET x = 4, y = 2 WHERE x == 0 AND y == 0;"
+	local query = "SELECT * FROM vectors;"
 	-- local query = 'SELECT password FROM users WHERE name == "'..username..'"'
 	puts(query)
 	sqlite_exec(g_db, query)

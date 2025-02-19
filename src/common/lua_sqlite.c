@@ -48,6 +48,7 @@ int l_sqlite_open(lua_State *l) {
 	int sqlite_e = sqlite3_open((char *) path.str, &db);
 	if (sqlite_e != SQLITE_OK) {
 		error("Failed to open database \"%s\". SQLite error: \"%s\"", path.str, sqlite3_errmsg(db));
+		sqlite3_close(db);
 		e = ERR_GENERIC;
 		goto cleanup;
 	}
@@ -63,12 +64,22 @@ int l_sqlite_open(lua_State *l) {
 }
 
 
-int lua_sqlite_callback(void *firstArgument, int numberOfColumns, char **columnStrings, char **resultColumnNameStrings) {
-	lua_State *l = firstArgument;
-	printf("lua_sqlite_callback: %i\n", numberOfColumns);
-	return SQLITE_OK;
-}
+/* int lua_sqlite_callback(void *firstArgument, int numberOfColumns, char **columnStrings, char **resultColumnNameStrings) { */
+/* 	lua_State *l = firstArgument; */
+/* 	for (int column_index = 0; column_index < numberOfColumns; column_index++) { */
+/* 		printf("%s: %s", resultColumnNameStrings[column_index], columnStrings[column_index]); */
+/* 		if (column_index == numberOfColumns-1) { */
+/* 			putchar('\n'); */
+/* 		} */
+/* 		else { */
+/* 			printf(", "); */
+/* 		} */
+/* 	} */
+/* 	return SQLITE_OK; */
+/* } */
 
+/* l_sqlite_exec(database, query) -> result, error
+   Makes a query to the database and returns the result of the query as a table. */
 int l_sqlite_exec(lua_State *l) {
 	int e = ERR_OK;
 
@@ -86,23 +97,69 @@ int l_sqlite_exec(lua_State *l) {
 		lua_error(l);
 	}
 	sqlite3 **dbContainer = lua_touserdata(l, 1);
-	const char *query_c = lua_tostring(l, 2);
-	char *errorMessage = NULL;
+	size_t query_c_length;
+	const char *query_c = lua_tolstring(l, 2, &query_c_length);
+	/* char *errorMessage = NULL; */
 
-	int sqlite_e = sqlite3_exec(*dbContainer, query_c, NULL, NULL, &errorMessage);
-	if (sqlite_e != SQLITE_OK){
-		error("Failed to execute query \"%s\". SQLite error code: \"%s\". SQLite error message: \"%s\"",
-		      query_c,
-		      sqlite3_errmsg(*dbContainer),
-		      errorMessage);
-		if (errorMessage != NULL) sqlite3_free(errorMessage);
+	sqlite3_stmt *statement;
+	int sqlite_e = sqlite3_prepare_v2(*dbContainer, query_c, query_c_length, &statement, NULL);
+	if (sqlite_e != SQLITE_OK) {
+		error("Failed to prepare query \"%s\". SQLite error code: \"%s\"", query_c, sqlite3_errmsg(*dbContainer));
 		goto cleanup;
 	}
 
+	while (true) {
+		sqlite_e = sqlite3_step(statement);
+		if (sqlite_e == SQLITE_DONE) {
+			sqlite_e = SQLITE_OK;
+			break;
+		}
+		else if (sqlite_e == SQLITE_ROW) {
+			puts("ROW");
+			int column_count = sqlite3_column_count(statement);
+			for (int column_index = 0; column_index < column_count; column_index++) {
+				const char *column_name = sqlite3_column_name(statement, column_index);
+				switch (sqlite3_column_type(statement, column_index)) {
+				case SQLITE_INTEGER:{
+					const sqlite3_int64 value = sqlite3_column_int64(statement, column_index);
+					printf("%s: %lli\n", column_name, value);
+					break;
+				}
+				case SQLITE_FLOAT:{
+					const double value = sqlite3_column_double(statement, column_index);
+					printf("%s: %lf\n", column_name, value);
+					break;
+				}
+				case SQLITE_TEXT: {
+					const uint8_t *value = sqlite3_column_text(statement, column_index);
+					printf("%s: \"%s\"\n", column_name, (char *) value);
+					break;
+				}
+				case SQLITE_BLOB:
+					printf("%s: BLOB\n", column_name);
+					break;
+				case SQLITE_NULL:{
+					printf("%s: NULL\n", column_name);
+					break;
+				}
+				}
+			}
+		}
+		else {
+			error("Failed to get result of query \"%s\". SQLite error message: \"%s\"",
+			      query_c,
+			      sqlite3_errmsg(*dbContainer));
+			break;
+		}
+	}
+	if (sqlite_e != SQLITE_OK) goto cleanup;
+
  cleanup:
+	if (statement != NULL) (void) sqlite3_finalize(statement);
 	if (e) lua_error(l);
+	(void) lua_pushnil(l);
 	(void) lua_pushinteger(l, sqlite_e);
-	return 1;
+	return 2;
 }
 
 int l_sqlite_close(lua_State *l) {
