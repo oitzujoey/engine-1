@@ -47,6 +47,33 @@ int snetwork_callback_maxClients(cfg2_var_t *var, const char *command, lua_State
 }
 
 
+// Expects client number as argument.
+int l_snetwork_disconnect(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 1) {
+		error("Requires 1 argument", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 1)) {
+		error("Argument must be a number.", "");
+		lua_error(l);
+	}
+	lua_Integer clientIndex = lua_tointeger(l, -1);
+	if (clientIndex <= 0) {
+		error("Passed `clientIndex` is invalid: %ll", clientIndex);
+		lua_error(l);
+		goto cleanup;
+	}
+	// Convert Lua index to C index.
+	clientIndex = clientIndex - 1;
+
+	g_clients[clientIndex].disconnectPending = true;
+	enet_peer_disconnect(g_clients[clientIndex].peer, 0);
+
+ cleanup: return 0;
+}
+
+
 static int snetwork_connect(ENetEvent event, lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
@@ -261,7 +288,7 @@ static int snetwork_sendEntityList(lua_State *luaState) {
 	*/
 	
 	for (int clientNumber = 0; clientNumber < MAX_CLIENTS; clientNumber++) {
-		if (!g_clients[clientNumber].inUse) {
+		if (!g_clients[clientNumber].inUse || g_clients[clientNumber].disconnectPending) {
 			continue;
 		}
 		
@@ -441,6 +468,7 @@ int snetwork_init(void) {
 	// Initialize client array.
 	for (int i = 0; i < MAX_CLIENTS; i++) {
 		g_clients[i].inUse = false;
+		g_clients[i].disconnectPending = false;
 		g_clients[i].peer = NULL;
 	}
 

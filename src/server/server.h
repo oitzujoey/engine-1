@@ -8,6 +8,7 @@
 
 typedef struct {
 	bool inUse;
+	bool disconnectPending;
 	ENetPeer *peer;
 } client_t;
 

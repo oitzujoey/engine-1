@@ -31,6 +31,7 @@
 int l_main_checkQuit(lua_State *luaState);
 
 luaCFunc_t luaServerFunctions[] = {
+	{.func = l_snetwork_disconnect, .name = "network_disconnect"},
 	{.func = NULL,                  .name = NULL}
 };
 
