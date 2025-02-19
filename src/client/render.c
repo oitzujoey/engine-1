@@ -290,9 +290,10 @@ int render_initOpenGL(void) {
 		"  vec3 vertex;\n"
 		"  vertex = rotate(scale * vp, orientation);\n"
 		"  vertex += position;\n"
-		"  gl_Position = projectionMatrix * vec4(vertex, 1.0);\n"
-		/* "  color = rotate(normal, orientation);\n" */
-		"  color = vec3(1.0, 1.0, 1.0);\n"
+		"  vec4 glPosition = projectionMatrix * vec4(vertex, 1.0);"
+		"  gl_Position = glPosition;\n"
+		"  float powerFactor = 1.01;"
+		"  color = pow(powerFactor, -abs(glPosition.z))/powerFactor * rotate(normal, orientation);\n"
 		"  textureCoordinate = texCoord;\n"
 		"}\n";
 	
@@ -304,7 +305,9 @@ int render_initOpenGL(void) {
 		"uniform sampler2D ourTexture;"
 		"void main() {"
 		"  float dot = dot(color, vec3(0.0, 0.0, 1.0));"
-		"  frag_colour = texture(ourTexture, textureCoordinate) * vec4(abs(dot), abs(dot), abs(dot), 1.0);"
+		"  float mixing = 0.75;"
+		"  dot = abs(dot) * (1.0 - mixing) + mixing;"
+		"  frag_colour = texture(ourTexture, textureCoordinate) * vec4(dot, dot, dot, 1.0);"
 		"}";
 	
 	/* Compile shaders and link program. */
