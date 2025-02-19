@@ -207,11 +207,36 @@ function startup()
 
 	g_selectedBox = nil
 
+	g_sensitivity, e = cfg2_getVariable("sensitivity")
+	if e ~= 0 then quit() end
+
+
+	g_username, e = cfg2_getVariable("username")
+	if e ~= 0 then
+		critical_error("startup", "`username` is not set!")
+		quit()
+	end
+	g_password, e = cfg2_getVariable("password")
+	if e ~= 0 then
+		critical_error("startup", "`password` is not set!")
+		quit()
+	end
+	info("startup", "username: "..g_username)
+
+	g_authenticated = false
+
 	info("startup", "Starting game")
 end
 
 function main()
 	local e
+
+	if not g_authenticated then
+		info("startup", "username: "..g_username)
+		clientState.username = g_username
+		clientState.password = g_password
+	end
+	clientState.test = "test"
 
 	local messages = serverState
 	local messages_length = #messages

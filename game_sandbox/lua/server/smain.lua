@@ -5,10 +5,11 @@ include "../common/common.lua"
 include "../common/loadworld.lua"
 
 g_eventQueues = {}
+g_clients = {}
 
 function sendEvent(command, data)
 	for i = 1,maxClients,1 do
-		if connectedClients[i] then
+		if g_clients[i].connected then
 			sendEventToClient(i, command, data)
 		end
 	end
@@ -24,7 +25,7 @@ end
 
 function sendQueuedEvents()
 	for i = 1,maxClients,1 do
-		if connectedClients[i] then
+		if g_clients[i].connected then
 			if not g_eventQueues[i] then
 				g_eventQueues[i] = {}
 			end
@@ -128,7 +129,8 @@ end
 
 
 function clientConnect(clientNumber)
-	connectedClients[clientNumber] = true
+	g_clients[clientNumber].connected = true
+	g_clients[clientNumber].authenticated = false
 	numClients = numClients + 1
 
 	info("clientConnect", "Client " .. clientNumber .. " connected.")
@@ -144,7 +146,7 @@ function clientConnect(clientNumber)
 end
 
 function clientDisconnect(clientNumber)
-	connectedClients[clientNumber] = false
+	g_clients[clientNumber].connected = false
 	numClients = numClients - 1
 	info("clientDisconnect", "Client " .. clientNumber .. " disconnected.")
 end
@@ -153,15 +155,26 @@ function startup()
 	info("startup", "Server started")
 
 	-- We start with no connected clients.
-	connectedClients = {}
+	g_clients = {}
 	for i = 1,maxClients,1 do
-		connectedClients[i] = false
+		g_clients[i] = {connected = false}
 	end
 	numClients = 0
 
 	setupConsoleCommands()
 
-	g_db = sqlite_open("server")
+	-- g_db = sqlite_open("server")
+	-- g_secretsDb = sqlite_open("secrets")
+
+
+
+	g_db = sqlite_open("test")
+	local query = "UPDATE vectors SET x = 4, y = 2 WHERE x == 0 AND y == 0;"
+	-- local query = 'SELECT password FROM users WHERE name == "'..username..'"'
+	puts(query)
+	sqlite_exec(g_db, query)
+
+
 
 	info("startup", "Loading world tree")
     loadWorld()
@@ -170,37 +183,56 @@ function startup()
 	info("startup", "Starting game")
 end
 
+function clientMain(clientIndex)
+	-- Send boxes to clients when they connect.
+	if not serverState[clientIndex].boxesCreated then
+		for box_index = 1,g_boxes_length,1 do
+			sendEventToClient(clientIndex,
+							  "create initial box",
+							  {position=g_boxes[box_index].position,
+							   materialName=g_boxes[box_index].materialName})
+		end
+		if g_boxes_length == 0 then
+			sendEventToClient(clientIndex, "no initial boxes", nil)
+		end
+	end
+
+	-- Now here's the trick. We may receive lots of messages, or we may receive none.
+	local messages = clientState[clientIndex]
+	local messages_length = #messages
+	if not serverState[clientIndex].boxesCreated then
+		for messages_index = 1,messages_length,1 do
+			if messages[messages_index].boxesCreated then
+				serverState[clientIndex].boxesCreated = true
+			end
+		end
+	end
+
+	local events
+	for messages_index = 1,messages_length,1 do
+		server_processEvents(messages[messages_index].events, clientIndex)
+	end
+end
+
 function main()
 	-- Process clients
 	for i = 1,maxClients,1 do
-		if connectedClients[i] then
-			-- Send boxes to clients when they connect.
-			if not serverState[i].boxesCreated then
-				for box_index = 1,g_boxes_length,1 do
-					sendEventToClient(i,
-									  "create initial box",
-									  {position=g_boxes[box_index].position,
-									   materialName=g_boxes[box_index].materialName})
+		if g_clients[i].connected then
+			puts("g_clients["..toString(i).."].authenticated: "..toString(g_clients[i].authenticated))
+			if g_clients[i].authenticated then
+				clientMain(i)
+			else
+				if #clientState[i] > 0 then
+					-- OK to hard code index because the client will be constantly streaming the identity to us.
+					local username = clientState[i][1].username
+					local password = clientState[i][1].password
+					puts("username: "..toString(username))
+					puts("password: "..toString(password))
+					local query = 'SELECT password FROM users WHERE name == "'..username..'"'
+					puts("query: "..query)
+					sqlite_eval(g_secretsDb, query)
+					network_disconnect(i)
 				end
-				if g_boxes_length == 0 then
-					sendEventToClient(i, "no initial boxes", nil)
-				end
-			end
-
-			-- Now here's the trick. We may receive lots of messages, or we may receive none.
-			local messages = clientState[i]
-			local messages_length = #messages
-			if not serverState[i].boxesCreated then
-				for messages_index = 1,messages_length,1 do
-					if messages[messages_index].boxesCreated then
-						serverState[i].boxesCreated = true
-					end
-				end
-			end
-
-			local events
-			for messages_index = 1,messages_length,1 do
-				server_processEvents(messages[messages_index].events, i)
 			end
 		end
 	end
@@ -211,4 +243,6 @@ end
 
 function shutdown()
 	info("shutdown", "Server quit");
+	sqlite_close(g_db)
+	-- sqlite_close(g_secretsDb)
 end

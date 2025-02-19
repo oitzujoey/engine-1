@@ -53,8 +53,78 @@ int l_sqlite_open(lua_State *l) {
 	}
 	info("Opened database \"%s\".", dbName.str);
 
+	sqlite3 **dbContainer = lua_newuserdata(l, sizeof(sqlite3 *));
+	*dbContainer = db;
+
 	e = stringArena.quit(stringArena.context);
 	if (e) goto cleanup;
+
+ cleanup: return 1;
+}
+
+
+int lua_sqlite_callback(void *firstArgument, int numberOfColumns, char **columnStrings, char **resultColumnNameStrings) {
+	lua_State *l = firstArgument;
+	printf("lua_sqlite_callback: %i\n", numberOfColumns);
+	return SQLITE_OK;
+}
+
+int l_sqlite_exec(lua_State *l) {
+	int e = ERR_OK;
+
+	int argc = lua_gettop(l);
+	if (argc != 2) {
+		error("Requires 2 arguments: database, query", "");
+		lua_error(l);
+	}
+	if (!lua_isuserdata(l, 1)) {
+		error("Database must be a database object.", "");
+		lua_error(l);
+	}
+	if (!lua_isstring(l, 2)) {
+		error("SQL query must be a string.", "");
+		lua_error(l);
+	}
+	sqlite3 **dbContainer = lua_touserdata(l, 1);
+	const char *query_c = lua_tostring(l, 2);
+	char *errorMessage = NULL;
+
+	int sqlite_e = sqlite3_exec(*dbContainer, query_c, NULL, NULL, &errorMessage);
+	if (sqlite_e != SQLITE_OK){
+		error("Failed to execute query \"%s\". SQLite error code: \"%s\". SQLite error message: \"%s\"",
+		      query_c,
+		      sqlite3_errmsg(*dbContainer),
+		      errorMessage);
+		if (errorMessage != NULL) sqlite3_free(errorMessage);
+		goto cleanup;
+	}
+
+ cleanup:
+	if (e) lua_error(l);
+	(void) lua_pushinteger(l, sqlite_e);
+	return 1;
+}
+
+int l_sqlite_close(lua_State *l) {
+	int e = ERR_OK;
+
+	int argc = lua_gettop(l);
+	if (argc != 1) {
+		error("Requires 1 argument: database", "");
+		lua_error(l);
+	}
+	if (!lua_isuserdata(l, 1)) {
+		error("Database must be a database object.", "");
+		lua_error(l);
+	}
+	sqlite3 **dbContainer = lua_touserdata(l, 1);
+
+	int sqlite_e = sqlite3_close(*dbContainer);
+	if (sqlite_e != SQLITE_OK){
+		error("Failed to close database. SQLite error code: \"%s\"", sqlite3_errmsg(*dbContainer));
+		e = ERR_GENERIC;
+		goto cleanup;
+	}
 
  cleanup:
 	(void) lua_pushnil(l);

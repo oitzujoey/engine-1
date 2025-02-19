@@ -171,7 +171,10 @@ void lua_sandbox_addFunctions(lua_State **Lua, luaCFunc_t *cfuncs) {
 
 int lua_sandbox_handleError(lua_State *l) {
 	int e = ERR_OK;
-	puts(lua_tostring(l, -1));
+	const char *errorMessage = lua_tostring(l, -1);
+	if (errorMessage != NULL) {
+		puts(lua_tostring(l, -1));
+	}
 	return e;
 }
 

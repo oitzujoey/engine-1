@@ -21,7 +21,6 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_round,            .name = "round"},
 	{.func = l_common_abs,              .name = "abs"},
 	{.func = l_common_random,           .name = "random"},
-	// {.func = l_loadObj,                 .name = "loadObj"},
 	{.func = l_log_info,                .name = "info"},
 	{.func = l_log_warning,             .name = "warning"},
 	{.func = l_log_error,               .name = "error"},
@@ -44,7 +43,10 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_aaNormalize,             .name = "aaNormalize"},
 	{.func = l_cfg2_setVariable,        .name = "cfg2_setVariable"},
 	{.func = l_cfg2_setCallback,        .name = "cfg2_setCallback"},
+	{.func = l_cfg2_getVariable,        .name = "cfg2_getVariable"},
 	{.func = l_sqlite_open,             .name = "sqlite_open"},
+	{.func = l_sqlite_exec,             .name = "sqlite_exec"},
+	{.func = l_sqlite_close,            .name = "sqlite_close"},
 	{.func = NULL,                  .name = NULL}
 };
 
@@ -212,6 +214,47 @@ int l_common_toString(lua_State *luaState) {
 	}
 	
 	return 1;
+}
+
+int l_cfg2_getVariable(lua_State *l) {
+	int e = ERR_OK;
+
+	int argc = lua_gettop(l);
+	if (argc != 1) {
+		error("Requires 1 argument", "");
+		lua_error(l);
+	}
+	if (!lua_isstring(l, 1)) {
+		error("Argument must be a string.", "");
+		lua_error(l);
+	}
+
+	const char *variableName = lua_tostring(l, 1);
+	cfg2_var_t *variable = cfg2_findVar(variableName);
+	if (variable == NULL) {
+		lua_pushnil(l);
+		e = ERR_GENERIC;
+		goto cleanup;
+	}
+	switch (variable->type) {
+	case cfg2_var_type_none:
+		lua_pushnil(l);
+		break;
+	case cfg2_var_type_vector:
+		error("cfg2_var_type_vector: Not implemented. Variable name: %s", variableName);
+		lua_pushnil(l);
+		break;
+	case cfg2_var_type_integer:
+		lua_pushinteger(l, variable->integer);
+		break;
+	case cfg2_var_type_string:
+		lua_pushstring(l, variable->string);
+		break;
+	}
+
+ cleanup:
+	(void) lua_pushinteger(l, e);
+	return 2;
 }
 
 int l_cfg2_setVariable(lua_State *luaState) {
