@@ -184,6 +184,10 @@ int lua_sandbox_init(lua_State **Lua, const char *filename) {
 	
 	lua_pushcfunction(*Lua, l_lua_sandbox_include);
 	lua_setglobal(*Lua, "include");
+
+	// Add the "sqlite" data type.
+	(void) luaL_newmetatable(*Lua, "sqlite");
+	(void) lua_pop(*Lua, 1);
 	
 	if (!PHYSFS_exists(filename)) {
 		error("File \"%s\" does not exist", filename, luaError[error]);

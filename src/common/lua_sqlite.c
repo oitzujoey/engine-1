@@ -1,11 +1,14 @@
 #include "lua_sqlite.h"
 #include <stdio.h>
 #include <string.h>
+#include <lauxlib.h>
 #include "log.h"
 #include "../sqlite/sqlite3.h"
 #include "vfs.h"
 #include "str4.h"
 #include "arena.h"
+
+
 
 int l_sqlite_open(lua_State *l) {
 	int e = ERR_OK;
@@ -57,6 +60,9 @@ int l_sqlite_open(lua_State *l) {
 	sqlite3 **dbContainer = lua_newuserdata(l, sizeof(sqlite3 *));
 	*dbContainer = db;
 
+	(void) luaL_getmetatable(l, "sqlite");
+	(void) lua_setmetatable(l, -2);
+
 	e = stringArena.quit(stringArena.context);
 	if (e) goto cleanup;
 
@@ -91,7 +97,8 @@ int l_sqlite_exec(lua_State *l) {
 			lua_error(l);
 		}
 	}
-	if (!lua_isuserdata(l, 1)) {
+	sqlite3 **dbContainer = luaL_checkudata(l, 1, "sqlite");
+	if (dbContainer == NULL) {
 		error("Database must be a database object.", "");
 		lua_error(l);
 	}
@@ -99,7 +106,6 @@ int l_sqlite_exec(lua_State *l) {
 		error("SQL query must be a string.", "");
 		lua_error(l);
 	}
-	sqlite3 **dbContainer = lua_touserdata(l, 1);
 	size_t query_c_length;
 	const char *query_c = lua_tolstring(l, 2, &query_c_length);
 
@@ -211,11 +217,11 @@ int l_sqlite_close(lua_State *l) {
 		error("Requires 1 argument: database", "");
 		lua_error(l);
 	}
-	if (!lua_isuserdata(l, 1)) {
+	sqlite3 **dbContainer = luaL_checkudata(l, 1, "sqlite");
+	if (dbContainer == NULL) {
 		error("Database must be a database object.", "");
 		lua_error(l);
 	}
-	sqlite3 **dbContainer = lua_touserdata(l, 1);
 
 	int sqlite_e = sqlite3_close(*dbContainer);
 	if (sqlite_e != SQLITE_OK){

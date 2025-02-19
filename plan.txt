@@ -966,9 +966,9 @@ I don't I need to bother with transactions because I'm only doing updates to one
 
 
 Stuff I need to add before public release:
-    Database
-    Authentication
     Lighting? -- Probably not. No light would probably make the world show up better.
+    Better textures
+    Final package
 
 Stuff I need to document:
     Rmsh & script
