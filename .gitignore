@@ -26,3 +26,5 @@ build
 *.out
 .*
 *.db-journal
+secrets.db
+identity.cfg
