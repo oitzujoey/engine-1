@@ -100,6 +100,7 @@ static int snetwork_connect(ENetEvent event, lua_State *luaState) {
 	error = lua_pcall(luaState, 1, 0, 0);
 	SDL_RemoveTimer(timerId);
 	if (error) {
+		lua_sandbox_handleError(luaState);
 		error("Lua function \"%s\" exited with error %s", luaTimeout.functionName, luaError[error]);
 		error = ERR_CRITICAL;
 		goto cleanup_l;
@@ -210,6 +211,7 @@ static int snetwork_disconnect(ENetEvent event, lua_State *luaState) {
 	error = lua_pcall(luaState, 1, 0, 0);
 	SDL_RemoveTimer(timerId);
 	if (error) {
+		lua_sandbox_handleError(luaState);
 		error("Lua function \"%s\" exited with error %s", luaTimeout.functionName, luaError[error]);
 		error = ERR_CRITICAL;
 		goto cleanup_l;

@@ -129,6 +129,7 @@ int input_execMousemotionBind(SDL_Event *event, lua_State *luaState) {
 
 		e = lua_pcall(luaState, 1, 0, 0);
 		if (e) {
+			lua_sandbox_handleError(luaState);
 			error("Lua function \"%s\" exited with error %s", g_keybinds.mouseMotionCallbackName, luaError[error]);
 			goto cleanup;
 		}

@@ -111,6 +111,7 @@ static int l_lua_sandbox_include(lua_State *luaState) {
 	
 	error = lua_pcall(luaState, 0, 0, 0);
 	if (error) {
+		lua_sandbox_handleError(luaState);
 		error("Initial run of Lua exited with error %s", luaError[error]);
 		lua_error(luaState);
 	}
@@ -146,6 +147,7 @@ int lua_runFunction(lua_State *luaState, const char *functionName, uint32_t time
 	// lua_call(luaState, 0, 0);
 	SDL_RemoveTimer(timerId);
 	if (error) {
+		lua_sandbox_handleError(luaState);
 		error("Lua function \"%s\" exited with error %s", luaTimeout.functionName, luaError[error]);
 		error = ERR_CRITICAL;
 		goto cleanup_l;
@@ -165,6 +167,12 @@ void lua_sandbox_addFunctions(lua_State **Lua, luaCFunc_t *cfuncs) {
 		lua_pushcfunction(*Lua, cfuncs[i].func);
 		lua_setglobal(*Lua, cfuncs[i].name);
 	}
+}
+
+int lua_sandbox_handleError(lua_State *l) {
+	int e = ERR_OK;
+	puts(lua_tostring(l, -1));
+	return e;
 }
 
 int lua_sandbox_init(lua_State **Lua, const char *filename) {
@@ -220,7 +228,8 @@ int lua_sandbox_init(lua_State **Lua, const char *filename) {
 	
 	error = lua_pcall(*Lua, 0, 0, 0);
 	if (error) {
-		log_error(__func__, "Initial run of Lua exited with error %s", luaError[error]);
+		lua_sandbox_handleError(*Lua);
+		error("Initial run of Lua exited with error %s", luaError[error]);
 		error = ERR_CRITICAL;
 		return ERR_GENERIC;
 	}
