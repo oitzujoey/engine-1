@@ -46,8 +46,8 @@ function server_processEvents(events, client_index)
 		local c = event.command
 		local d = event.data
 		if c == "change box color" then
-			local occupied, box_index = isOccupied(d.position)
-			if occupied then
+			local box_index = getBoxEntry(d.position)
+			if box_index then
 				local c = d.color
 				local p = d.position
 				local x = p.x
@@ -72,19 +72,13 @@ function server_processEvents(events, client_index)
 				-- Enable physics for box above. We could do all boxes above, but I noticed that the boxes don't move until
 				-- the box below them moves entirely out of the way, meaning that the box above doesn't move immediately,
 				-- `needsUpdate` is set to false, and the box ends up *never* moving.
-				local snappedPosition = snapToGrid(d.start_position)
-				snappedPosition.z = snappedPosition.z + g_gridSpacing
-				local above_box_index = getBoxEntry(snappedPosition)
-				if above_box_index then
-					g_boxes[above_box_index].needsUpdate = true
-				end
+				updateNeighborBoxes(d.start_position)
 
 				do -- Update database
 					local id = g_boxes[box_index].id
-					local nx = d.end_position.x
-					local ny = d.end_position.y
-					local nz = d.end_position.z
-					sqlite_exec(g_db, "UPDATE boxes SET x = "..nx..", y = "..ny..", z = "..nz.." WHERE id == "..id..";")
+					local n = snapToGrid(d.end_position)
+					n.z = n.z + g_backOff
+					sqlite_exec(g_db, "UPDATE boxes SET x = "..n.x..", y = "..n.y..", z = "..n.z.." WHERE id == "..id..";")
 				end
 			end
 		else
@@ -112,7 +106,15 @@ function loadBoxes()
 		local x = boxDescriptor.x
 		local y = boxDescriptor.y
 		local z = boxDescriptor.z
-		createBox(boxDescriptor.id, {x=x, y=y, z=z}, boxDescriptor.color)
+		local position = {x=x, y=y, z=z}
+		createBox(boxDescriptor.id, position, boxDescriptor.color)
+	end
+	for i = 1,boxDescriptors_length,1 do
+		if checkIfBoxNeedsUpdate(g_boxes[i].position) then
+			local p = g_boxes[i].position
+			puts("Update: "..toString(p.x).." "..toString(p.y).." "..toString(p.z))
+			g_boxes[i].needsUpdate = true
+		end
 	end
 end
 

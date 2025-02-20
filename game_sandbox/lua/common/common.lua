@@ -84,6 +84,10 @@ function vec3_equal(a, b)
 	return a.x==b.x and a.y==b.y and a.z==b.z
 end
 
+function vec3_copy(v)
+	return {x=v.x, y=v.y, z=v.z}
+end
+
 function aaToQuat(axisAngle)
 	local angle = axisAngle.w
 	local w_part = cos(angle/2)
@@ -409,9 +413,65 @@ function moveBox(box_index, newPosition, oldPosition)
 	return true
 end
 
+function checkIfBoxNeedsUpdate(position)
+	local centerPosition = snapToGrid(position)
+	-- Doubt these are the correct directions. What is important is that they are all different cardinal directions.
+	local d = vec3_copy(centerPosition)
+	d.z = d.z - g_gridSpacing
+	local n = vec3_copy(centerPosition)
+	n.x = n.x + g_gridSpacing
+	local s = vec3_copy(centerPosition)
+	s.x = s.x - g_gridSpacing
+	local e = vec3_copy(centerPosition)
+	e.y = e.y + g_gridSpacing
+	local w = vec3_copy(centerPosition)
+	w.y = w.y - g_gridSpacing
+	local directions = {n, s, e, w}
+	local directions_length = #directions
+	local occupied, _ = isOccupied(d)
+	if occupied then return false end
+	local box_count = 0
+	for i = 1,directions_length,1 do
+		local direction = directions[i]
+		local box_index = getBoxEntry(direction)
+		if box_index then
+			box_count = box_count + 1
+		end
+	end
+	return box_count < 3
+end
+
+function updateNeighborBoxes(position)
+	local centerPosition = snapToGrid(position)
+	-- Doubt these are the correct directions. What is important is that they are all different cardinal directions.
+	local u = vec3_copy(centerPosition)
+	u.z = u.z + g_gridSpacing
+	local n = vec3_copy(centerPosition)
+	n.x = n.x + g_gridSpacing
+	local s = vec3_copy(centerPosition)
+	s.x = s.x - g_gridSpacing
+	local e = vec3_copy(centerPosition)
+	e.y = e.y + g_gridSpacing
+	local w = vec3_copy(centerPosition)
+	w.y = w.y - g_gridSpacing
+	local directions = {u, n, s, e, w}
+	local directions_length = #directions
+	local box_count = 0
+	for i = 1,directions_length,1 do
+		local direction = directions[i]
+		if checkIfBoxNeedsUpdate(direction) then
+			local box_index = getBoxEntry(direction)
+			if box_index then
+				g_boxes[box_index].needsUpdate = true
+			end
+		end
+	end
+end
+
 function processBoxes(boxes)
 	for i = 1,g_boxes_length,1 do
 		if boxes[i].needsUpdate then
+			puts("Update: "..toString(boxes[i].position.x).." "..toString(boxes[i].position.y).." "..toString(boxes[i].position.z))
 			boxes[i].velocity.z = boxes[i].velocity.z + G_GRAVITY
 			local oldPosition = boxes[i].position
 			boxes[i] = boxMoveAndCollide(boxes[i])
@@ -421,20 +481,13 @@ function processBoxes(boxes)
 			end
 			local moved = moveBox(i, newPosition, oldPosition)
 			if moved then
-				-- Enable physics for box above.
-				local snappedPosition = snapToGrid(oldPosition)
-				snappedPosition.z = snappedPosition.z + g_gridSpacing
-				local above_box_index = getBoxEntry(snappedPosition)
-				if above_box_index then
-					g_boxes[above_box_index].needsUpdate = true
-				end
+				updateNeighborBoxes(oldPosition)
 			end
 			if G_SERVER and moved then
 				local id = boxes[i].id
-				local nx = newPosition.x
-				local ny = newPosition.y
-				local nz = newPosition.z
-				sqlite_exec(g_db, "UPDATE boxes SET x = "..nx..", y = "..ny..", z = "..nz.." WHERE id == "..id..";")
+				local n = snapToGrid(newPosition)
+				n.z = n.z + g_backOff
+				sqlite_exec(g_db, "UPDATE boxes SET x = "..n.x..", y = "..n.y..", z = "..n.z.." WHERE id == "..id..";")
 			end
 			entity_setPosition(boxes[i].entity, boxes[i].position)
 		end
@@ -450,7 +503,7 @@ function createBox(id, position, materialName)
 	box.id = id
 	box.entity = boxEntity
 	-- Enable gravity.
-	box.needsUpdate = true
+	box.needsUpdate = false
 
 	entity_setScale(boxEntity, g_boxes_scale)
 	box.position = position

@@ -55,15 +55,7 @@ function processEvents(events)
 			g_boxes[box_index].needsUpdate = true
 			entity_setPosition(g_boxes[box_index].entity, g_boxes[box_index].position)
 
-			-- Enable physics for box above. We could do all boxes above, but I noticed that the boxes don't move until
-			-- the box below them moves entirely out of the way, meaning that the box above doesn't move immediately,
-			-- `needsUpdate` is set to false, and the box ends up *never* moving.
-			local snappedPosition = snapToGrid(d.start_position)
-			snappedPosition.z = snappedPosition.z + g_gridSpacing
-			local above_box_index = getBoxEntry(snappedPosition)
-			if above_box_index then
-				g_boxes[above_box_index].needsUpdate = true
-			end
+			updateNeighborBoxes(d.start_position)
 		else
 			warning("processEvents", "Unrecognized event \""..c.."\"")
 		end
@@ -71,6 +63,15 @@ function processEvents(events)
 	if createdBoxes then
 		clientState.boxesCreated = true
 		g_initialBoxesCreated = true
+		local boxes_length = #g_boxes
+		for i = 1,boxes_length,1 do
+			local p = g_boxes[i].position
+			puts("Check: "..toString(p.x).." "..toString(p.y).." "..toString(p.z))
+			if checkIfBoxNeedsUpdate(p) then
+				puts("Update: "..toString(p.x).." "..toString(p.y).." "..toString(p.z))
+				g_boxes[i].needsUpdate = true
+			end
+		end
 	end
 end
 
@@ -105,17 +106,17 @@ function startup()
 		return material, e
 	end
 
-	redMaterial, error = loadMaterial("red")
-	greenMaterial, error = loadMaterial("green")
-	blueMaterial, error = loadMaterial("blue")
-	whiteMaterial, error = loadMaterial("white")
-	blackMaterial, error = loadMaterial("black")
-	cyanMaterial, error = loadMaterial("cyan")
-	magentaMaterial, error = loadMaterial("magenta")
-	yellowMaterial, error = loadMaterial("yellow")
-	clearMaterial, error = loadMaterial("clear")
+	redMaterial, e = loadMaterial("red")
+	greenMaterial, e = loadMaterial("green")
+	blueMaterial, e = loadMaterial("blue")
+	whiteMaterial, e = loadMaterial("white")
+	blackMaterial, e = loadMaterial("black")
+	cyanMaterial, e = loadMaterial("cyan")
+	magentaMaterial, e = loadMaterial("magenta")
+	yellowMaterial, e = loadMaterial("yellow")
+	clearMaterial, e = loadMaterial("clear")
 
-	cardboardBoxMaterial, error = loadTexture("box")
+	cardboardBoxMaterial, e = loadTexture("box")
 
 	-- World box
 	local sandboxModel, e = mesh_load("blender/sandbox")
@@ -145,11 +146,11 @@ function startup()
 	e = model_linkDefaultMaterial(planeModel, groundMaterial)
 	if e ~= 0 then quit() end
 
-	g_cursorMaterial, error = loadTexture("cursor")
+	g_cursorMaterial, e = loadTexture("cursor")
 	g_cursorEntity = modelEntity_create({x=0, y=0, z=0}, {w=1, x=0, y=0, z=0}, g_boxes_scale * g_cursorScale)
 	e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
 
-	g_selectionMaterial, error = loadTexture("selection")
+	g_selectionMaterial, e = loadTexture("selection")
 
 	-- a
 	keys_createFullBind("k_97", "key_strafeLeft", "key_strafeLeft_d", "key_strafeLeft_u")
@@ -247,7 +248,6 @@ function main()
 	local e
 
 	if not g_authenticated then
-		info("startup", "username: "..g_username)
 		clientState.username = g_username
 		clientState.password = g_password
 	end
