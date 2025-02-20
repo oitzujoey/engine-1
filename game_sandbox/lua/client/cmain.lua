@@ -268,7 +268,7 @@ function mainGame()
 	-- Move box
 	if g_selectCube then
 		g_selectCube = false
-		local occupied, _ = isOccupied(cursorPosition)
+		local occupied = getBoxEntry(cursorPosition)
 		if g_selectedPosition and not occupied then
 			e = modelEntity_delete(g_selectionEntity)
 			if e ~= 0 then quit() end
@@ -276,6 +276,12 @@ function mainGame()
 							 {start_position=g_selectedPosition,
 							  end_position={x=cursorPosition.x, y=cursorPosition.y, z=cursorPosition.z + g_backOff}})
 			g_selectedPosition = nil
+
+			e = modelEntity_delete(g_cursorEntity)
+			if e ~= 0 then quit() end
+			g_cursorEntity = modelEntity_create(cursorPosition, {w=1, x=0, y=0, z=0}, g_boxes_scale * g_cursorScale)
+			e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
+			if e ~= 0 then quit() end
 		elseif not g_selectedPosition and occupied then
 			g_selectedPosition = cursorPosition
 			g_selectionEntity = modelEntity_create(g_selectedPosition,
@@ -300,7 +306,12 @@ function mainGame()
 			entity_setPosition(g_cursorEntity, cursorPosition)
 		else
 			g_cursorEntity = modelEntity_create(cursorPosition, {w=1, x=0, y=0, z=0}, g_boxes_scale * g_cursorScale)
-			e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
+			if g_selectedPosition then
+				e = entity_linkMaterial(g_cursorEntity, g_selectionMaterial)
+			else
+				e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
+			end
+			if e ~= 0 then quit() end
 		end
 	end
 		
