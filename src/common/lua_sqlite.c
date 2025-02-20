@@ -22,7 +22,27 @@ int l_sqlite_open(lua_State *l) {
 		error("Path to database must be a string.", "");
 		lua_error(l);
 	}
-	const char *dbName_c = lua_tostring(l, 1);
+	size_t dbName_c_length;
+	const char *dbName_c = lua_tolstring(l, 1, &dbName_c_length);
+	bool invalid = false;
+	for (size_t i = 0; i < dbName_c_length; i++) {
+		const char character = dbName_c[i];
+		if (character == '_'
+		    || ('0' <= character && character <= '9')
+		    || ('a' <= character && character <= 'z')
+		    || ('A' <= character && character <= 'Z')) {
+			// Good!
+		}
+		else {
+			invalid = true;
+		}
+	}
+	if (invalid) {
+		error("Failed to open database. \"%s\" is an invalid database name. Only English alphanumeric and '_' characters are allowed.",
+		      dbName_c);
+		e = ERR_GENERIC;
+		goto cleanup;
+	}
 
 	Allocator stringArena;
 	e = allocator_create_stdlibArena(&stringArena);
@@ -31,7 +51,7 @@ int l_sqlite_open(lua_State *l) {
 		goto cleanup;
 	}
 	Str4 path = str4_create(&stringArena);
-	Str4 dbName = str4_createConstant((uint8_t *) dbName_c, strlen(dbName_c));
+	Str4 dbName = str4_createConstant((uint8_t *) dbName_c, dbName_c_length);
 	Str4 slash = STR4("/");
 	Str4 extension = STR4(".db");
 	(void) str4_append(&path, &g_workspace);
@@ -66,7 +86,11 @@ int l_sqlite_open(lua_State *l) {
 	e = stringArena.quit(stringArena.context);
 	if (e) goto cleanup;
 
- cleanup: return 1;
+ cleanup:
+	if (e) {
+		lua_error(l);
+	}
+	return 1;
 }
 
 

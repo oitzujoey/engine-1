@@ -979,6 +979,8 @@ Custom data for each package, server:
 Stuff I need to add before public release:
     Final package
     `sqlite_open` database name sanitation
+    Windows test
+    Multiple architecture test
 
 Stuff I need to document:
     Rmsh & script
