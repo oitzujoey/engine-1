@@ -7,6 +7,7 @@
 extern luaCFunc_t luaCommonFunctions[];
 
 int l_common_random(lua_State *l);
+int l_common_sqrt(lua_State *l);
 int l_common_abs(lua_State *l);
 int l_common_round(lua_State *l);
 int l_common_cos(lua_State *l);

@@ -80,6 +80,14 @@ function vec3_norm2(a)
 	return a.x*a.x + a.y*a.y + a.z*a.z
 end
 
+function vec3_norm(a)
+	return sqrt(a.x*a.x + a.y*a.y + a.z*a.z)
+end
+
+function vec3_normalize(a)
+	return vec3_scale(a, 1.0/vec3_norm(a))
+end
+
 function vec3_equal(a, b)
 	return a.x==b.x and a.y==b.y and a.z==b.z
 end

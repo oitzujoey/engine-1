@@ -962,13 +962,23 @@ And obviously I can't commit this table. :)
 I don't I need to bother with transactions because I'm only doing updates to one row at a time.
 
 
+I will need a loading screen. During that time I must inhibit client input.
+
+I believe the reason that download is so long is because I have so much data I am sending as Lua objects over Enet as UDP. I believe the reason the client still updates while it is downloading is because ENet breaks up the massive message into smaller packets, sends them over a period of time (the waiting time) and reassembles the message on the client. This means that ENet has full control over the downloading delay, and I can't show progress.
+
+Haha, I can make the loading screen a cube with a texture that says "loading..." on it. Moving the mouse rotates the cube. I'm impressed that putting some thought into the loading screen actually resulted in an interesting idea. I thought I would just get "show loading message on screen" like I originally wanted.
 
 
+
+
+
+Custom data for each package, server:
+    identity.cfg
+    client.cfg
 
 Stuff I need to add before public release:
-    Lighting? -- Probably not. No light would probably make the world show up better.
-    Better textures
     Final package
+    `sqlite_open` database name sanitation
 
 Stuff I need to document:
     Rmsh & script
@@ -977,6 +987,7 @@ Stuff I need to document:
     All Lua functions
     All cvars and console language
     Key binding
+    SQLite bindings
 
 Stuff I need to add:
     Collision detection

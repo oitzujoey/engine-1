@@ -20,6 +20,7 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_cos,              .name = "cos"},
 	{.func = l_common_round,            .name = "round"},
 	{.func = l_common_abs,              .name = "abs"},
+	{.func = l_common_sqrt,             .name = "sqrt"},
 	{.func = l_common_random,           .name = "random"},
 	{.func = l_log_info,                .name = "info"},
 	{.func = l_log_warning,             .name = "warning"},
@@ -59,6 +60,40 @@ int l_common_random(lua_State *l) {
 	}
 
 	(void) lua_pushinteger(l, random());
+
+	return 1;
+}
+
+int l_common_sqrt(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 1) {
+		error("`sqrt` requires 1 argument", "");
+		lua_error(l);
+	}
+
+	if (lua_isinteger(l, 1)) {
+		lua_Integer s = lua_tointeger(l, 1);
+		lua_Number n;
+#ifdef DOUBLE_VEC
+		n = sqrt(s);
+#else
+		n = sqrtf(s);
+#endif
+		(void) lua_pushnumber(l, n);
+	}
+	else if (lua_isnumber(l, 1)) {
+		vec_t s = lua_tonumber(l, 1);
+#ifdef DOUBLE_VEC
+		s = sqrt(s);
+#else
+		s = sqrtf(s);
+#endif
+		(void) lua_pushnumber(l, s);
+	}
+	else {
+		error("Argument of `sqrt` must be a number.", "");
+		lua_error(l);
+	}
 
 	return 1;
 }

@@ -116,7 +116,6 @@ function startup()
 	yellowMaterial, e = loadMaterial("yellow")
 	clearMaterial, e = loadMaterial("clear")
 
-	cardboardBoxMaterial, e = loadTexture("box")
 
 	-- World box
 	local sandboxModel, e = mesh_load("blender/sandbox")
@@ -151,6 +150,8 @@ function startup()
 	e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
 
 	g_selectionMaterial, e = loadTexture("selection")
+
+	g_loadingMaterial, e = loadTexture("loading")
 
 	-- a
 	keys_createFullBind("k_97", "key_strafeLeft", "key_strafeLeft_d", "key_strafeLeft_u")
@@ -242,22 +243,14 @@ function startup()
 	g_authenticated = false
 
 	info("startup", "Starting game")
+
+	g_loadingScreen = aaToQuat({w=3*G_PI/4, x=0, y=0, z=1})
+	g_loadingEntity = modelEntity_create({x=0, y=0, z=75}, g_loadingScreen, g_boxes_scale)
+	e = entity_linkMaterial(g_loadingEntity, g_loadingMaterial)
 end
 
-function main()
+function mainGame()
 	local e
-
-	if not g_authenticated then
-		clientState.username = g_username
-		clientState.password = g_password
-	end
-
-	local messages = serverState
-	local messages_length = #messages
-	for messages_index = 1,messages_length,1 do
-		processEvents(messages[messages_index].events)
-	end
-
 
 	-- Box manipulation
 
@@ -372,6 +365,60 @@ function main()
 
 
 	processBoxes(g_boxes)
+end
+
+function loadingScreen()
+	local scale = 3.0
+	local angleVector = {x=0.0, y=0.0, z=0.0}
+	if g_mouse.delta_x then
+		angleVector.x = scale*g_mouse.delta_x/1000.0
+	end
+	if g_mouse.delta_y then
+		angleVector.y = scale*g_mouse.delta_y/1000.0
+	end
+	local angle = vec3_norm(angleVector)
+	local axisAngle = vec3_scale(angleVector, 1.0/angle)
+	axisAngle.w = angle
+	if angle ~= 0 then
+		g_loadingScreen = hamiltonProduct(g_loadingScreen, aaToQuat(axisAngle))
+		puts(toString(g_loadingScreen.w))
+		puts(toString(g_loadingScreen.x))
+		puts(toString(g_loadingScreen.y))
+		puts(toString(g_loadingScreen.z))
+		entity_setOrientation(g_loadingEntity, g_loadingScreen)
+	end
+end
+
+g_wasLoading = true
+function main()
+	local e
+
+	if not g_authenticated then
+		clientState.username = g_username
+		clientState.password = g_password
+	end
+
+	local messages = serverState
+	local messages_length = #messages
+	for messages_index = 1,messages_length,1 do
+		processEvents(messages[messages_index].events)
+	end
+
+	if g_initialBoxesCreated then
+		if g_wasLoading then
+			g_wasLoading = false
+			
+			-- Do final game setup:
+
+			-- Delete loading cube.
+			e = modelEntity_delete(g_loadingEntity)
+			if e ~= 0 then quit() end
+		end
+
+		mainGame()
+	else -- Loading screen.
+		loadingScreen()
+	end
 
 	client_sendQueuedEvents()
 
