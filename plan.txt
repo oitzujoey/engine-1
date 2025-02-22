@@ -966,7 +966,7 @@ I will need a loading screen. During that time I must inhibit client input.
 
 I believe the reason that download is so long is because I have so much data I am sending as Lua objects over Enet as UDP. I believe the reason the client still updates while it is downloading is because ENet breaks up the massive message into smaller packets, sends them over a period of time (the waiting time) and reassembles the message on the client. This means that ENet has full control over the downloading delay, and I can't show progress.
 
-Haha, I can make the loading screen a cube with a texture that says "loading..." on it. Moving the mouse rotates the cube. I'm impressed that putting some thought into the loading screen actually resulted in an interesting idea. I thought I would just get "show loading message on screen" like I originally wanted.
+Haha, I can make the loading screen a cube with a texture that says "loading..." on it. Moving the mouse rotates the cube. I'm surprised that putting some thought into the loading screen actually resulted in an interesting idea. I thought I would just get "show loading message on screen" like I originally wanted.
 
 
 
@@ -977,8 +977,11 @@ Custom data for each package, server:
     client.cfg
 
 Stuff I need to add before public release:
+    Make movement mostly framerate independent.
+    Add more textures?
+    Sort transparent models?
     Windows test
-    Multiple architecture test
+    Multiple architecture test?
     Final package
 
 Stuff I need to document:

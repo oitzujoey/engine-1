@@ -46,6 +46,14 @@ void vec3_subtract(vec3_t *result, vec3_t *a, vec3_t *b) {
 	(*result)[2] = (*a)[2] - (*b)[2];
 }
 
+vec_t vec3_norm2(const vec3_t *v) {
+	return (*v)[0]*(*v)[0] + (*v)[1]*(*v)[1] + (*v)[2]*(*v)[2];
+}
+
+vec_t vec3_norm(const vec3_t *v) {
+	return sqrt((*v)[0]*(*v)[0] + (*v)[1]*(*v)[1] + (*v)[2]*(*v)[2]);
+}
+
 int vec3_normalize(vec3_t *v) {
 	int error = ERR_OK;
 

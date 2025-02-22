@@ -10,6 +10,8 @@ void vec3_dotProduct(vec_t *result, vec3_t *a, vec3_t *b);
 void vec3_crossProduct(vec3_t *result, vec3_t *a, vec3_t *b);
 void vec3_add(vec3_t *result, vec3_t *a, vec3_t *b);
 void vec3_subtract(vec3_t *result, vec3_t *a, vec3_t *b);
+vec_t vec3_norm2(const vec3_t *v);
+vec_t vec3_norm(const vec3_t *v);
 int vec3_normalize(vec3_t *v);
 
 void quat_copy(quat_t *out, quat_t *in);

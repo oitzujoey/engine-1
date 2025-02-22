@@ -2,9 +2,9 @@
 #include "render.h"
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
-#include <math.h>
 #include "../common/common.h"
 #include "../common/log.h"
 #include "../common/entity.h"
@@ -601,6 +601,21 @@ int renderRenderObjects(array_t *renderObjects) {
 		if (e) return e;
 		renderRenderObject(renderObject);
 	}
+	return ERR_OK;
+}
+
+int renderObject_compare(const void *a, const void *b) {
+	const renderObject_t *roa = *((const renderObject_t **) a);
+	const renderObject_t *rob = *((const renderObject_t **) b);
+	// The array is traversed front to back when rendering. We want farther objects to be drawn first, so farther
+	// objects should appear first in the array. So a larger magnitude is counted as smaller.
+	const vec_t result = vec3_norm2(&rob->position) - vec3_norm2(&roa->position);
+	// Cast to integer.
+	return (result > 0
+	        ? 1
+	        : result < 0
+	        ? -1
+	        : 0);
 }
 
 int render(entity_t *entity) {
@@ -618,6 +633,12 @@ int render(entity_t *entity) {
 
 	// Render world entity.
 	e = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}}, 1.0, -1);
+
+	// Sort transparent models.
+	(void) qsort(g_transparencyRenderObjects.elements,
+	             g_transparencyRenderObjects.elements_length,
+	             g_transparencyRenderObjects.element_size,
+	             renderObject_compare);
 
 	// Render transparent models.
 	glEnable(GL_BLEND);
