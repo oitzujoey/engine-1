@@ -969,6 +969,11 @@ I believe the reason that download is so long is because I have so much data I a
 Haha, I can make the loading screen a cube with a texture that says "loading..." on it. Moving the mouse rotates the cube. I'm surprised that putting some thought into the loading screen actually resulted in an interesting idea. I thought I would just get "show loading message on screen" like I originally wanted.
 
 
+The depth sort makes it so that large objects don't get sorted properly. I think I need a way to say "draw this in the order I created it" and a way to say "sort this by depth".
+
+Now that sorting is working, the game feels slower.
+
+
 
 
 

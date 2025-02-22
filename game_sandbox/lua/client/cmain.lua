@@ -108,14 +108,25 @@ function startup()
 	end
 
 	redMaterial, e = loadMaterial("red")
+	if e ~= 0 then quit() end
 	greenMaterial, e = loadMaterial("green")
+	if e ~= 0 then quit() end
 	blueMaterial, e = loadMaterial("blue")
+	if e ~= 0 then quit() end
 	whiteMaterial, e = loadMaterial("white")
+	if e ~= 0 then quit() end
 	blackMaterial, e = loadMaterial("black")
+	if e ~= 0 then quit() end
 	cyanMaterial, e = loadMaterial("cyan")
+	if e ~= 0 then quit() end
 	magentaMaterial, e = loadMaterial("magenta")
+	if e ~= 0 then quit() end
 	yellowMaterial, e = loadMaterial("yellow")
+	if e ~= 0 then quit() end
 	clearMaterial, e = loadMaterial("clear")
+	if e ~= 0 then quit() end
+	-- e = material_setCull(clearMaterial, false)
+	-- if e ~= 0 then quit() end
 
 
 	-- World box
@@ -129,6 +140,7 @@ function startup()
 	entity_setScale(sandboxEntity, 5*g_boundingBoxRadius)
 	entity_setOrientation(sandboxEntity, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
 	local sandboxMaterial, e = loadTexture("lava")
+	material_setDepthSort(sandboxMaterial, false)
 	e = model_linkDefaultMaterial(sandboxModel, sandboxMaterial)
 
 	-- Ground
@@ -136,6 +148,7 @@ function startup()
 	if e ~= 0 then quit() end
 	g_groundMaterial, e = loadTexture("floor")
 	if e ~= 0 then quit() end
+	material_setDepthSort(g_groundMaterial, false)
 
 	g_cursorMaterial, e = loadTexture("cursor")
 	if e ~= 0 then quit() end

@@ -308,6 +308,8 @@ typedef struct {
 #ifdef CLIENT
 	GLuint texture;
 	bool transparent;
+	bool depthSort;
+	bool cull;
 #else
 	// Make the compiler happy.
 	bool dummy;

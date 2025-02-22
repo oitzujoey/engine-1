@@ -44,6 +44,8 @@ void material_freeList(material_list_t *materialList) {
 static void material_init(material_t *material) {
 	material->texture = 0;
 	material->transparent = false;
+	material->depthSort = false;
+	material->cull = true;
 }
 
 // static void material_free(material_t *material) {
@@ -64,6 +66,7 @@ static int material_create(material_list_t *materialList, ptrdiff_t *materialInd
 	size_t lastIndex = materialList->materials_length - 1;
 	(void) material_init(&materialList->materials[lastIndex]);
 	materialList->materials[lastIndex].transparent = transparent;
+	materialList->materials[lastIndex].depthSort = transparent;  // sic.
 	(void) material_linkTexture(*materialList, lastIndex, textureIndex);
 
  cleanup:
@@ -225,7 +228,101 @@ int l_material_create(lua_State *luaState) {
 		lua_pushinteger(luaState, materialIndex);
 	}
 
-	lua_pushinteger(luaState, error);
+	(void) lua_pushinteger(luaState, e);
 
 	return 2;
+}
+
+int l_material_setDepthSort(lua_State *l) {
+	int e = ERR_OK;
+
+	GLuint textureIndex = 0;
+
+	if (lua_gettop(l) != 2) {
+		critical_error("Function requires 2 arguments.", "");
+		e = ERR_CRITICAL;
+		goto cleanup;
+	}
+
+	if (!lua_isinteger(l, 1)) {
+		critical_error("Argument 1 should be the material index, an integer, not a %s.", lua_typename(l, lua_type(l, -1)));
+		e = ERR_CRITICAL;
+		goto cleanup;
+	}
+
+	if (!lua_isinteger(l, 2) && !lua_isboolean(l, 2)) {
+		critical_error("Argument 2 should be an integer or a boolean, not a %s.", lua_typename(l, lua_type(l, -1)));
+		e = ERR_CRITICAL;
+		goto cleanup;
+	}
+
+	lua_Integer materialIndex = lua_tointeger(l, 1);
+	if (!material_indexExists(g_materialList, materialIndex)) {
+		error("Bad material index %i.", materialIndex);
+		e = ERR_GENERIC;
+		goto cleanup;
+	}
+	material_t *material = &g_materialList.materials[materialIndex];
+
+	bool doDepthSort;
+	if (lua_isinteger(l, 2)) {
+		doDepthSort = 0 != lua_tointeger(l, 2);
+	}
+	if (lua_isboolean(l, 2)) {
+		doDepthSort = lua_toboolean(l, 2);
+	}
+
+	material->depthSort = doDepthSort;
+
+ cleanup:
+	if (e >= ERR_CRITICAL) lua_error(l);
+	lua_pushinteger(l, e);
+	return 1;
+}
+
+int l_material_setCull(lua_State *l) {
+	int e = ERR_OK;
+
+	GLuint textureIndex = 0;
+
+	if (lua_gettop(l) != 2) {
+		critical_error("Function requires 2 arguments.", "");
+		e = ERR_CRITICAL;
+		goto cleanup;
+	}
+
+	if (!lua_isinteger(l, 1)) {
+		critical_error("Argument 1 should be the material index, an integer, not a %s.", lua_typename(l, lua_type(l, -1)));
+		e = ERR_CRITICAL;
+		goto cleanup;
+	}
+
+	if (!lua_isinteger(l, 2) && !lua_isboolean(l, 2)) {
+		critical_error("Argument 2 should be an integer or a boolean, not a %s.", lua_typename(l, lua_type(l, -1)));
+		e = ERR_CRITICAL;
+		goto cleanup;
+	}
+
+	lua_Integer materialIndex = lua_tointeger(l, 1);
+	if (!material_indexExists(g_materialList, materialIndex)) {
+		error("Bad material index %i.", materialIndex);
+		e = ERR_GENERIC;
+		goto cleanup;
+	}
+	material_t *material = &g_materialList.materials[materialIndex];
+
+	bool cull;
+	if (lua_isinteger(l, 2)) {
+		cull = 0 != lua_tointeger(l, 2);
+	}
+	if (lua_isboolean(l, 2)) {
+		cull = lua_toboolean(l, 2);
+	}
+
+	material->cull = cull;
+
+ cleanup:
+	if (e >= ERR_CRITICAL) lua_error(l);
+	lua_pushinteger(l, e);
+	return 1;
 }

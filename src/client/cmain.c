@@ -38,10 +38,9 @@ extern SDL_Window *g_window;
 extern material_list_t g_materialList;
 
 luaCFunc_t luaClientFunctions[] = {
-	// {.func = render,                .name = "render"},
-	// {.func = getInput,              .name = "getInput"},
-	// {.func = l_cnetwork_receive,    .name = "l_snetwork_receive"},
 	{.func = l_material_create,             .name = "material_create"},
+	{.func = l_material_setDepthSort,       .name = "material_setDepthSort"},
+	{.func = l_material_setCull,            .name = "material_setCull"},
 	{.func = l_model_linkDefaultMaterial,   .name = "model_linkDefaultMaterial"},
 	{.func = l_entity_linkMaterial,         .name = "entity_linkMaterial"},
 	{.func = NULL,                          .name = NULL}

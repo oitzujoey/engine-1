@@ -36,6 +36,7 @@ float g_points[] = {
 Allocator g_renderObjectArena;
 
 array_t g_transparencyRenderObjects;
+array_t g_sortedTransparencyRenderObjects;
 
 
 static const char *render_glGetErrorString(GLenum glError) {
@@ -200,8 +201,7 @@ int render_initOpenGL(void) {
 	
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-	
-	glEnable(GL_CULL_FACE);
+
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 
@@ -472,7 +472,12 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 			ro->material = material;
 			ro->shaderProgram = g_shaderProgram[0];
 
-			return array_push(&g_transparencyRenderObjects, &ro);
+			if (material->depthSort) {
+				return array_push(&g_sortedTransparencyRenderObjects, &ro);
+			}
+			else {
+				return array_push(&g_transparencyRenderObjects, &ro);
+			}
 		}
 		
 		/* Render */
@@ -588,8 +593,12 @@ void renderRenderObject(renderObject_t *renderObject) {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, renderObject->material->texture);
 	glBindVertexArray(g_vao);
+
+	if (renderObject->material->cull) glEnable(GL_CULL_FACE);
+
 	// glVertices_length is always a multiple of three.
 	glDrawArrays(GL_TRIANGLES, 0, renderObject->glVertices_length / 3);
+	glDisable(GL_CULL_FACE);
 }
 
 int renderRenderObjects(array_t *renderObjects) {
@@ -630,27 +639,34 @@ int render(entity_t *entity) {
 
 	e = allocator_create_stdlibArena(&g_renderObjectArena);
 	(void) array_init(&g_transparencyRenderObjects, &g_renderObjectArena, sizeof(renderObject_t *));
+	(void) array_init(&g_sortedTransparencyRenderObjects, &g_renderObjectArena, sizeof(renderObject_t *));
 
 	// Render world entity.
+	glEnable(GL_CULL_FACE);
 	e = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}}, 1.0, -1);
+	glDisable(GL_CULL_FACE);
 
-	// Sort transparent models.
-	(void) qsort(g_transparencyRenderObjects.elements,
-	             g_transparencyRenderObjects.elements_length,
-	             g_transparencyRenderObjects.element_size,
+	// Sort transparent models. I think this is expensive.
+	(void) qsort(g_sortedTransparencyRenderObjects.elements,
+	             g_sortedTransparencyRenderObjects.elements_length,
+	             g_sortedTransparencyRenderObjects.element_size,
 	             renderObject_compare);
 
 	// Render transparent models.
 	glEnable(GL_BLEND);
-	renderRenderObjects(&g_transparencyRenderObjects);
+	e = renderRenderObjects(&g_transparencyRenderObjects);
+	if (e) goto cleanup;
+	// Sorted is drawn on top of unsorted.
+	e = renderRenderObjects(&g_sortedTransparencyRenderObjects);
+	if (e) goto cleanup;
 	glDisable(GL_BLEND);
-
-	// Destroy renderObjects and the array that contains them.
-	e = g_renderObjectArena.quit(g_renderObjectArena.context);
 
 	/* Show */
 	
 	SDL_GL_SwapWindow(g_window);
-	
+
+ cleanup:
+	// Destroy renderObjects and the array that contains them.
+	e = g_renderObjectArena.quit(g_renderObjectArena.context);
 	return e;
 }
