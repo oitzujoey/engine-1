@@ -138,9 +138,6 @@ function startup()
 
 	g_cursorMaterial, e = loadTexture("cursor")
 	if e ~= 0 then quit() end
-	g_cursorEntity = modelEntity_create({x=0, y=0, z=0}, {w=1, x=0, y=0, z=0}, g_boxes_scale * g_cursorScale)
-	e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
-	if e ~= 0 then quit() end
 
 	g_selectionMaterial, e = loadTexture("selection")
 
@@ -422,6 +419,10 @@ function main()
 			entity_setPosition(planeEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2 + g_gridSpacing/2)})
 			entity_setOrientation(planeEntity, {w=1, x=1, y=0, z=0})
 			e = model_linkDefaultMaterial(g_planeModel, g_groundMaterial)
+			if e ~= 0 then quit() end
+
+			g_cursorEntity = modelEntity_create({x=0, y=0, z=0}, {w=1, x=0, y=0, z=0}, g_boxes_scale * g_cursorScale)
+			e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
 			if e ~= 0 then quit() end
 
 			-- Delete loading cube.
