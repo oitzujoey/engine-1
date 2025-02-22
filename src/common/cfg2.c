@@ -1629,7 +1629,7 @@ int cfg2_setVariable(cfg2_var_t *var, const char *value, lua_State *luaState, co
 			break;
 		case cfg2_var_type_vector:
 #ifdef DOUBLE_VEC
-			var1->vector = strtod(value, NULL);
+			var->vector = strtod(value, NULL);
 #else
 			var->vector = strtof(value, NULL);
 #endif

@@ -125,42 +125,35 @@ function startup()
 	if e ~= 0 then quit() end
 	e = entity_linkChild(sandboxEntity, sandboxModel)
 	if e ~= 0 then quit() end
-	entity_setScale(sandboxEntity, 10*g_boundingBoxRadius)
+	entity_setScale(sandboxEntity, 5*g_boundingBoxRadius)
 	entity_setOrientation(sandboxEntity, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
 	local sandboxMaterial, e = loadTexture("lava")
 	e = model_linkDefaultMaterial(sandboxModel, sandboxMaterial)
 
 	-- Ground
-	local planeModel, e = mesh_load("blender/plane")
+	g_planeModel, e = mesh_load("blender/plane")
 	if e ~= 0 then quit() end
-	local planeEntity, e = entity_createEntity(g_entity_type_model)
-	e = entity_linkChild(g_cameraEntity, planeEntity)
-	if e ~= 0 then quit() end
-	e = entity_linkChild(planeEntity, planeModel)
-	if e ~= 0 then quit() end
-	entity_setScale(planeEntity, g_boundingBoxRadius + g_gridSpacing/2)
-	entity_setPosition(planeEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2 + g_gridSpacing/2)})
-	entity_setOrientation(planeEntity, {w=1, x=1, y=0, z=0})
-	local groundMaterial, e = loadTexture("floor")
-	e = model_linkDefaultMaterial(planeModel, groundMaterial)
+	g_groundMaterial, e = loadTexture("floor")
 	if e ~= 0 then quit() end
 
 	g_cursorMaterial, e = loadTexture("cursor")
+	if e ~= 0 then quit() end
 	g_cursorEntity = modelEntity_create({x=0, y=0, z=0}, {w=1, x=0, y=0, z=0}, g_boxes_scale * g_cursorScale)
 	e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
+	if e ~= 0 then quit() end
 
 	g_selectionMaterial, e = loadTexture("selection")
 
 	g_loadingMaterial, e = loadTexture("loading")
 
 	-- a
-	keys_createFullBind("k_97", "key_strafeLeft", "key_strafeLeft_d", "key_strafeLeft_u")
+	keys_createFullBind("k_100", "key_strafeLeft", "key_strafeLeft_d", "key_strafeLeft_u")
 	-- d
-	keys_createFullBind("k_100", "key_strafeRight", "key_strafeRight_d", "key_strafeRight_u")
+	keys_createFullBind("k_97", "key_strafeRight", "key_strafeRight_d", "key_strafeRight_u")
 	-- w
-	keys_createFullBind("k_119", "key_forward",	"key_forward_d", "key_forward_u")
+	keys_createFullBind("k_119", "key_backward", "key_backward_d", "key_backward_u")
 	-- s
-	keys_createFullBind("k_115", "key_backward", "key_backward_d", "key_backward_u")
+	keys_createFullBind("k_115", "key_forward",	"key_forward_d", "key_forward_u")
 	-- Box colors
 	keys_createHalfBind("k_49", "key_color1", "key_color1_d")
 	keys_createHalfBind("k_50", "key_color2", "key_color2_d")
@@ -244,8 +237,8 @@ function startup()
 
 	info("startup", "Starting game")
 
-	g_loadingScreen = aaToQuat({w=3*G_PI/4, x=0, y=0, z=1})
-	g_loadingEntity = modelEntity_create({x=0, y=0, z=75}, g_loadingScreen, g_boxes_scale)
+	g_loadingScreen = aaToQuat({w=5*G_PI/4, x=0, y=0, z=1})
+	g_loadingEntity = modelEntity_create({x=0, y=0, z=-100}, g_loadingScreen, g_boxes_scale)
 	e = entity_linkMaterial(g_loadingEntity, g_loadingMaterial)
 end
 
@@ -351,7 +344,7 @@ function mainGame()
 	g_playerState.velocity = vec3_add(g_playerState.velocity, {x=yaw_x, y=yaw_y, z=0})
 
 	if (g_mouse.delta_y and g_mouse.delta_y ~= 0) then
-		g_playerState.euler.pitch = g_playerState.euler.pitch + g_mouse.delta_y/1000.0
+		g_playerState.euler.pitch = g_playerState.euler.pitch - g_mouse.delta_y/1000.0
 	end
 	if (g_mouse.delta_x and g_mouse.delta_x ~= 0) then
 		g_playerState.euler.yaw = g_playerState.euler.yaw + g_mouse.delta_x/1000.0
@@ -368,11 +361,11 @@ function mainGame()
 
 	-- Display self.
 	entity_setOrientation(g_worldEntity, {w=g_playerState.orientation.w,
-										  x=-g_playerState.orientation.x,
-										  y=-g_playerState.orientation.y,
-										  z=-g_playerState.orientation.z})
+	                                      x=-g_playerState.orientation.x,
+	                                      y=-g_playerState.orientation.y,
+	                                      z=-g_playerState.orientation.z})
 	entity_setPosition(g_cameraEntity,
-					   {x=-g_playerState.position.x, y=-g_playerState.position.y, z=-g_playerState.position.z})
+	                   {x=-g_playerState.position.x, y=-g_playerState.position.y, z=-g_playerState.position.z})
 
 
 	processBoxes(g_boxes)
@@ -420,6 +413,16 @@ function main()
 			g_wasLoading = false
 			
 			-- Do final game setup:
+			local planeEntity, e = entity_createEntity(g_entity_type_model)
+			e = entity_linkChild(g_cameraEntity, planeEntity)
+			if e ~= 0 then quit() end
+			e = entity_linkChild(planeEntity, g_planeModel)
+			if e ~= 0 then quit() end
+			entity_setScale(planeEntity, g_boundingBoxRadius + g_gridSpacing/2)
+			entity_setPosition(planeEntity, {x=0, y=0, z=-(g_boundingBoxRadius/2 + g_gridSpacing/2)})
+			entity_setOrientation(planeEntity, {w=1, x=1, y=0, z=0})
+			e = model_linkDefaultMaterial(g_planeModel, g_groundMaterial)
+			if e ~= 0 then quit() end
 
 			-- Delete loading cube.
 			e = modelEntity_delete(g_loadingEntity)

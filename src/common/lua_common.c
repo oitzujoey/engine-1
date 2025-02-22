@@ -59,7 +59,7 @@ int l_common_random(lua_State *l) {
 		lua_error(l);
 	}
 
-	(void) lua_pushinteger(l, random());
+	(void) lua_pushinteger(l, rand());
 
 	return 1;
 }

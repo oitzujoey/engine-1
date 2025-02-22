@@ -254,7 +254,7 @@ int render_initOpenGL(void) {
 		"uniform float scale;\n"
 		"out vec3 color;\n"
 		"out vec2 textureCoordinate;\n"
-		
+
 		"vec4 conjugate(vec4 a) {\n"
 		"  return vec4(\n"
 		"    -a.x,\n"
@@ -263,7 +263,7 @@ int render_initOpenGL(void) {
 		"    a.w\n"
 		"  );\n"
 		"}\n"
-		
+
 		"vec4 hamilton(vec4 a, vec4 b) {\n"
 		"  return vec4(\n"
 		"    a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,\n"
@@ -272,32 +272,36 @@ int render_initOpenGL(void) {
 		"    a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z\n"
 		"  );\n"
 		"}\n"
-		
+
 		"vec3 rotate(vec3 v, vec4 q) {\n"
 		"  vec4 v4 = vec4(v, 0);\n"
 		"  v4 = hamilton(hamilton(q, v4), conjugate(q));\n"
 		"  return vec3(v4.x, v4.y, v4.z);\n"
 		"}\n"
 
+		"float w = 11.0*screenHeight;"
+		"float h = 11.0;"
+		"float n = 11.0;"
+		"float f = 7500.0;"
 		"mat4 projectionMatrix = mat4("
-		"  3.0/screenHeight, 0.0, 0.0, 0.0,"
-		"  0.0, 3.0,  0.0,      0.0,"
-		"  0.0, 0.0,          -1.01, 2.01,"
-		"  0.0, 0.0,          -1.0, 0.0"
+		"  -2.0*n/w, 0.0, 0.0, 0.0,"
+		"  0.0, 2.0*n/h, 0.0, 0.0,"
+		"  0.0, 0.0, -(f+n)/(f-n), -1.0,"
+		"  0.0, 0.0, -2.0*f*n/(f-n), 0.0"
 		");"
-		
+
 		"void main() {\n"
 		"  vec3 vertex;\n"
 		"  vertex = rotate(scale * vp, orientation);\n"
 		"  vertex += position;\n"
-		"  vec4 glPosition = projectionMatrix * vec4(vertex, 1.0);"
-		"  gl_Position = glPosition;\n"
+		"  gl_Position = projectionMatrix * vec4(vertex, 1.0);\n"
+
 		"  float powerFactor = 1.01;"
 		"  float mixing = 0.5;"
-		"  color = (pow(powerFactor, -abs(glPosition.z))/powerFactor * (1.0 - mixing) + mixing) * rotate(normal, orientation);\n"
+		"  color = (pow(powerFactor, -abs(gl_Position.z))/powerFactor * (1.0 - mixing) + mixing) * rotate(normal, orientation);\n"
 		"  textureCoordinate = texCoord;\n"
 		"}\n";
-	
+
 	const char* fragmentShaderSource0 =
 		"#version 400\n"
 		"out vec4 frag_colour;"

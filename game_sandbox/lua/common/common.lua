@@ -23,7 +23,7 @@ g_materials = {}
 
 g_frame = 1
 
-g_cursorOffset = {x=0, y=0, z=100}
+g_cursorOffset = {x=0, y=0, z=-100}
 g_backOff = 0.001
 
 Vec3_xn = {x=-1, y=0, z=0}
