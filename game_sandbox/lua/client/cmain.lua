@@ -23,6 +23,7 @@ function client_sendQueuedEvents()
 	g_eventQueue = {}
 end
 
+g_initialBoxesToCreate = {}
 
 g_initialBoxesCreated = false
 function processEvents(events)
@@ -37,7 +38,7 @@ function processEvents(events)
 			createBox(nil, d.position, d.materialName)
 		elseif c == "create initial box" then
 			if not g_initialBoxesCreated then
-				createBox(nil, d.position, d.materialName)
+				push(g_initialBoxesToCreate, d)
 				createdBoxes = true
 			end
 		elseif c == "no initial boxes" then
@@ -410,6 +411,10 @@ function main()
 			g_wasLoading = false
 			
 			-- Do final game setup:
+
+			-- The order things are created in is important because my transparency is broken because I don't sort by z value.
+
+			-- Create ground.
 			local planeEntity, e = entity_createEntity(g_entity_type_model)
 			e = entity_linkChild(g_cameraEntity, planeEntity)
 			if e ~= 0 then quit() end
@@ -421,9 +426,20 @@ function main()
 			e = model_linkDefaultMaterial(g_planeModel, g_groundMaterial)
 			if e ~= 0 then quit() end
 
+			-- Create cursor.
 			g_cursorEntity = modelEntity_create({x=0, y=0, z=0}, {w=1, x=0, y=0, z=0}, g_boxes_scale * g_cursorScale)
 			e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
 			if e ~= 0 then quit() end
+
+			-- Create boxes.
+			do
+				local boxes_length = #g_initialBoxesToCreate
+				for box_index = 1,boxes_length,1 do
+					local boxDescriptor = g_initialBoxesToCreate[box_index]
+					createBox(nil, boxDescriptor.position, boxDescriptor.materialName)
+				end
+				g_initialBoxesToCreate = nil
+			end
 
 			-- Delete loading cube.
 			e = modelEntity_delete(g_loadingEntity)
