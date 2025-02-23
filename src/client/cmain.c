@@ -125,12 +125,7 @@ const cfg2_var_init_t g_clientVarInit[] = {
 
 static void main_housekeeping(lua_State *luaState) {
 	int error = ERR_CRITICAL;
-	
-    error = render(&g_entityList.entities[0]);
-    // if (error) {
-    //     goto cleanup_l;
-    // }
-    
+
     error = input_processSdlEvents(luaState);
 	if (error) {
 		goto cleanup_l;
@@ -156,6 +151,11 @@ static void main_housekeeping(lua_State *luaState) {
 	//     }
 	//     entity_printEntity(i);
 	// }
+
+    error = render(&g_entityList.entities[0]);
+    // if (error) {
+    //     goto cleanup_l;
+    // }
 
 	// SDL_Delay(8);
 	
@@ -460,9 +460,17 @@ int main (int argc, char *argv[]) {
     }
 	
 	// Run the main game.
-	
+
+	Uint64 performanceCounterValue = SDL_GetPerformanceCounter();
+	Uint64 performanceCounterValue_last;
 	while (!g_cfg2.quit) {
         main_housekeeping(luaState);
+
+		performanceCounterValue_last = performanceCounterValue;
+		performanceCounterValue = SDL_GetPerformanceCounter();
+		vec_t deltaT = (vec_t) (performanceCounterValue - performanceCounterValue_last) / (vec_t) SDL_GetPerformanceFrequency();
+		(void) lua_pushnumber(luaState, deltaT);
+		(void) lua_setglobal(luaState, MAIN_LUA_DELTAT_NAME);
 
         error = lua_runFunction(luaState, "main", MAIN_LUA_MAIN_TIMEOUT);
 		if (error) {

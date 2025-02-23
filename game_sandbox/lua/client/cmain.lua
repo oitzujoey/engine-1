@@ -466,6 +466,7 @@ function main()
 
 	client_sendQueuedEvents()
 
+	puts("FPS: "..toString(1/deltaT))
 	g_frame = g_frame + 1
 	g_mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
 end

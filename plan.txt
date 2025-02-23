@@ -984,7 +984,6 @@ Custom data for each package, server:
 Stuff I need to add before public release:
     Make movement mostly framerate independent.
     Add more textures?
-    Sort transparent models?
     Windows test
     Multiple architecture test?
     Final package

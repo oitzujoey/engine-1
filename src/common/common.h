@@ -71,6 +71,8 @@
 #define MAIN_LUA_MAIN_TIMEOUT       100
 #define MAIN_LUA_SHUTDOWN_TIMEOUT   1000
 
+#define MAIN_LUA_DELTAT_NAME "deltaT"
+
 extern int error;
 
 extern const cfg2_var_init_t g_commonVarInit[];

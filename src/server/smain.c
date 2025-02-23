@@ -395,10 +395,18 @@ int main(int argc, char *argv[]) {
 	
 	// Run the main game.
 	
+	Uint64 performanceCounterValue = SDL_GetPerformanceCounter();
+	Uint64 performanceCounterValue_last;
 	while (!g_cfg2.quit) {
 		proceed = false;
 
         main_housekeeping(luaState);
+
+		performanceCounterValue_last = performanceCounterValue;
+		performanceCounterValue = SDL_GetPerformanceCounter();
+		vec_t deltaT = (vec_t) (performanceCounterValue - performanceCounterValue_last) / (vec_t) SDL_GetPerformanceFrequency();
+		(void) lua_pushnumber(luaState, deltaT);
+		(void) lua_setglobal(luaState, MAIN_LUA_DELTAT_NAME);
 
 		error = lua_runFunction(luaState, "main", MAIN_LUA_MAIN_TIMEOUT);
 		if (error) {
