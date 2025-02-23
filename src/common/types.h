@@ -84,6 +84,8 @@ typedef struct {
 
 	// Rendering:
 #ifdef CLIENT
+	bool instanced;  // Enable GPU instancing.
+
 	// Add pure array of vertices and normals to save rendering time. The server should never need this.
 	// Both arrays are 3 (*faces) * 3 (**faces) * facesLength.
 	vec_t *glVertices;

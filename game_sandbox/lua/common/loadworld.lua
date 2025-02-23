@@ -18,4 +18,7 @@ function loadWorld()
 
 	boxModel, e = mesh_load("blender/cube")
 	if e ~= 0 then quit() end
+	-- Enable GPU instancing for this model.
+	e = model_setInstanced(boxModel, true)
+	if e ~= 0 then quit() end
 end

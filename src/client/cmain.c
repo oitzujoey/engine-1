@@ -42,6 +42,7 @@ luaCFunc_t luaClientFunctions[] = {
 	{.func = l_material_setDepthSort,       .name = "material_setDepthSort"},
 	{.func = l_material_setCull,            .name = "material_setCull"},
 	{.func = l_model_linkDefaultMaterial,   .name = "model_linkDefaultMaterial"},
+	{.func = l_model_setInstanced,          .name = "model_setInstanced"},
 	{.func = l_entity_linkMaterial,         .name = "entity_linkMaterial"},
 	{.func = NULL,                          .name = NULL}
 };
