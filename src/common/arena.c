@@ -78,13 +78,16 @@ int allocator_arena_free(void *allocator, void **data) {
 }
 
 int allocator_arena_quit(void *allocator) {
+	int e = ERR_OK;
 	Arena *arena = allocator;
 	Allocator *host = arena->host_allocator;
 	size_t allocations_length = arena->allocations_length;
 	void **allocations = arena->allocations;
 	for (size_t i = 0; i < allocations_length; i++) {
-		int e = host->free(host->context, &allocations[i]);
+		e = host->free(host->context, &allocations[i]);
 		if (e) return e;
 	}
+	e = host->free(host->context, (void **) &allocations);
+	if (e) return e;
 	return host->free(host->context, (void **) &arena);
 }

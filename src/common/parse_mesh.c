@@ -105,7 +105,9 @@ static int cmsh_read(file_cmsh_t *cmsh, uint8_t *fileName) {
 
 	int e = vfs_getFileContents_malloc(&bytes, &bytes_length, fileName);
 	if (e) return e;
-	return cmsh_parse(cmsh, bytes, bytes_length);
+	e = cmsh_parse(cmsh, bytes, bytes_length);
+	MEMORY_FREE(&bytes);
+	return e;
 }
 
 // `fileName` is null terminated.
@@ -116,7 +118,9 @@ static int rmsh_read(file_rmsh_t *rmsh, uint8_t *fileName) {
 
 	int e = vfs_getFileContents_malloc(&bytes, &bytes_length, fileName);
 	if (e) return e;
-	return rmsh_parse(rmsh, bytes, bytes_length);
+	e = rmsh_parse(rmsh, bytes, bytes_length);
+	MEMORY_FREE(&bytes);
+	return e;
 }
 
 
