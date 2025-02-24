@@ -94,20 +94,6 @@ int l_sqlite_open(lua_State *l) {
 }
 
 
-/* int lua_sqlite_callback(void *firstArgument, int numberOfColumns, char **columnStrings, char **resultColumnNameStrings) { */
-/* 	lua_State *l = firstArgument; */
-/* 	for (int column_index = 0; column_index < numberOfColumns; column_index++) { */
-/* 		printf("%s: %s", resultColumnNameStrings[column_index], columnStrings[column_index]); */
-/* 		if (column_index == numberOfColumns-1) { */
-/* 			putchar('\n'); */
-/* 		} */
-/* 		else { */
-/* 			printf(", "); */
-/* 		} */
-/* 	} */
-/* 	return SQLITE_OK; */
-/* } */
-
 /* l_sqlite_exec(database, query) -> result, error
    Makes a query to the database and returns the result of the query as a table. */
 int l_sqlite_exec(lua_State *l) {
