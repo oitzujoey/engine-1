@@ -41,7 +41,9 @@ int array_push(array_t *a, void *element) {
 		if (e) return e;
 		a->memory_size = newMemory_size;
 		(void) memcpy(a->elements, oldMemory, oldMemory_size);
-		e = allocator->free(allocator->context, &oldMemory);
+		if (oldMemory != NULL) {
+			e = allocator->free(allocator->context, &oldMemory);
+		}
 		if (e) return e;
 	}
 

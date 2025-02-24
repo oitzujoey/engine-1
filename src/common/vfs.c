@@ -294,7 +294,7 @@ int vfs_getFileContents_malloc(uint8_t **fileContents, PHYSFS_sint64 *fileConten
 	
 	*fileContents_length = PHYSFS_fileLength(file);
 	
-	*fileContents = malloc(*fileContents_length * sizeof(uint8_t));
+	*fileContents = malloc((*fileContents_length + 1) * sizeof(uint8_t));
 	if (*fileContents == NULL) {
 		outOfMemory();
 		error = ERR_OUTOFMEMORY;
@@ -302,6 +302,7 @@ int vfs_getFileContents_malloc(uint8_t **fileContents, PHYSFS_sint64 *fileConten
 	}
 	
 	PHYSFS_sint64 realLength = PHYSFS_readBytes(file, *fileContents, *fileContents_length);
+	(*fileContents)[realLength] = '\0';  // Just in case it's text.
 	*fileContents_length = realLength;
 	
 	error = ERR_OK;

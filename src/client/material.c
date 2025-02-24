@@ -1,6 +1,7 @@
 
 #include "material.h"
 #include <GL/glew.h>
+#include <lauxlib.h>
 #define STB_IMAGE_IMPLEMENTATION
 // #define STBI_ASSERT(x)
 #include "stb_image.h"
@@ -8,13 +9,14 @@
 #include "../common/log.h"
 #include "../common/vfs.h"
 #include "../common/memory.h"
+#include "shader.h"
 
 material_list_t g_materialList;
 size_t g_textures_length;
 
 
 static void material_loadTexturemissingTexture(GLuint *textureIndex);
-static int material_create(material_list_t *, ptrdiff_t *, GLuint, bool);
+static int material_create(material_list_t *, ptrdiff_t *, Shader *, GLuint, bool);
 static void material_linkTexture(const material_list_t, const ptrdiff_t, GLuint);
 
 
@@ -28,8 +30,72 @@ int material_initList(material_list_t *materialList) {
 		GLuint textureIndex;
 		ptrdiff_t materialIndex;
 		(void) material_loadTexturemissingTexture(&textureIndex);
+
+		// Create a default shader. The projection matrix almost certainly won't look right when used with shaders
+		// loaded from files, but it should be better than nothing.
+		Shader *shader = NULL;
+		{
+			// Would be cool if I could load this from a file at compile time.
+			Str4 vertexShader_sourceCode = STR4("#version 400\n"
+			                                    "layout(location = 0) in vec3 vp;"
+			                                    "layout(location = 1) in vec3 normal;"
+			                                    "layout(location = 2) in vec2 texCoord;"
+			                                    "uniform vec4 orientation;"
+			                                    "uniform vec3 position;"
+			                                    "uniform float aspectRatio;"
+			                                    "uniform float scale;"
+			                                    "out vec3 color;"
+			                                    "out vec2 textureCoordinate;"
+			                                    "vec4 conjugate(vec4 a) {"
+			                                    "  return vec4(-a.x,"
+			                                    "              -a.y,"
+			                                    "              -a.z,"
+			                                    "              a.w);"
+			                                    "}"
+			                                    "vec4 hamilton(vec4 a, vec4 b) {"
+			                                    "  return vec4(a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,"
+			                                    "              a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,"
+			                                    "              a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,"
+			                                    "              a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z);"
+			                                    "}"
+			                                    "vec3 rotate(vec3 v, vec4 q) {"
+			                                    "  vec4 v4 = vec4(v, 0);"
+			                                    "  v4 = hamilton(hamilton(q, v4), conjugate(q));"
+			                                    "  return vec3(v4.x, v4.y, v4.z);"
+			                                    "}"
+			                                    "float w = 11.0*aspectRatio;"
+			                                    "float h = 11.0;"
+			                                    "float n = 11.0;"
+			                                    "float f = 7500.0;"
+			                                    "mat4 projectionMatrix = mat4(-2.0*n/w, 0.0, 0.0, 0.0,"
+			                                    "                             0.0, 2.0*n/h, 0.0, 0.0,"
+			                                    "                             0.0, 0.0, -(f+n)/(f-n), -1.0,"
+			                                    "                             0.0, 0.0, -2.0*f*n/(f-n), 0.0);"
+			                                    "void main() {"
+			                                    "  vec3 vertex;"
+			                                    "  vertex = rotate(scale * vp, orientation);"
+			                                    "  vertex += position;"
+			                                    "  gl_Position = projectionMatrix * vec4(vertex, 1.0);"
+			                                    "  color = rotate(normal, orientation);"
+			                                    "  textureCoordinate = texCoord;"
+			                                    "}");
+			Str4 fragmentShader_sourceCode = STR4("#version 400\n"
+			                                      "out vec4 frag_colour;"
+			                                      "in vec3 color;"
+			                                      "in vec2 textureCoordinate;"
+			                                      "uniform sampler2D ourTexture;"
+			                                      "void main() {"
+			                                      "  float dot = dot(color, vec3(0.0, 0.0, 1.0));"
+			                                      "  float mixing = 0.75;"
+			                                      "  dot = abs(dot) * (1.0 - mixing) + mixing;"
+			                                      "  frag_colour = texture(ourTexture, textureCoordinate)"
+			                                      "                        * vec4(dot, dot, dot, 1.0);"
+			                                      "}");
+			int e = shader_create(&shader, &vertexShader_sourceCode, &fragmentShader_sourceCode);
+		}
+
 		// Default material is opaque.
-		int e = material_create(&g_materialList, &materialIndex, textureIndex, false);
+		int e = material_create(&g_materialList, &materialIndex, shader, textureIndex, false);
 		if (e) return e;
 	}
 
@@ -52,7 +118,11 @@ static void material_init(material_t *material) {
 	
 // }
 
-static int material_create(material_list_t *materialList, ptrdiff_t *materialIndex, GLuint textureIndex, bool transparent) {
+static int material_create(material_list_t *materialList,
+                           ptrdiff_t *materialIndex,
+                           Shader *shader,
+                           GLuint textureIndex,
+                           bool transparent) {
 	int e = ERR_OK;
 
 	materialList->materials_length++;
@@ -65,6 +135,7 @@ static int material_create(material_list_t *materialList, ptrdiff_t *materialInd
 
 	size_t lastIndex = materialList->materials_length - 1;
 	(void) material_init(&materialList->materials[lastIndex]);
+	materialList->materials[lastIndex].shader = shader;
 	materialList->materials[lastIndex].transparent = transparent;
 	materialList->materials[lastIndex].depthSort = transparent;  // sic.
 	(void) material_linkTexture(*materialList, lastIndex, textureIndex);
@@ -193,29 +264,39 @@ static int material_loadTexture(GLuint *textureIndex, bool *transparent, const c
 /* Lua bindings */
 /* ============ */
 
+// material_create shaderPath texturePath
+// `shaderPath` does not have the file extension because this function adds the .vert and .frag suffixes.
 int l_material_create(lua_State *luaState) {
 	int e = ERR_OK;
 
 	GLuint textureIndex = 0;
 
-	if (lua_gettop(luaState) != 1) {
-		critical_error("Function requires 1 argument.", "");
+	if (lua_gettop(luaState) != 2) {
+		critical_error("Function requires 2 arguments.", "");
 		e = ERR_CRITICAL;
 		goto cleanup;
 	}
 
-	if (!lua_isstring(luaState, -1)) {
-		critical_error("Argument 1 should be a string, not a %s.", lua_typename(luaState, lua_type(luaState, -1)));
+	Shader **shaderReference = luaL_checkudata(luaState, 1, "shader");
+	if (shaderReference == NULL) {
+		critical_error("Argument 1 should be a shader, not a %s.", lua_typename(luaState, lua_type(luaState, 1)));
+		e = ERR_CRITICAL;
+		goto cleanup;
+	}
+	Shader *shader = *shaderReference;
+
+	if (!lua_isstring(luaState, 2)) {
+		critical_error("Argument 2 should be a string, not a %s.", lua_typename(luaState, lua_type(luaState, 2)));
 		e = ERR_CRITICAL;
 		goto cleanup;
 	}
 
 	bool transparent = false;
-	e = material_loadTexture(&textureIndex, &transparent, lua_tostring(luaState, -1));
+	e = material_loadTexture(&textureIndex, &transparent, lua_tostring(luaState, 2));
 	if (e) goto cleanup;
 
 	ptrdiff_t materialIndex = -1;
-	e = material_create(&g_materialList, &materialIndex, textureIndex, transparent);
+	e = material_create(&g_materialList, &materialIndex, shader, textureIndex, transparent);
 	if (e) goto cleanup;
 
  cleanup:
@@ -245,13 +326,13 @@ int l_material_setDepthSort(lua_State *l) {
 	}
 
 	if (!lua_isinteger(l, 1)) {
-		critical_error("Argument 1 should be the material index, an integer, not a %s.", lua_typename(l, lua_type(l, -1)));
+		critical_error("Argument 1 should be the material index, an integer, not a %s.", lua_typename(l, lua_type(l, 1)));
 		e = ERR_CRITICAL;
 		goto cleanup;
 	}
 
 	if (!lua_isinteger(l, 2) && !lua_isboolean(l, 2)) {
-		critical_error("Argument 2 should be an integer or a boolean, not a %s.", lua_typename(l, lua_type(l, -1)));
+		critical_error("Argument 2 should be an integer or a boolean, not a %s.", lua_typename(l, lua_type(l, 2)));
 		e = ERR_CRITICAL;
 		goto cleanup;
 	}
@@ -292,13 +373,13 @@ int l_material_setCull(lua_State *l) {
 	}
 
 	if (!lua_isinteger(l, 1)) {
-		critical_error("Argument 1 should be the material index, an integer, not a %s.", lua_typename(l, lua_type(l, -1)));
+		critical_error("Argument 1 should be the material index, an integer, not a %s.", lua_typename(l, lua_type(l, 1)));
 		e = ERR_CRITICAL;
 		goto cleanup;
 	}
 
 	if (!lua_isinteger(l, 2) && !lua_isboolean(l, 2)) {
-		critical_error("Argument 2 should be an integer or a boolean, not a %s.", lua_typename(l, lua_type(l, -1)));
+		critical_error("Argument 2 should be an integer or a boolean, not a %s.", lua_typename(l, lua_type(l, 2)));
 		e = ERR_CRITICAL;
 		goto cleanup;
 	}

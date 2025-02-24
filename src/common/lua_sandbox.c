@@ -154,11 +154,13 @@ void lua_sandbox_addFunctions(lua_State **Lua, luaCFunc_t *cfuncs) {
 	}
 }
 
+// I've noticed this sometimes print out weird junk. I think an error object isn't always pushed, and maybe the C
+// function that throws the error is supposed to push an error object on the stack.
 int lua_sandbox_handleError(lua_State *l) {
 	int e = ERR_OK;
 	const char *errorMessage = lua_tostring(l, -1);
 	if (errorMessage != NULL) {
-		puts(lua_tostring(l, -1));
+		error("Lua error: \"%s\"", lua_tostring(l, -1));
 	}
 	return e;
 }
@@ -185,10 +187,16 @@ int lua_sandbox_init(lua_State **Lua, const char *filename) {
 	lua_pushcfunction(*Lua, l_lua_sandbox_include);
 	lua_setglobal(*Lua, "include");
 
-	// Add the "sqlite" data type.
-	(void) luaL_newmetatable(*Lua, "sqlite");
-	(void) lua_pop(*Lua, 1);
-	
+	// Add user data types.
+	char *userDataTypes[] = {
+		"sqlite",
+		"shader",
+	};
+	for (size_t i = 0; i < sizeof(userDataTypes)/sizeof(*userDataTypes); i++) {
+		(void) luaL_newmetatable(*Lua, userDataTypes[i]);
+		(void) lua_pop(*Lua, 1);
+	}
+
 	if (!PHYSFS_exists(filename)) {
 		error("File \"%s\" does not exist", filename, luaError[error]);
 		return ERR_GENERIC;

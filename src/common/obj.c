@@ -118,7 +118,6 @@ void model_init(model_t *model) {
 	model->vertices = NULL;
 	model->vertices_length = 0;
 #ifdef CLIENT
-	model->instanced = false;
 	model->glVertices = NULL;
 	model->glNormals = NULL;
 	model->boundingSphere = 0.0;
@@ -225,53 +224,6 @@ int l_model_linkDefaultMaterial(lua_State *luaState) {
 	
 	lua_pushinteger(luaState, error);
 	
-	return 1;
-}
-
-int l_model_setInstanced(lua_State *l) {
-	int e = ERR_OK;
-
-	GLuint textureIndex = 0;
-
-	if (lua_gettop(l) != 2) {
-		critical_error("Function requires 2 arguments.", "");
-		e = ERR_CRITICAL;
-		goto cleanup;
-	}
-
-	if (!lua_isinteger(l, 1)) {
-		critical_error("Argument 1 should be the model index, an integer, not a %s.", lua_typename(l, lua_type(l, -1)));
-		e = ERR_CRITICAL;
-		goto cleanup;
-	}
-
-	if (!lua_isinteger(l, 2) && !lua_isboolean(l, 2)) {
-		critical_error("Argument 2 should be an integer or a boolean, not a %s.", lua_typename(l, lua_type(l, -1)));
-		e = ERR_CRITICAL;
-		goto cleanup;
-	}
-
-	lua_Integer modelIndex = lua_tointeger(l, 1);
-	if (!obj_isValidModelIndex(modelIndex)) {
-		error("Bad model index %i.", modelIndex);
-		e = ERR_GENERIC;
-		goto cleanup;
-	}
-	model_t *model = &g_modelList.models[modelIndex];
-
-	bool instanced;
-	if (lua_isinteger(l, 2)) {
-		instanced = 0 != lua_tointeger(l, 2);
-	}
-	if (lua_isboolean(l, 2)) {
-		instanced = lua_toboolean(l, 2);
-	}
-
-	model->instanced = instanced;
-
- cleanup:
-	if (e >= ERR_CRITICAL) lua_error(l);
-	lua_pushinteger(l, e);
 	return 1;
 }
 

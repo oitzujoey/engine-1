@@ -4,6 +4,7 @@
 
 #include <stdbool.h>
 #include <time.h>
+#include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <lua.h>
 #include <enet/enet.h>
@@ -84,8 +85,6 @@ typedef struct {
 
 	// Rendering:
 #ifdef CLIENT
-	bool instanced;  // Enable GPU instancing.
-
 	// Add pure array of vertices and normals to save rendering time. The server should never need this.
 	// Both arrays are 3 (*faces) * 3 (**faces) * facesLength.
 	vec_t *glVertices;
@@ -303,12 +302,27 @@ typedef enum {
 	network_lua_type_table
 } network_lua_type_t;
 
+/* shader.h */
+/* ======== */
+
+typedef struct {
+	GLuint program;
+	struct {
+		GLint orientation;
+		GLint position;
+		GLint scale;
+		GLint aspectRatio;
+	} uniform;
+	bool instanced;  // Enable GPU instancing for this shader.
+} Shader;
+
 /* material.h */
 /* ========= */
 
 typedef struct {
 #ifdef CLIENT
 	GLuint texture;
+	Shader *shader;
 	bool transparent;
 	bool depthSort;
 	bool cull;

@@ -2,7 +2,6 @@ G_CLIENT=true
 
 include "../common/common.lua"
 include "../client/keys.lua"
-include "../common/loadworld.lua"
 
 g_sensitivity = 1.0
 
@@ -22,6 +21,8 @@ function client_sendQueuedEvents()
 	clientState.events = g_eventQueue
 	g_eventQueue = {}
 end
+
+g_averageFramerate = 0
 
 g_initialBoxesToCreate = {}
 
@@ -94,36 +95,50 @@ function startup()
 
 	info("startup", "Loading models")
 
-	loadWorld()
+	g_cameraEntity = entity_createEntity(g_entity_type_entity)
+	e = entity_linkChild(g_worldEntity, g_cameraEntity)
+	if e ~= 0 then quit() end
 
-	-- Load a .png texture from "textures/".
-	function loadTexture(name)
-		return material_create("textures/"..name..".png")
+	g_boxModel, e = mesh_load("blender/cube")
+	if e ~= 0 then quit() end
+
+	function loadShader(name)
+		return shader_create("shaders/"..name)
+	end
+	-- Load a .png texture from "textures/" as a new material.
+	function loadMaterial(shader, name)
+		return material_create(shader, "textures/"..name..".png")
 	end
 
-	function loadMaterial(name)
-		local material, e = loadTexture(name)
+	local cubeShader, e = loadShader("cube")
+	if e ~= 0 then quit() end
+	-- Enable GPU instancing for this shader.
+	e = shader_setInstanced(cubeShader, true)
+	if e ~= 0 then quit() end
+
+	function loadCubeMaterial(name)
+		local material, e = loadMaterial(cubeShader, name)
 		g_materials[name] = material
 		return material, e
 	end
 
-	redMaterial, e = loadMaterial("red")
+	redMaterial, e = loadCubeMaterial("red")
 	if e ~= 0 then quit() end
-	greenMaterial, e = loadMaterial("green")
+	greenMaterial, e = loadCubeMaterial("green")
 	if e ~= 0 then quit() end
-	blueMaterial, e = loadMaterial("blue")
+	blueMaterial, e = loadCubeMaterial("blue")
 	if e ~= 0 then quit() end
-	whiteMaterial, e = loadMaterial("white")
+	whiteMaterial, e = loadCubeMaterial("white")
 	if e ~= 0 then quit() end
-	blackMaterial, e = loadMaterial("black")
+	blackMaterial, e = loadCubeMaterial("black")
 	if e ~= 0 then quit() end
-	cyanMaterial, e = loadMaterial("cyan")
+	cyanMaterial, e = loadCubeMaterial("cyan")
 	if e ~= 0 then quit() end
-	magentaMaterial, e = loadMaterial("magenta")
+	magentaMaterial, e = loadCubeMaterial("magenta")
 	if e ~= 0 then quit() end
-	yellowMaterial, e = loadMaterial("yellow")
+	yellowMaterial, e = loadCubeMaterial("yellow")
 	if e ~= 0 then quit() end
-	clearMaterial, e = loadMaterial("clear")
+	clearMaterial, e = loadCubeMaterial("clear")
 	if e ~= 0 then quit() end
 	-- e = material_setCull(clearMaterial, false)
 	-- if e ~= 0 then quit() end
@@ -139,23 +154,27 @@ function startup()
 	if e ~= 0 then quit() end
 	entity_setScale(sandboxEntity, 5*g_boundingBoxRadius)
 	entity_setOrientation(sandboxEntity, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
-	local sandboxMaterial, e = loadTexture("lava")
+	local sandboxMaterial, e = loadMaterial(cubeShader, "lava")
+	if e ~= 0 then quit() end
 	material_setDepthSort(sandboxMaterial, false)
 	e = model_linkDefaultMaterial(sandboxModel, sandboxMaterial)
+	if e ~= 0 then quit() end
 
 	-- Ground
 	g_planeModel, e = mesh_load("blender/plane")
 	if e ~= 0 then quit() end
-	g_groundMaterial, e = loadTexture("floor")
+	g_groundMaterial, e = loadMaterial(cubeShader, "floor")
 	if e ~= 0 then quit() end
 	material_setDepthSort(g_groundMaterial, false)
 
-	g_cursorMaterial, e = loadTexture("cursor")
+	g_cursorMaterial, e = loadMaterial(cubeShader, "cursor")
 	if e ~= 0 then quit() end
 
-	g_selectionMaterial, e = loadTexture("selection")
+	g_selectionMaterial, e = loadMaterial(cubeShader, "selection")
+	if e ~= 0 then quit() end
 
-	g_loadingMaterial, e = loadTexture("loading")
+	g_loadingMaterial, e = loadMaterial(cubeShader, "loading")
+	if e ~= 0 then quit() end
 
 	-- a
 	keys_createFullBind("k_100", "key_strafeLeft", "key_strafeLeft_d", "key_strafeLeft_u")
@@ -396,10 +415,6 @@ function loadingScreen()
 	axisAngle.w = angle
 	if angle ~= 0 then
 		g_loadingScreen = hamiltonProduct(g_loadingScreen, aaToQuat(axisAngle))
-		puts(toString(g_loadingScreen.w))
-		puts(toString(g_loadingScreen.x))
-		puts(toString(g_loadingScreen.y))
-		puts(toString(g_loadingScreen.z))
 		entity_setOrientation(g_loadingEntity, g_loadingScreen)
 	end
 end
@@ -466,11 +481,12 @@ function main()
 
 	client_sendQueuedEvents()
 
-	puts("FPS: "..toString(1/deltaT))
+	g_averageFramerate = g_averageFramerate + (1/deltaT - g_averageFramerate)/1000
 	g_frame = g_frame + 1
 	g_mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
 end
 
 function shutdown()
 	info("shutdown", "Client quit")
+	puts("FPS: "..toString(g_averageFramerate))
 end

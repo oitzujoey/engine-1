@@ -28,6 +28,7 @@
 #include "material.h"
 #include "../common/memory.h"
 #include "../common/random.h"
+#include "shader.h"
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
@@ -38,11 +39,12 @@ extern SDL_Window *g_window;
 extern material_list_t g_materialList;
 
 luaCFunc_t luaClientFunctions[] = {
+	{.func = l_shader_create,               .name = "shader_create"},
+	{.func = l_shader_setInstanced,         .name = "shader_setInstanced"},
 	{.func = l_material_create,             .name = "material_create"},
 	{.func = l_material_setDepthSort,       .name = "material_setDepthSort"},
 	{.func = l_material_setCull,            .name = "material_setCull"},
 	{.func = l_model_linkDefaultMaterial,   .name = "model_linkDefaultMaterial"},
-	{.func = l_model_setInstanced,          .name = "model_setInstanced"},
 	{.func = l_entity_linkMaterial,         .name = "entity_linkMaterial"},
 	{.func = NULL,                          .name = NULL}
 };
@@ -204,22 +206,25 @@ int windowInit(void) {
 	if (error) {
 		goto cleanup_l;
 	}
-	
+
+	(void) shaders_init();
+
 	error = material_initList(&g_materialList);
 	if (error) {
 		critical_error("Failed to initialize material list.", "");
 		goto cleanup_l;
 	}
-	
+
 	error = ERR_OK;
 	cleanup_l:
 	return error;
 }
 
 static void windowQuit(void) {
-
 	material_freeList(&g_materialList);
-	
+
+	shaders_quit();
+
 	SDL_DestroyWindow(g_window);
 	g_window = NULL;
 	

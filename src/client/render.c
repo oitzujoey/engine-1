@@ -21,12 +21,7 @@ SDL_GLContext g_GLContext;
 GLuint g_VertexVbo;
 GLuint g_colorVbo;
 GLuint g_texCoordVbo;
-GLint g_orientationUniform;
-GLint g_positionUniform;
-GLint g_screenHeightUniform;
-GLint g_scaleUniform;
 GLuint g_vao;
-GLuint g_shaderProgram[2];
 char *g_openglLogFileName;
 float g_points[] = {
 	-0.5, -0.5, 0,
@@ -39,7 +34,7 @@ array_t g_transparencyRenderObjects;
 array_t g_sortedTransparencyRenderObjects;
 
 
-static const char *render_glGetErrorString(GLenum glError) {
+const char *render_glGetErrorString(GLenum glError) {
 	switch (glError) {
 	case GL_NO_ERROR:
 		return "GL_NO_ERROR";
@@ -240,176 +235,6 @@ int render_initOpenGL(void) {
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
-	
-	/* Shaders */
-	
-	const char* vertexShaderSource0 =
-		"#version 400\n"
-		"layout(location = 0) in vec3 vp;\n"
-		"layout(location = 1) in vec3 normal;\n"
-		"layout(location = 2) in vec2 texCoord;\n"
-		"uniform vec4 orientation;\n"
-		"uniform vec3 position;\n"
-		"uniform float screenHeight;\n"
-		"uniform float scale;\n"
-		"out vec3 color;\n"
-		"out vec2 textureCoordinate;\n"
-
-		"vec4 conjugate(vec4 a) {\n"
-		"  return vec4(\n"
-		"    -a.x,\n"
-		"    -a.y,\n"
-		"    -a.z,\n"
-		"    a.w\n"
-		"  );\n"
-		"}\n"
-
-		"vec4 hamilton(vec4 a, vec4 b) {\n"
-		"  return vec4(\n"
-		"    a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,\n"
-		"    a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,\n"
-		"    a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,\n"
-		"    a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z\n"
-		"  );\n"
-		"}\n"
-
-		"vec3 rotate(vec3 v, vec4 q) {\n"
-		"  vec4 v4 = vec4(v, 0);\n"
-		"  v4 = hamilton(hamilton(q, v4), conjugate(q));\n"
-		"  return vec3(v4.x, v4.y, v4.z);\n"
-		"}\n"
-
-		"float w = 11.0*screenHeight;"
-		"float h = 11.0;"
-		"float n = 11.0;"
-		"float f = 7500.0;"
-		"mat4 projectionMatrix = mat4("
-		"  -2.0*n/w, 0.0, 0.0, 0.0,"
-		"  0.0, 2.0*n/h, 0.0, 0.0,"
-		"  0.0, 0.0, -(f+n)/(f-n), -1.0,"
-		"  0.0, 0.0, -2.0*f*n/(f-n), 0.0"
-		");"
-
-		"void main() {\n"
-		"  vec3 vertex;\n"
-		"  vertex = rotate(scale * vp, orientation);\n"
-		"  vertex += position;\n"
-		"  gl_Position = projectionMatrix * vec4(vertex, 1.0);\n"
-
-		"  float powerFactor = 1.01;"
-		"  float mixing = 0.5;"
-		"  color = (pow(powerFactor, -abs(gl_Position.z))/powerFactor * (1.0 - mixing) + mixing) * rotate(normal, orientation);\n"
-		"  textureCoordinate = texCoord;\n"
-		"}\n";
-
-	const char* fragmentShaderSource0 =
-		"#version 400\n"
-		"out vec4 frag_colour;"
-		"in vec3 color;"
-		"in vec2 textureCoordinate;"
-		"uniform sampler2D ourTexture;"
-		"void main() {"
-		"  float dot = dot(color, vec3(0.0, 0.0, 1.0));"
-		"  float mixing = 0.75;"
-		"  dot = abs(dot) * (1.0 - mixing) + mixing;"
-		"  frag_colour = texture(ourTexture, textureCoordinate) * vec4(dot, dot, dot, 1.0);"
-		"}";
-	
-	/* Compile shaders and link program. */
-	
-	for (int i = 0; i < 2; i++) {
-		g_shaderProgram[i] = glCreateProgram();
-		if (g_shaderProgram[i] == 0) {
-			error("glCreateProgram returned with errors.", "");
-			error = ERR_CRITICAL;
-			goto cleanup_l;
-		}
-	}
-	
-	GLint compileStatus;
-	
-	GLuint vertexShader0 = glCreateShader(GL_VERTEX_SHADER);
-	if (vertexShader0 == 0) {
-		glError = glGetError();
-		error("glCreateShader returned with errors.", "");
-		while (glError) {
-			error("OpenGL error: %s", render_glGetErrorString(glError));
-			glError = glGetError();
-		}
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	glShaderSource(vertexShader0, 1, &vertexShaderSource0, NULL);
-	glCompileShader(vertexShader0);
-	glGetShaderiv(vertexShader0, GL_COMPILE_STATUS, &compileStatus);
-	if (compileStatus == GL_FALSE) {
-		error("Vertex shader failed to compile.", "");
-		render_logShaderInfo(vertexShader0);
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	GLuint fragmentShader0 = glCreateShader(GL_FRAGMENT_SHADER);
-	if (fragmentShader0 == 0) {
-		glError = glGetError();
-		error("glCreateShader returned with errors.", "");
-		while (glError) {
-			error("OpenGL error: %s", render_glGetErrorString(glError));
-			glError = glGetError();
-		}
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	glShaderSource(fragmentShader0, 1, &fragmentShaderSource0, NULL);
-	glCompileShader(fragmentShader0);
-	glGetShaderiv(fragmentShader0, GL_COMPILE_STATUS, &compileStatus);
-	if (compileStatus == GL_FALSE) {
-		error("Fragment shader failed to compile.", "");
-		render_logShaderInfo(fragmentShader0);
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	glAttachShader(g_shaderProgram[0], vertexShader0);
-	glAttachShader(g_shaderProgram[0], fragmentShader0);
-	glLinkProgram(g_shaderProgram[0]);
-	glGetProgramiv(g_shaderProgram[0],  GL_LINK_STATUS, &compileStatus);
-	if (compileStatus == GL_FALSE) {
-		error("Program failed to link.", "");
-		render_logProgramInfo(g_shaderProgram[0]);
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	/* Find uniform variable locations. */
-	
-	g_orientationUniform = glGetUniformLocation(g_shaderProgram[0], "orientation");
-	if (g_orientationUniform < 0) {
-		critical_error("Could not get uniform from program.", "");
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	g_positionUniform = glGetUniformLocation(g_shaderProgram[0], "position");
-	if (g_positionUniform < 0) {
-		critical_error("Could not get uniform from program.", "");
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-	
-	g_screenHeightUniform = glGetUniformLocation(g_shaderProgram[0], "screenHeight");
-	if (g_screenHeightUniform < 0) {
-		critical_error("Could not get uniform from program.", "");
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
-
-	g_scaleUniform = glGetUniformLocation(g_shaderProgram[0], "scale");
-	if (g_scaleUniform < 0) {
-		critical_error("Could not get uniform from program.", "");
-		error = ERR_CRITICAL;
-		goto cleanup_l;
-	}
 
 	/* Set background color. */
 	
@@ -435,6 +260,7 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 		// TODO: Change this from texture #1 to whatever texture is called for.
 		if (material_index < 0) material_index = model->defaultMaterials[0];
 		material_t *material = &g_materialList.materials[material_index];
+		Shader *shader = material->shader;
 
 		// TODO: Fix frustum culling.
 		/* // Make sure model is inside the frustum. */
@@ -470,7 +296,6 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 			(void) vec3_copy(&ro->position, position);
 			ro->scale = scale;
 			ro->material = material;
-			ro->shaderProgram = g_shaderProgram[0];
 
 			if (material->depthSort) {
 				return array_push(&g_sortedTransparencyRenderObjects, &ro);
@@ -481,7 +306,9 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 		}
 		
 		/* Render */
-		
+
+		glUseProgram(shader->program);
+
 		glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
 		glBufferData(GL_ARRAY_BUFFER, model->glVertices_length * sizeof(float), model->glVertices, GL_DYNAMIC_DRAW);
 		
@@ -491,19 +318,19 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 		glBindBuffer(GL_ARRAY_BUFFER, g_texCoordVbo);
 		glBufferData(GL_ARRAY_BUFFER, model->glTexCoords_length * sizeof(float), model->glTexCoords, GL_DYNAMIC_DRAW);
 
-		glUniform4f(g_orientationUniform, 
+		glUniform1f(shader->uniform.aspectRatio, 16.0f/9.0f);
+		glUniform4f(shader->uniform.orientation,
 			orientation.v[0],
 			orientation.v[1],
 			orientation.v[2],
 			orientation.s
 		);
-		glUniform3f(g_positionUniform, 
+		glUniform3f(shader->uniform.position,
 		            (*position)[0],
 		            (*position)[1],
 		            (*position)[2]);
-		glUniform1f(g_scaleUniform, scale);
-		
-		glUseProgram(g_shaderProgram[0]);
+		glUniform1f(shader->uniform.scale, scale);
+
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, material->texture);
 		glBindVertexArray(g_vao);
@@ -564,9 +391,10 @@ int renderEntity(entity_t *entity, vec3_t *position, quat_t *orientation, vec_t 
 }
 
 void renderRenderObject(renderObject_t *renderObject) {
-	// We don't do frustum culling here because we should have already done it in the tree traversal.
+	material_t *material = renderObject->material;
+	Shader *shader = material->shader;
 
-	/* Render */
+	glUseProgram(shader->program);
 
 	glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
 	glBufferData(GL_ARRAY_BUFFER, renderObject->glVertices_length * sizeof(float), renderObject->glVertices, GL_DYNAMIC_DRAW);
@@ -577,24 +405,24 @@ void renderRenderObject(renderObject_t *renderObject) {
 	glBindBuffer(GL_ARRAY_BUFFER, g_texCoordVbo);
 	glBufferData(GL_ARRAY_BUFFER, renderObject->glTexCoords_length * sizeof(float), renderObject->glTexCoords, GL_DYNAMIC_DRAW);
 
-	glUniform4f(g_orientationUniform,
+	glUniform1f(shader->uniform.aspectRatio, 16.0f/9.0f);
+	glUniform4f(shader->uniform.orientation,
 				renderObject->orientation.v[0],
 				renderObject->orientation.v[1],
 				renderObject->orientation.v[2],
 				renderObject->orientation.s
 				);
-	glUniform3f(g_positionUniform,
+	glUniform3f(shader->uniform.position,
 				renderObject->position[0],
 				renderObject->position[1],
 				renderObject->position[2]);
-	glUniform1f(g_scaleUniform, renderObject->scale);
+	glUniform1f(shader->uniform.scale, renderObject->scale);
 
-	glUseProgram(renderObject->shaderProgram);
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, renderObject->material->texture);
+	glBindTexture(GL_TEXTURE_2D, material->texture);
 	glBindVertexArray(g_vao);
 
-	if (renderObject->material->cull) glEnable(GL_CULL_FACE);
+	if (material->cull) glEnable(GL_CULL_FACE);
 
 	// glVertices_length is always a multiple of three.
 	glDrawArrays(GL_TRIANGLES, 0, renderObject->glVertices_length / 3);
@@ -633,9 +461,6 @@ int render(entity_t *entity) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	// For each entity in the tree...
-	
-	// Set FOV.
-	glUniform1f(g_screenHeightUniform, 16.0f/9.0f);
 
 	e = allocator_create_stdlibArena(&g_renderObjectArena);
 	(void) array_init(&g_transparencyRenderObjects, &g_renderObjectArena, sizeof(renderObject_t *));
@@ -662,7 +487,6 @@ int render(entity_t *entity) {
 	glDisable(GL_BLEND);
 
 	/* Show */
-	
 	SDL_GL_SwapWindow(g_window);
 
  cleanup:

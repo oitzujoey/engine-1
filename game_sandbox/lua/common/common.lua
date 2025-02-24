@@ -115,7 +115,7 @@ end
 function modelEntity_create(position, orientation, scale)
 	local entity, e = entity_createEntity(g_entity_type_model)
 	e = entity_linkChild(g_cameraEntity, entity)
-	e = entity_linkChild(entity, boxModel)
+	e = entity_linkChild(entity, g_boxModel)
 	entity_setScale(entity, scale)
 	entity_setPosition(entity, position)
 	entity_setOrientation(entity, orientation)
@@ -134,7 +134,15 @@ end
 --------------------------
 
 
+g_worldOrientation = {w=1.0, x=0.0, y=0.0, z=0.0}
+
 g_gridSpacing = 40
+
+g_boxes_length = 0
+g_boxes_scale = g_gridSpacing/2
+
+g_boxes = {}
+
 g_boundingBoxRadius = g_gridSpacing * 20
 g_boxTable = {}
 G_GRAVITY = -0.4
@@ -507,7 +515,7 @@ function createBox(id, position, materialName)
 	local box = {}
 	local boxEntity, e = entity_createEntity(g_entity_type_model)
 	e = entity_linkChild(g_cameraEntity, boxEntity)
-	e = entity_linkChild(boxEntity, boxModel)
+	e = entity_linkChild(boxEntity, g_boxModel)
 	box.id = id
 	box.entity = boxEntity
 	-- Enable gravity.
@@ -550,7 +558,7 @@ function changeBoxMaterial(box, materialName)
 		box.entity = box_entity
 		e = entity_linkChild(g_cameraEntity, box_entity)
 		if e ~= 0 then return e end
-		e = entity_linkChild(box_entity, boxModel)
+		e = entity_linkChild(box_entity, g_boxModel)
 		if e ~= 0 then return e end
 		entity_setScale(box_entity, g_boxes_scale)
 		entity_setPosition(box_entity, box.position)

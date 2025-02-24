@@ -9,6 +9,9 @@
 extern SDL_DisplayMode g_displayMode;
 extern char *g_openglLogFileName;
 
+const char *render_glGetErrorString(GLenum glError);
+void render_logShaderInfo(GLuint shaderIndex);
+void render_logProgramInfo(GLuint programIndex);
 int render_callback_updateLogFileName(cfg2_var_t *var);
 
 int render_initOpenGL(void);
@@ -27,7 +30,6 @@ typedef struct {
 	vec3_t position;
 	vec_t scale;
 	material_t *material;
-	GLuint shaderProgram;
 } renderObject_t;
 
 #endif // RENDER_H

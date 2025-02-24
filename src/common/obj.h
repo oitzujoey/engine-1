@@ -16,7 +16,6 @@ void model_init(model_t *model);
 void model_free(model_t *model);
 #ifdef CLIENT
 int l_model_linkDefaultMaterial(lua_State *luaState);
-int l_model_setInstanced(lua_State *l);
 #endif
 
 int l_obj_loadOoliteDAT(lua_State *luaState);

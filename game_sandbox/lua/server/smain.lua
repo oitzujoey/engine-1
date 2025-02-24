@@ -2,7 +2,6 @@ G_SERVER=true
 
 -- `include` is the engine's version of `require`.
 include "../common/common.lua"
-include "../common/loadworld.lua"
 
 g_eventQueues = {}
 g_clients = {}
@@ -182,7 +181,14 @@ function startup()
 	g_secretsDb = sqlite_open("secrets")
 
 	info("startup", "Loading world tree")
-    loadWorld()
+
+	g_cameraEntity = entity_createEntity(g_entity_type_entity)
+	e = entity_linkChild(g_worldEntity, g_cameraEntity)
+	if e ~= 0 then quit() end
+
+	g_boxModel, e = mesh_load("blender/cube")
+	if e ~= 0 then quit() end
+
 	loadBoxes()
 
 	info("startup", "Starting game")
