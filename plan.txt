@@ -974,6 +974,62 @@ The depth sort makes it so that large objects don't get sorted properly. I think
 Now that sorting is working, the game feels slower.
 
 
+I suspect that one reason the game is slow is that there are so many draw calls. After all, I'm rendering 1000 cubes each frame. Based on what Renderdoc shows, this seems to be what is happening. GPU instancing seems like the obvious choice. I intend to use a VBO for the vertex and texture buffers. Transparent objects chopped the rendering code in half, then sorting chopped the transparency code in half again. Instancing will probably chop each of those in half, making a grand total of six draw stages.
+
+1. Draw solid objects.
+2. Draw instanced solid objects.
+3. Draw unsorted transparent objects.
+4. Draw unsorted instanced transparent objects.
+5. Draw sorted transparent objects.
+6. Draw sorted transparent instanced objects.
+Uh oh. If I split sorting into two stages, then that's not actually sorting.
+
+So I guess this is where I make `RenderObject`s dynamically typed. Maybe I should add a bytecode interpreter while I'm at it. :p
+
+1. Draw solid RenderObjects, including instanced.
+2. Draw unsorted transparent objects, including instanced.
+3. Draw sorted transparent objects, including instanced.
+
+I don't think that fully solves the issue though. For example, let's say the ground model is closer to the player than one box, but not another. The two boxes are the same instance, but the ground needs to be rendered after the first box but before the second box. Do I need code to split the boxes into two instances?
+
+2 major features conflicting:
+* transparency
+* instancing
+
+Solve this problem:
+I have an array of objects. Some objects have a flag set. Group the objects together that have the flag set. Retain the overall ordering of the objects.
+How many draw calls does this result in?
+1. World box
+2. Far set of cubes
+3. Ground
+4. Near set of cubes
+
+Except we have transparency, so...
+1. Opaque cubes
+2. World box
+3. Far set of transparent cubes
+4. Ground
+5. Near set of transparent cubes
+
+And now we have an obvious lazy optimization: Don't instance transparent cubes!
+Don't even instance them if the `instancing` flag is set.
+
+1..n. Opaque models (Group by model, then generate instanced data sets from the large groups)
+n..n+m. Unsorted transparent models
+n+m..n+m+l. Sorted transparent models
+
+Only the opaque model renderer needs the special instancing code.
+
+For each node in the scene graph, if it is instanced, create a render object (or something smaller) instead of drawing and copy in the the instancing array for that model. Draw the instanced objects immediately after the scene graph rendering is finished, and before the transparency rendering. E.Z.
+An array will need to be created for each instanced model.
+
+Why does the current Lua request instancing per-shader instead of per-model?
+It is probably because a shader must be written with instancing in mind, while a model doesn't care if it is instanced or not. Is this wise? Each cube material uses the same cube shader, so that's basically an array per model anyway, so I guess it's not that bad. What if I want a model to have multiple materials, each of which references a different shader? What if one shader is opaque and another is transparent? The shaders would have to be drawn in different stages. And I think per-shader instancing would work in this case. Or I could force it per-model, and the mental model would be simpler... but per-shader encourages you to consider whether your shader supports instancing, and the models themselves don't care if they are instanced or not.
+This means there will be an array for each instanced shader, not an array for each instanced model.
+
+
+Should I modify the renderer for each game?
+
 
 
 
