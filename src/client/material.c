@@ -91,7 +91,7 @@ int material_initList(material_list_t *materialList) {
 			                                      "  frag_colour = texture(ourTexture, textureCoordinate)"
 			                                      "                        * vec4(dot, dot, dot, 1.0);"
 			                                      "}");
-			int e = shader_create(&shader, &vertexShader_sourceCode, &fragmentShader_sourceCode);
+			int e = shader_create(&shader, &vertexShader_sourceCode, &fragmentShader_sourceCode, false);
 		}
 
 		// Default material is opaque.

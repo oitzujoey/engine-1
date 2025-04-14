@@ -281,7 +281,12 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 		/* 	continue; */
 		/* } */
 
-		if (material->transparent) {
+		bool transparent = material->transparent;
+		bool instanced = shader->instanced;
+		if (transparent && instanced) {
+			// Perhaps we should name objects so that we can refer to them in error messages?
+			warning("Scene graph node is both transparent and GPU instanced. This is an invalid configuration.", "");
+		} else if (transparent) {
 			// Defer rendering to the transparency pass.
 			renderObject_t *ro = NULL;
 			e = g_renderObjectArena.alloc(g_renderObjectArena.context, (void **) &ro, sizeof(renderObject_t));
@@ -303,6 +308,28 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 			else {
 				return array_push(&g_transparencyRenderObjects, &ro);
 			}
+		} else if (instanced) {
+			// Create an instance object for each shader, even if the shader isn't used.
+			InstancedRenderObjects *iro = NULL;
+			e = g_renderObjectArena.alloc(g_renderObjectArena.context, (void **) &iro, sizeof(InstancedRenderObjects));
+			if (e) return e;
+			iro->glVertices_length = model->glVertices_length;
+			iro->glVertices = model->glVertices;
+			iro->glNormals_length = model->glNormals_length;
+			iro->glNormals = model->glNormals;
+			iro->glTexCoords_length = model->glTexCoords_length;
+			iro->glTexCoords = model->glTexCoords;
+			iro->material = material;
+			(void) array_init(&iro->orientations, &g_renderObjectArena, sizeof(quat_t));
+			(void) array_init(&iro->positions, &g_renderObjectArena, sizeof(vec3_t));
+			(void) array_init(&iro->scales, &g_renderObjectArena, sizeof(vec_t));
+
+			e = array_push(&iro->orientations, &orientation);
+			if (e) return e;
+			e = array_push(&iro->positions, position);
+			if (e) return e;
+			e = array_push(&iro->scales, &scale);
+			if (e) return e;
 		}
 		
 		/* Render */
@@ -460,16 +487,21 @@ int render(entity_t *entity) {
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	// For each entity in the tree...
-
 	e = allocator_create_stdlibArena(&g_renderObjectArena);
 	(void) array_init(&g_transparencyRenderObjects, &g_renderObjectArena, sizeof(renderObject_t *));
 	(void) array_init(&g_sortedTransparencyRenderObjects, &g_renderObjectArena, sizeof(renderObject_t *));
 
-	// Render world entity.
+
+	// Render world node.
 	glEnable(GL_CULL_FACE);
 	e = renderEntity(entity, &(vec3_t){0, 0, 0}, &(quat_t){.s = 1, .v = {0, 0, 0}}, 1.0, -1);
 	glDisable(GL_CULL_FACE);
+
+
+	// Render scene nodes with instanced shaders.
+	/* e = renderInstanced(); */
+	/* if (e) goto cleanup; */
+
 
 	// Sort transparent models. I think this is expensive.
 	(void) qsort(g_sortedTransparencyRenderObjects.elements,
@@ -477,14 +509,16 @@ int render(entity_t *entity) {
 	             g_sortedTransparencyRenderObjects.element_size,
 	             renderObject_compare);
 
-	// Render transparent models.
+	// Render unsorted transparent models.
 	glEnable(GL_BLEND);
 	e = renderRenderObjects(&g_transparencyRenderObjects);
 	if (e) goto cleanup;
-	// Sorted is drawn on top of unsorted.
+
+	// Render sorted transparent models on top of unsorted transparent models.
 	e = renderRenderObjects(&g_sortedTransparencyRenderObjects);
 	if (e) goto cleanup;
 	glDisable(GL_BLEND);
+
 
 	/* Show */
 	SDL_GL_SwapWindow(g_window);

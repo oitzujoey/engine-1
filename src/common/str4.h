@@ -4,7 +4,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include "allocator.h"
+#include "array.h"
 
 
 /* IMPORTANT:
@@ -27,7 +29,12 @@ void str4_copyC(Str4 *str4, const uint8_t *str, size_t str_length);
 void str4_copy(Str4 *destination, Str4 *source);
 void str4_concatenate(Str4 *destination, Str4 *left, Str4 *right);
 void str4_append(Str4 *destination, Str4 *right);
+size_t str4_length(Str4 *string);
+void str4_substring(Str4 *destination, Str4 *source, ptrdiff_t start_index, ptrdiff_t end_index);
+int str4_splitLines(array_t *array, Str4 *string);
+bool str4_equalC(Str4 *lstring, const uint8_t *rstring, size_t str_length);
 
+#define CSTR(c_string) ((const uint8_t *) c_string), (sizeof(c_string) - 1)
 #define STR4(c_string) str4_createConstant(((const uint8_t *) (c_string)), (sizeof(c_string) - 1))
 
 #endif // STR4_H

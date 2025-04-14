@@ -1020,7 +1020,7 @@ n+m..n+m+l. Sorted transparent models
 
 Only the opaque model renderer needs the special instancing code.
 
-For each node in the scene graph, if it is instanced, create a render object (or something smaller) instead of drawing and copy in the the instancing array for that model. Draw the instanced objects immediately after the scene graph rendering is finished, and before the transparency rendering. E.Z.
+For each node in the scene graph, if it is instanced, create a render object (or something smaller) instead of drawing and copy in to the instancing array for that model. Draw the instanced objects immediately after the scene graph rendering is finished, and before the transparency rendering. E.Z.
 An array will need to be created for each instanced model.
 
 Why does the current Lua request instancing per-shader instead of per-model?

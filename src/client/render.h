@@ -5,6 +5,7 @@
 #include "lua.h"
 #include "../common/cfg2.h"
 #include "../common/types.h"
+#include "../common/array.h"
 
 extern SDL_DisplayMode g_displayMode;
 extern char *g_openglLogFileName;
@@ -31,5 +32,19 @@ typedef struct {
 	vec_t scale;
 	material_t *material;
 } renderObject_t;
+
+typedef struct {
+	size_t glVertices_length;
+	vec_t *glVertices;
+	size_t glNormals_length;
+	vec_t *glNormals;
+	size_t glTexCoords_length;
+	vec_t *glTexCoords;
+	material_t *material;
+	// Unique per instance:
+	array_t orientations;
+	array_t positions;
+	array_t scales;
+} InstancedRenderObjects;
 
 #endif // RENDER_H

@@ -31,7 +31,7 @@ int shaders_quit(void) {
 	return array_quit(&g_shaders);
 }
 
-int shader_create(Shader **shader, Str4 *vertexShader_sourceCode, Str4 *fragmentShader_sourceCode) {
+int shader_create(Shader **shader, Str4 *vertexShader_sourceCode, Str4 *fragmentShader_sourceCode, bool instanced) {
 	int e = ERR_OK;
 	do {
 		Shader *localShader = malloc(sizeof(Shader));
@@ -133,7 +133,7 @@ int shader_create(Shader **shader, Str4 *vertexShader_sourceCode, Str4 *fragment
 			break;
 		}
 
-		localShader->instanced = false;
+		localShader->instanced = instanced;
 
 		e = array_push(&g_shaders, &localShader);
 		if (e) break;
@@ -141,8 +141,40 @@ int shader_create(Shader **shader, Str4 *vertexShader_sourceCode, Str4 *fragment
 		*shader = localShader;
 		printf("shaders_length %zu\n", g_shaders.elements_length);
 		printf("shader %p\n", *shader);
+		printf("shader %s\n", localShader->instanced ? "instanced" : "not instanced");
 
 	} while (0);
+	return e;
+}
+
+int shader_source_checkInstanced(Str4 *shaderSourceCode, bool *instanced) {
+	int e = ERR_OK;
+	if (shaderSourceCode->error) return shaderSourceCode->error;
+
+	array_t lines;
+	Allocator allocator = allocator_create_stdlib();
+	(void) array_init(&lines, &allocator, sizeof(Str4));
+	e = str4_splitLines(&lines, shaderSourceCode);
+	if (e) goto cleanup;
+
+	size_t lines_length = array_length(&lines);
+	for (size_t i = 0; i < lines_length; i++) {
+		Str4 line;
+		e = array_getElement(&lines, &line, i);
+		if (e) goto cleanup;
+		if (line.error) {
+			e = line.error;
+			goto cleanup;
+		}
+		bool equal = str4_equalC(&line, CSTR("#pragma instanced"));
+		if (equal) {
+			*instanced = true;
+			goto cleanup;
+		}
+	}
+	*instanced = false;
+ cleanup:
+	if (!e) e = array_quit(&lines);
 	return e;
 }
 
@@ -164,6 +196,9 @@ int shader_load(Shader **shader, Str4 *shader_path) {
 		e = vfs_getFileContents_malloc(&vertexShader_sourceCode_c, &vertexShader_sourceCode_c_length, vertexShader_path.str);
 		if (e) break;
 		Str4 vertexShader_sourceCode = str4_createConstant(vertexShader_sourceCode_c, vertexShader_sourceCode_c_length);
+		bool vertexShader_instanced;
+		e = shader_source_checkInstanced(&vertexShader_sourceCode, &vertexShader_instanced);
+		if (e) break;
 
 		Str4 fragmentShader_path = str4_create(&a);
 		Str4 fragmentShader_extension = STR4(".frag");
@@ -175,8 +210,22 @@ int shader_load(Shader **shader, Str4 *shader_path) {
 		e = vfs_getFileContents_malloc(&fragmentShader_sourceCode_c, &fragmentShader_sourceCode_c_length, fragmentShader_path.str);
 		if (e) break;
 		Str4 fragmentShader_sourceCode = str4_createConstant(fragmentShader_sourceCode_c, fragmentShader_sourceCode_c_length);
+		bool fragmentShader_instanced;
+		e = shader_source_checkInstanced(&fragmentShader_sourceCode, &fragmentShader_instanced);
+		if (e) break;
 
-		e = shader_create(shader, &vertexShader_sourceCode, &fragmentShader_sourceCode);
+		if (vertexShader_instanced && !fragmentShader_instanced) {
+			error("The fragment shader \"%s.frag\" is not instanced. Either both shaders must be instanced or neither should be instanced.", shader_path->str);
+			e = ERR_GENERIC;
+			break;
+		}
+		if (!vertexShader_instanced && fragmentShader_instanced) {
+			error("The vertex shader \"%s.vert\" is not instanced. Either both shaders must be instanced or neither should be instanced.", shader_path->str);
+			e = ERR_GENERIC;
+			break;
+		}
+
+		e = shader_create(shader, &vertexShader_sourceCode, &fragmentShader_sourceCode, vertexShader_instanced && fragmentShader_instanced);
 		if (e) break;
 
 	} while (0);

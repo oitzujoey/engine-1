@@ -112,9 +112,6 @@ function startup()
 
 	local cubeShader, e = loadShader("cube")
 	if e ~= 0 then quit() end
-	-- Enable GPU instancing for this shader.
-	e = shader_setInstanced(cubeShader, true)
-	if e ~= 0 then quit() end
 
 	function loadCubeMaterial(name)
 		local material, e = loadMaterial(cubeShader, name)

@@ -1,6 +1,8 @@
 #include "str4.h"
 #include <string.h>
 #include "common.h"
+#include "array.h"
+#include "arena.h"
 
 int str4_errorp(Str4 *str) {
 	return str->error;
@@ -104,4 +106,107 @@ void str4_append(Str4 *destination, Str4 *right) {
 	// Commit.
 	destination->str = destination_str;
 	destination->str_length = destination_str_length;
+}
+
+size_t str4_length(Str4 *string) {
+	return string->str_length;
+}
+
+void str4_substring(Str4 *destination, Str4 *source, ptrdiff_t start_index, ptrdiff_t end_index) {
+	if (source->error) {
+		destination->error = source->error;
+		return;
+	}
+	// end_index > length is probably OK.
+	if (end_index > source->str_length) {
+		end_index = source->str_length;
+	}
+	// ...but these are bad.
+	if (start_index > end_index || start_index < 0 || start_index > source->str_length) {
+		destination->error = ERR_GENERIC;
+		return;
+	}
+
+	// Shortcut.
+	if (start_index == end_index) {
+		destination->str = NULL;
+		destination->str_length = 0;
+		return;
+	}
+
+	Allocator *destination_allocator = destination->allocator;
+	size_t destination_bytes_length = end_index - start_index;
+	uint8_t *destination_bytes = NULL;
+	int e = destination_allocator->alloc(destination_allocator->context,
+	                                     (void **) &destination_bytes,
+	                                     (destination_bytes_length + 1) * sizeof(uint8_t));
+	if (e) {
+		destination->error = e;
+		return;
+	}
+	(void) memcpy(destination_bytes, &source->str[start_index], destination_bytes_length);
+	destination_bytes[destination_bytes_length] = '\0';
+	destination->str = destination_bytes;
+	destination->str_length = destination_bytes_length;
+}
+
+int str4_splitLines(array_t *array, Str4 *string) {
+	int e = ERR_OK;
+	if (string->error) {
+		e = string->error;
+		goto cleanup;
+	}
+
+	Allocator arena;
+	// Use the array's allocator.
+	e = allocator_create_arena(&arena, array->allocator);
+	if (e) goto cleanup;
+	
+	Str4 currentLine;
+
+	size_t string_length = str4_length(string);
+	size_t substring_start = 0;
+	enum {
+		NORMAL,
+		CARRIAGE_RETURN,
+		NEWLINE,
+	} state = NORMAL;
+	for (size_t string_index = 0; string_index < string_length; string_index++) {
+		currentLine = str4_create(&arena);
+		uint8_t character = string->str[string_index];
+		if (character == '\n') {
+			if (state != CARRIAGE_RETURN) {
+				(void) str4_substring(&currentLine, string, substring_start, string_index);
+				e = array_push(array, &currentLine);
+				if (e) goto cleanup;
+			}
+			state = NEWLINE;
+		}
+		else if (character == '\r') {
+			state = CARRIAGE_RETURN;
+		}
+		else {
+			if (state != NORMAL) {
+				substring_start = string_index;
+				state = NORMAL;
+			}
+		}
+	}
+
+ cleanup: return e;
+}
+
+bool str4_equalC(Str4 *lstring, const uint8_t *rstring, size_t str_length) {
+	if (lstring->error) return false;
+	if (lstring->str_length != str_length) return false;
+
+	uint8_t *lstring_str = lstring->str;
+	bool equal = true;
+	for (size_t i = 0; i < str_length; i++) {
+		if (lstring_str[i] != rstring[i]) {
+			equal = false;
+			break;
+		}
+	}
+	return equal;
 }
