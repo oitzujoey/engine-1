@@ -40,7 +40,6 @@ extern material_list_t g_materialList;
 
 luaCFunc_t luaClientFunctions[] = {
 	{.func = l_shader_create,               .name = "shader_create"},
-	{.func = l_shader_setInstanced,         .name = "shader_setInstanced"},
 	{.func = l_material_create,             .name = "material_create"},
 	{.func = l_material_setDepthSort,       .name = "material_setDepthSort"},
 	{.func = l_material_setCull,            .name = "material_setCull"},
