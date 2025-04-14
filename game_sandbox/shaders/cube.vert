@@ -34,7 +34,7 @@ float w = 11.0*aspectRatio;
 float h = 11.0;
 float n = 11.0;
 float f = 7500.0;
-mat4 projectionMatrix = mat4(-2.0*n/w, 0.0, 0.0, 0.0,
+mat4 projectionMatrix = mat4(2.0*n/w, 0.0, 0.0, 0.0,
                              0.0, 2.0*n/h, 0.0, 0.0,
                              0.0, 0.0, -(f+n)/(f-n), -1.0,
                              0.0, 0.0, -2.0*f*n/(f-n), 0.0);

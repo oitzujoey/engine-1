@@ -102,40 +102,46 @@ function startup()
 	g_boxModel, e = mesh_load("blender/cube")
 	if e ~= 0 then quit() end
 
+	g_frogModel, e = mesh_load("blender/frogcube")
+	if e ~= 0 then quit() end
+
 	function loadShader(name)
 		return shader_create("shaders/"..name)
 	end
 	-- Load a .png texture from "textures/" as a new material.
 	function loadMaterial(shader, name)
-		return material_create(shader, "textures/"..name..".png")
+		return material_create(shader, "textures/"..name)
 	end
 
 	local cubeShader, e = loadShader("cube")
 	if e ~= 0 then quit() end
 
-	function loadCubeMaterial(name)
-		local material, e = loadMaterial(cubeShader, name)
+	function loadCubeMaterial(name, file, model)
+		local material, e = loadMaterial(cubeShader, file)
 		g_materials[name] = material
+		g_modelForMaterial[name] = model
 		return material, e
 	end
 
-	redMaterial, e = loadCubeMaterial("red")
+	redMaterial, e = loadCubeMaterial("red", "red.png", g_boxModel)
 	if e ~= 0 then quit() end
-	greenMaterial, e = loadCubeMaterial("green")
+	greenMaterial, e = loadCubeMaterial("green", "green.png", g_boxModel)
 	if e ~= 0 then quit() end
-	blueMaterial, e = loadCubeMaterial("blue")
+	blueMaterial, e = loadCubeMaterial("blue", "blue.png", g_boxModel)
 	if e ~= 0 then quit() end
-	whiteMaterial, e = loadCubeMaterial("white")
+	whiteMaterial, e = loadCubeMaterial("white", "white.png", g_boxModel)
 	if e ~= 0 then quit() end
-	blackMaterial, e = loadCubeMaterial("black")
+	blackMaterial, e = loadCubeMaterial("black", "black.png", g_boxModel)
 	if e ~= 0 then quit() end
-	cyanMaterial, e = loadCubeMaterial("cyan")
+	cyanMaterial, e = loadCubeMaterial("cyan", "cyan.png", g_boxModel)
 	if e ~= 0 then quit() end
-	magentaMaterial, e = loadCubeMaterial("magenta")
+	magentaMaterial, e = loadCubeMaterial("magenta", "magenta.png", g_boxModel)
 	if e ~= 0 then quit() end
-	yellowMaterial, e = loadCubeMaterial("yellow")
+	yellowMaterial, e = loadCubeMaterial("yellow", "yellow.png", g_boxModel)
 	if e ~= 0 then quit() end
-	clearMaterial, e = loadCubeMaterial("clear")
+	clearMaterial, e = loadCubeMaterial("clear", "clear.png", g_boxModel)
+	if e ~= 0 then quit() end
+	frogMaterial, e = loadCubeMaterial("frog", "frogcube.png", g_frogModel)
 	if e ~= 0 then quit() end
 	-- e = material_setCull(clearMaterial, false)
 	-- if e ~= 0 then quit() end
@@ -151,7 +157,7 @@ function startup()
 	if e ~= 0 then quit() end
 	entity_setScale(sandboxEntity, 5*g_boundingBoxRadius)
 	entity_setOrientation(sandboxEntity, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
-	local sandboxMaterial, e = loadMaterial(cubeShader, "lava")
+	local sandboxMaterial, e = loadMaterial(cubeShader, "lava.png")
 	if e ~= 0 then quit() end
 	material_setDepthSort(sandboxMaterial, false)
 	e = model_linkDefaultMaterial(sandboxModel, sandboxMaterial)
@@ -160,17 +166,17 @@ function startup()
 	-- Ground
 	g_planeModel, e = mesh_load("blender/plane")
 	if e ~= 0 then quit() end
-	g_groundMaterial, e = loadMaterial(cubeShader, "floor")
+	g_groundMaterial, e = loadMaterial(cubeShader, "floor.png")
 	if e ~= 0 then quit() end
 	material_setDepthSort(g_groundMaterial, false)
 
-	g_cursorMaterial, e = loadMaterial(cubeShader, "cursor")
+	g_cursorMaterial, e = loadMaterial(cubeShader, "cursor.png")
 	if e ~= 0 then quit() end
 
-	g_selectionMaterial, e = loadMaterial(cubeShader, "selection")
+	g_selectionMaterial, e = loadMaterial(cubeShader, "selection.png")
 	if e ~= 0 then quit() end
 
-	g_loadingMaterial, e = loadMaterial(cubeShader, "loading")
+	g_loadingMaterial, e = loadMaterial(cubeShader, "loading.png")
 	if e ~= 0 then quit() end
 
 	-- a
@@ -361,12 +367,12 @@ function mainGame()
 		yaw_y = yaw_y + cos(g_playerState.euler.yaw)
 	end
 	if g_strafeLeft then
-		yaw_x = yaw_x - cos(g_playerState.euler.yaw)
-		yaw_y = yaw_y - sin(g_playerState.euler.yaw)
-	end
-	if g_strafeRight then
 		yaw_x = yaw_x + cos(g_playerState.euler.yaw)
 		yaw_y = yaw_y + sin(g_playerState.euler.yaw)
+	end
+	if g_strafeRight then
+		yaw_x = yaw_x - cos(g_playerState.euler.yaw)
+		yaw_y = yaw_y - sin(g_playerState.euler.yaw)
 	end
 	g_playerState.velocity = vec3_add(g_playerState.velocity, {x=yaw_x, y=yaw_y, z=0})
 
@@ -374,7 +380,7 @@ function mainGame()
 		g_playerState.euler.pitch = g_playerState.euler.pitch - g_mouse.delta_y/1000.0
 	end
 	if (g_mouse.delta_x and g_mouse.delta_x ~= 0) then
-		g_playerState.euler.yaw = g_playerState.euler.yaw + g_mouse.delta_x/1000.0
+		g_playerState.euler.yaw = g_playerState.euler.yaw - g_mouse.delta_x/1000.0
 	end
 
 	-- Constrain up-down view to not go past vertical.

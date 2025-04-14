@@ -198,7 +198,7 @@ int render_initOpenGL(void) {
 	glDepthFunc(GL_LESS);
 
 	glCullFace(GL_BACK);
-	glFrontFace(GL_CCW);
+	glFrontFace(GL_CW);
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	

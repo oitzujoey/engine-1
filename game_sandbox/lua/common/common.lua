@@ -14,12 +14,14 @@ g_materialNames = {
 	"yellow",
 	"cyan",
 	"magenta",
-	-- "purple",
 	"black",
 	"white",
-	"clear"
+	"clear",
+	"frog"
 }
 g_materials = {}
+
+g_modelForMaterial = {}
 
 g_frame = 1
 
@@ -515,7 +517,12 @@ function createBox(id, position, materialName)
 	local box = {}
 	local boxEntity, e = entity_createEntity(g_entity_type_model)
 	e = entity_linkChild(g_cameraEntity, boxEntity)
-	e = entity_linkChild(boxEntity, g_boxModel)
+	if G_CLIENT then
+		model = g_modelForMaterial[materialName]
+	else
+		model = g_boxModel
+	end
+	e = entity_linkChild(boxEntity, model)
 	box.id = id
 	box.entity = boxEntity
 	-- Enable gravity.
@@ -558,7 +565,7 @@ function changeBoxMaterial(box, materialName)
 		box.entity = box_entity
 		e = entity_linkChild(g_cameraEntity, box_entity)
 		if e ~= 0 then return e end
-		e = entity_linkChild(box_entity, g_boxModel)
+		e = entity_linkChild(box_entity, g_modelForMaterial[materialName])
 		if e ~= 0 then return e end
 		entity_setScale(box_entity, g_boxes_scale)
 		entity_setPosition(box_entity, box.position)

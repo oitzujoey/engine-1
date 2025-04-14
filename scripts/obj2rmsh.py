@@ -60,7 +60,7 @@ for face in obj.faces:
         rmsh.maxs = list(map(max, rmsh.maxs, vertex))
         rmsh.vertices += [vertex]
         rmsh.vertexNormals += [vertex_normal]
-        rmsh.vertexTextureCoordinates += [texture_coordinate]
+        rmsh.vertexTextureCoordinates += [[texture_coordinate[0], -texture_coordinate[1]]]
 rmsh.vertices_length = len(rmsh.vertices)
 rmsh.vertexNormals_length = len(rmsh.vertexNormals)
 rmsh.vertexTextureCoordinates_length = len(rmsh.vertexTextureCoordinates)
