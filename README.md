@@ -11,6 +11,8 @@ Here is what I do know:
 
 ## Installation
 
+EVERYTHING THAT FOLLOWS IS OUT OF DATE AND IS UNLIKELY TO WORK.
+
 ### Dependencies
 
 Make sure you have these dependencies before building. GL and GLEW are required for the client only. Qt is only required for the runner.
