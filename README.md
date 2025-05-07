@@ -1,8 +1,6 @@
 # engine-1
 
-![Screenshot of a bunch of space ships.](/readme-assets/lots-o-ships.jpg)
-
-![Screenshot of a terrain-like mesh.](/readme-assets/terrain-mesh.png)
+![Screenshot of cubes built into structures, one of which is falling down.](/readme-assets/cubes-game.png)
 
 Honestly, I have no idea what this is going to be yet. At this point, it's just a tech demo.
 Here is what I do know:
