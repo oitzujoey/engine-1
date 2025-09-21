@@ -1027,6 +1027,30 @@ Why does the current Lua request instancing per-shader instead of per-model?
 It is probably because a shader must be written with instancing in mind, while a model doesn't care if it is instanced or not. Is this wise? Each cube material uses the same cube shader, so that's basically an array per model anyway, so I guess it's not that bad. What if I want a model to have multiple materials, each of which references a different shader? What if one shader is opaque and another is transparent? The shaders would have to be drawn in different stages. And I think per-shader instancing would work in this case. Or I could force it per-model, and the mental model would be simpler... but per-shader encourages you to consider whether your shader supports instancing, and the models themselves don't care if they are instanced or not.
 This means there will be an array for each instanced shader, not an array for each instanced model.
 
+Once a shader-model pair is added to the list of instanced pairs, it is never removed.
+
+// Setup: each time a model or 
+instancedObjects = {}
+for model in models {
+  if model.parent and model.parent.material and model.parent.material.shader.instanced {
+    instancedObjects[(model.index, model.parent.material.shader.index)] = []
+  }
+  else if model.defaultMaterial and model.defaultMaterial.shader.instanced {
+    instancedObjects[(model.index, model.defaultMaterial.shader.index)] = []
+  }
+}
+
+I think it would make the engine simpler if models didn't have a default shader. It would be better if a model-entity must be created with a model and a material.
+
+shader = shader_create "shader"
+material = material_create shader "texture"
+model = model_load "model"
+nodeEntity = entity_create
+modelEntity = entity_createModelEntity model material
+entity_link nodeEntity modelEntity
+entity_unlink nodeEntity modelEntity
+entity_delete modelEntity
+
 
 Should I modify the renderer for each game?
 
@@ -1052,6 +1076,7 @@ Stuff I need to document:
     All cvars and console language
     Key binding
     SQLite bindings
+    Instancing
 
 Stuff I need to add:
     Collision detection
@@ -1138,18 +1163,18 @@ Other improvements:
 =================================================
 [*] (Common) Implement proper VFS.
 [*] (Common) Redo config scripting system.
-[ ] (Client) Load GLSL from files.
+[*] (Client) Load GLSL from files.
 [ ] (Client) Allow GLSL to include GLSL libraries (preprocessor).
 [*] (Common) Allow Lua to include Lua source code.
 [*] (Common) Import .obj files.
 ===========================
 */* Start work on games. ***
 ===========================
-[/] (Client) Texture models.
+[*] (Client) Texture models.
     [*] (Client) Load images.
     [*] (Client) Create texture list.
     [*] (Client) Bind texture to model.
-    [ ] (Client) Bind texture to entity.
+    [*] (Client) Bind texture to entity.
     [*] (Client) Render texture.
 
 =====================
@@ -1159,7 +1184,7 @@ Other improvements:
     [*] Make boxes
 	[*] Make map
 	[ ] Make player models
-[ ] (Lua) Texture boxes with different colors corresponding to the keyboard numbers 0-9.
+[*] (Lua) Texture boxes with different colors corresponding to the keyboard numbers 0-9.
 [*] (Lua) Add physics and collision handling.
 [ ] (All) Profile and optimize for speed.
 

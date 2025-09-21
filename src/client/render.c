@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
 #include "../common/common.h"
@@ -32,6 +33,7 @@ Allocator g_renderObjectArena;
 
 array_t g_transparencyRenderObjects;
 array_t g_sortedTransparencyRenderObjects;
+array_t g_instancedRenderObjectArrays;
 
 
 const char *render_glGetErrorString(GLenum glError) {
@@ -245,7 +247,7 @@ int render_initOpenGL(void) {
 	return error;
 }
 
-// Note: `position` is `vec3_t *` and not `vec3_t` because `vec3_t` it decayed to a pointer. I'm not entirely clear on
+// Note: `position` is `vec3_t *` and not `vec3_t` because `vec3_t` is decayed to a pointer. I'm not entirely clear on
 // why this happens. It's possible that arrays always decay when passed to functions.
 int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t scale, ptrdiff_t material_index) {
 	int e = ERR_OK;
@@ -283,6 +285,7 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 
 		bool transparent = material->transparent;
 		bool instanced = shader->instanced;
+		// I believe that (material, shader) is guaranteed to be in the list of material-shader pairs if it is instanced.
 		if (transparent && instanced) {
 			// Perhaps we should name objects so that we can refer to them in error messages?
 			warning("Scene graph node is both transparent and GPU instanced. This is an invalid configuration.", "");
@@ -311,7 +314,7 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 		} else if (instanced) {
 			// Create an instance object for each shader, even if the shader isn't used.
 			InstancedRenderObjects *iro = NULL;
-			e = g_renderObjectArena.alloc(g_renderObjectArena.context, (void **) &iro, sizeof(InstancedRenderObjects));
+			e = ARENA_ALLOC(g_renderObjectArena, &iro, sizeof(InstancedRenderObjects));
 			if (e) return e;
 			iro->glVertices_length = model->glVertices_length;
 			iro->glVertices = model->glVertices;
@@ -330,8 +333,39 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 			if (e) return e;
 			e = array_push(&iro->scales, &scale);
 			if (e) return e;
+
+			// Insert `iro` into the array selected by its shader-model pair.
+			size_t model_key = modelIndex;
+			size_t shader_key = shader->shader_index;
+			// Search for shader-model pair.
+			bool found = false;
+			InstancedRenderObjectArray iroa;
+			for (size_t index = 0; index < g_instancedRenderObjectArrays.elements_length; index++) {
+				e = array_getElement(&g_instancedRenderObjectArrays, &iroa, index);
+				if (e) return e;
+				if (iroa.shader_index == shader_key && iroa.model_index == model_key) {
+					found = true;
+					break;
+				}
+			}
+			if (found) {
+				// Shader-model pair exists, so push `iro` into its array.
+				e = array_push(&iroa.instancedRenderObjects, &iro);
+				if (e) return e;
+			}
+			else {
+				// Shader-model pair doesn't exist, so create a new one and push it into the associative array.
+				// Shadow iroa.
+				InstancedRenderObjectArray iroa;
+				iroa.shader_index = shader_key;
+				iroa.model_index = model_key;
+				(void) array_init(&iroa.instancedRenderObjects, g_instancedRenderObjectArrays.allocator, sizeof(InstancedRenderObjects *));
+				e = array_push(&g_instancedRenderObjectArrays, &iroa);
+				if (e) return e;
+			}
+			continue;
 		}
-		
+
 		/* Render */
 
 		glUseProgram(shader->program);
@@ -490,6 +524,7 @@ int render(entity_t *entity) {
 	e = allocator_create_stdlibArena(&g_renderObjectArena);
 	(void) array_init(&g_transparencyRenderObjects, &g_renderObjectArena, sizeof(renderObject_t *));
 	(void) array_init(&g_sortedTransparencyRenderObjects, &g_renderObjectArena, sizeof(renderObject_t *));
+	(void) array_init(&g_instancedRenderObjectArrays, &g_renderObjectArena, sizeof(InstancedRenderObjectArray));
 
 
 	// Render world node.
@@ -499,8 +534,8 @@ int render(entity_t *entity) {
 
 
 	// Render scene nodes with instanced shaders.
-	/* e = renderInstanced(); */
-	/* if (e) goto cleanup; */
+	e = renderInstanced();
+	if (e) goto cleanup;
 
 
 	// Sort transparent models. I think this is expensive.

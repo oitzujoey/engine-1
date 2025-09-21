@@ -625,6 +625,7 @@ int l_entity_setScale(lua_State *luaState) {
 
 #ifdef CLIENT
 
+/* entity_linkMaterial entity_index::Integer material_index::Integer */
 int l_entity_linkMaterial(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	

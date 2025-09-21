@@ -1,4 +1,5 @@
 #version 400
+#pragma instanced
 
 out vec4 frag_colour;
 in vec3 color;

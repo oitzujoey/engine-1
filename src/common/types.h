@@ -306,6 +306,7 @@ typedef enum {
 /* ======== */
 
 typedef struct {
+	size_t shader_index;
 	GLuint program;
 	struct {
 		GLint orientation;

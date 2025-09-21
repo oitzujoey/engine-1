@@ -118,32 +118,38 @@ function startup()
 	local defaultShader, e = loadShader("default")
 	if e ~= 0 then quit() end
 
-	function loadCubeMaterial(name, file, model)
-		local material, e = loadMaterial(cubeShader, file)
+	function loadCubeMaterial(name, file, model, transparent)
+		local shader = nil
+		if transparent then
+			shader = defaultShader
+		else
+			shader = cubeShader
+		end
+		local material, e = loadMaterial(shader, file)
 		g_materials[name] = material
 		g_modelForMaterial[name] = model
 		return material, e
 	end
 
-	redMaterial, e = loadCubeMaterial("red", "red.png", g_boxModel)
+	redMaterial, e = loadCubeMaterial("red", "red.png", g_boxModel, false)
 	if e ~= 0 then quit() end
-	greenMaterial, e = loadCubeMaterial("green", "green.png", g_boxModel)
+	greenMaterial, e = loadCubeMaterial("green", "green.png", g_boxModel, false)
 	if e ~= 0 then quit() end
-	blueMaterial, e = loadCubeMaterial("blue", "blue.png", g_boxModel)
+	blueMaterial, e = loadCubeMaterial("blue", "blue.png", g_boxModel, false)
 	if e ~= 0 then quit() end
-	whiteMaterial, e = loadCubeMaterial("white", "white.png", g_boxModel)
+	whiteMaterial, e = loadCubeMaterial("white", "white.png", g_boxModel, false)
 	if e ~= 0 then quit() end
-	blackMaterial, e = loadCubeMaterial("black", "black.png", g_boxModel)
+	blackMaterial, e = loadCubeMaterial("black", "black.png", g_boxModel, false)
 	if e ~= 0 then quit() end
-	cyanMaterial, e = loadCubeMaterial("cyan", "cyan.png", g_boxModel)
+	cyanMaterial, e = loadCubeMaterial("cyan", "cyan.png", g_boxModel, false)
 	if e ~= 0 then quit() end
-	magentaMaterial, e = loadCubeMaterial("magenta", "magenta.png", g_boxModel)
+	magentaMaterial, e = loadCubeMaterial("magenta", "magenta.png", g_boxModel, false)
 	if e ~= 0 then quit() end
-	yellowMaterial, e = loadCubeMaterial("yellow", "yellow.png", g_boxModel)
+	yellowMaterial, e = loadCubeMaterial("yellow", "yellow.png", g_boxModel, false)
 	if e ~= 0 then quit() end
-	clearMaterial, e = loadCubeMaterial("clear", "clear.png", g_boxModel)
+	clearMaterial, e = loadCubeMaterial("clear", "clear.png", g_boxModel, true)
 	if e ~= 0 then quit() end
-	frogMaterial, e = loadCubeMaterial("frog", "frogcube.png", g_frogModel)
+	frogMaterial, e = loadCubeMaterial("frog", "frogcube.png", g_frogModel, false)
 	if e ~= 0 then quit() end
 	-- e = material_setCull(clearMaterial, false)
 	-- if e ~= 0 then quit() end
@@ -172,10 +178,10 @@ function startup()
 	if e ~= 0 then quit() end
 	material_setDepthSort(g_groundMaterial, false)
 
-	g_cursorMaterial, e = loadMaterial(cubeShader, "cursor.png")
+	g_cursorMaterial, e = loadMaterial(defaultShader, "cursor.png")
 	if e ~= 0 then quit() end
 
-	g_selectionMaterial, e = loadMaterial(cubeShader, "selection.png")
+	g_selectionMaterial, e = loadMaterial(defaultShader, "selection.png")
 	if e ~= 0 then quit() end
 
 	g_loadingMaterial, e = loadMaterial(defaultShader, "loading.png")

@@ -47,4 +47,10 @@ typedef struct {
 	array_t scales;
 } InstancedRenderObjects;
 
+typedef struct {
+	size_t shader_index;
+	size_t model_index;
+	array_t instancedRenderObjects;
+} InstancedRenderObjectArray;
+
 #endif // RENDER_H

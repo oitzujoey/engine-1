@@ -264,8 +264,7 @@ static int material_loadTexture(GLuint *textureIndex, bool *transparent, const c
 /* Lua bindings */
 /* ============ */
 
-// material_create shaderPath texturePath
-// `shaderPath` does not have the file extension because this function adds the .vert and .frag suffixes.
+// material_create shader texturePath
 int l_material_create(lua_State *luaState) {
 	int e = ERR_OK;
 

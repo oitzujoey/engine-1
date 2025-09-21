@@ -135,6 +135,7 @@ int shader_create(Shader **shader, Str4 *vertexShader_sourceCode, Str4 *fragment
 
 		localShader->instanced = instanced;
 
+		localShader->shader_index = array_length(&g_shaders);
 		e = array_push(&g_shaders, &localShader);
 		if (e) break;
 

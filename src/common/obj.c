@@ -172,6 +172,7 @@ static inline int model_linkDefaultMaterial(ptrdiff_t parentIndex, ptrdiff_t mat
 	return error;
 }
 
+/* model_linkDefaultMaterial model_index::Integer material_index::Integer */
 int l_model_linkDefaultMaterial(lua_State *luaState) {
 	int error = ERR_CRITICAL;
 	
