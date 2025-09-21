@@ -115,6 +115,8 @@ function startup()
 
 	local cubeShader, e = loadShader("cube")
 	if e ~= 0 then quit() end
+	local defaultShader, e = loadShader("default")
+	if e ~= 0 then quit() end
 
 	function loadCubeMaterial(name, file, model)
 		local material, e = loadMaterial(cubeShader, file)
@@ -157,7 +159,7 @@ function startup()
 	if e ~= 0 then quit() end
 	entity_setScale(sandboxEntity, 5*g_boundingBoxRadius)
 	entity_setOrientation(sandboxEntity, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
-	local sandboxMaterial, e = loadMaterial(cubeShader, "lava.png")
+	local sandboxMaterial, e = loadMaterial(defaultShader, "lava.png")
 	if e ~= 0 then quit() end
 	material_setDepthSort(sandboxMaterial, false)
 	e = model_linkDefaultMaterial(sandboxModel, sandboxMaterial)
@@ -166,7 +168,7 @@ function startup()
 	-- Ground
 	g_planeModel, e = mesh_load("blender/plane")
 	if e ~= 0 then quit() end
-	g_groundMaterial, e = loadMaterial(cubeShader, "floor.png")
+	g_groundMaterial, e = loadMaterial(defaultShader, "floor.png")
 	if e ~= 0 then quit() end
 	material_setDepthSort(g_groundMaterial, false)
 
@@ -176,7 +178,7 @@ function startup()
 	g_selectionMaterial, e = loadMaterial(cubeShader, "selection.png")
 	if e ~= 0 then quit() end
 
-	g_loadingMaterial, e = loadMaterial(cubeShader, "loading.png")
+	g_loadingMaterial, e = loadMaterial(defaultShader, "loading.png")
 	if e ~= 0 then quit() end
 
 	-- a
