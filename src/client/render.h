@@ -34,6 +34,8 @@ typedef struct {
 } renderObject_t;
 
 typedef struct {
+	size_t shader_index;
+	size_t model_index;
 	size_t glVertices_length;
 	vec_t *glVertices;
 	size_t glNormals_length;
@@ -42,15 +44,9 @@ typedef struct {
 	vec_t *glTexCoords;
 	material_t *material;
 	// Unique per instance:
-	array_t orientations;
 	array_t positions;
+	array_t orientations;
 	array_t scales;
 } InstancedRenderObjects;
-
-typedef struct {
-	size_t shader_index;
-	size_t model_index;
-	array_t instancedRenderObjects;
-} InstancedRenderObjectArray;
 
 #endif // RENDER_H

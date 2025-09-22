@@ -4,10 +4,12 @@
 layout(location = 0) in vec3 vp;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 texCoord;
-uniform vec4 orientation;
-uniform vec3 position;
+// Instanced parameters
+layout(location = 3) in vec3 position;
+layout(location = 4) in vec4 orientation;
+layout(location = 5) in float scale;
+
 uniform float aspectRatio;
-uniform float scale;
 out vec3 color;
 out vec2 textureCoordinate;
 

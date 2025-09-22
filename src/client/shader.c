@@ -104,26 +104,28 @@ int shader_create(Shader **shader, Str4 *vertexShader_sourceCode, Str4 *fragment
 		}
 		
 		/* Find uniform variable locations. */
-	
-		localShader->uniform.orientation = glGetUniformLocation(localShader->program, "orientation");
-		if (localShader->uniform.orientation < 0) {
-			critical_error("Could not get uniform from program.", "");
-			e = ERR_CRITICAL;
-			break;
-		}
-	
-		localShader->uniform.position = glGetUniformLocation(localShader->program, "position");
-		if (localShader->uniform.position < 0) {
-			critical_error("Could not get uniform from program.", "");
-			e = ERR_CRITICAL;
-			break;
-		}
 
-		localShader->uniform.scale = glGetUniformLocation(localShader->program, "scale");
-		if (localShader->uniform.scale < 0) {
-			critical_error("Could not get uniform from program.", "");
-			e = ERR_CRITICAL;
-			break;
+		if (!instanced) {
+			localShader->uniform.orientation = glGetUniformLocation(localShader->program, "orientation");
+			if (localShader->uniform.orientation < 0) {
+				critical_error("Could not get uniform from program.", "");
+				e = ERR_CRITICAL;
+				break;
+			}
+	
+			localShader->uniform.position = glGetUniformLocation(localShader->program, "position");
+			if (localShader->uniform.position < 0) {
+				critical_error("Could not get uniform from program.", "");
+				e = ERR_CRITICAL;
+				break;
+			}
+
+			localShader->uniform.scale = glGetUniformLocation(localShader->program, "scale");
+			if (localShader->uniform.scale < 0) {
+				critical_error("Could not get uniform from program.", "");
+				e = ERR_CRITICAL;
+				break;
+			}
 		}
 	
 		localShader->uniform.aspectRatio = glGetUniformLocation(localShader->program, "aspectRatio");

@@ -22,6 +22,9 @@ SDL_GLContext g_GLContext;
 GLuint g_VertexVbo;
 GLuint g_colorVbo;
 GLuint g_texCoordVbo;
+GLuint g_positionVbo;
+GLuint g_orientationVbo;
+GLuint g_scaleVbo;
 GLuint g_vao;
 char *g_openglLogFileName;
 float g_points[] = {
@@ -33,7 +36,7 @@ Allocator g_renderObjectArena;
 
 array_t g_transparencyRenderObjects;
 array_t g_sortedTransparencyRenderObjects;
-array_t g_instancedRenderObjectArrays;
+array_t g_instancedRenderObjects;
 
 
 const char *render_glGetErrorString(GLenum glError) {
@@ -219,7 +222,19 @@ int render_initOpenGL(void) {
 	g_texCoordVbo = 0;
 	glGenBuffers(1, &g_texCoordVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, g_texCoordVbo);
-	
+
+	g_positionVbo = 0;
+	glGenBuffers(1, &g_positionVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, g_positionVbo);
+
+	g_orientationVbo = 0;
+	glGenBuffers(1, &g_orientationVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, g_orientationVbo);
+
+	g_scaleVbo = 0;
+	glGenBuffers(1, &g_scaleVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, g_scaleVbo);
+
 	
 	g_vao = 0;
 	glGenVertexArrays(1, &g_vao);
@@ -233,10 +248,22 @@ int render_initOpenGL(void) {
 	
 	glBindBuffer(GL_ARRAY_BUFFER, g_texCoordVbo);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-	
+
+	glBindBuffer(GL_ARRAY_BUFFER, g_positionVbo);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	glBindBuffer(GL_ARRAY_BUFFER, g_orientationVbo);
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, 0, NULL);
+
+	glBindBuffer(GL_ARRAY_BUFFER, g_scaleVbo);
+	glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, 0, NULL);
+
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
+	glEnableVertexAttribArray(4);
+	glEnableVertexAttribArray(5);
 
 	/* Set background color. */
 	
@@ -312,55 +339,50 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 				return array_push(&g_transparencyRenderObjects, &ro);
 			}
 		} else if (instanced) {
-			// Create an instance object for each shader, even if the shader isn't used.
+			// Insert `iro` into the array selected by its shader-model pair.
+			size_t model_key = modelIndex;
+			size_t shader_key = shader->shader_index;
+			// Search for shader-model pair.
+			bool missing = true;
 			InstancedRenderObjects *iro = NULL;
-			e = ARENA_ALLOC(g_renderObjectArena, &iro, sizeof(InstancedRenderObjects));
-			if (e) return e;
-			iro->glVertices_length = model->glVertices_length;
-			iro->glVertices = model->glVertices;
-			iro->glNormals_length = model->glNormals_length;
-			iro->glNormals = model->glNormals;
-			iro->glTexCoords_length = model->glTexCoords_length;
-			iro->glTexCoords = model->glTexCoords;
-			iro->material = material;
-			(void) array_init(&iro->orientations, &g_renderObjectArena, sizeof(quat_t));
-			(void) array_init(&iro->positions, &g_renderObjectArena, sizeof(vec3_t));
-			(void) array_init(&iro->scales, &g_renderObjectArena, sizeof(vec_t));
+			for (size_t index = 0; index < g_instancedRenderObjects.elements_length; index++) {
+				e = array_getElement(&g_instancedRenderObjects, &iro, index);
+				if (e) return e;
+				if (iro->shader_index == shader_key && iro->model_index == model_key) {
+					missing = false;
+					break;
+				}
+			}
+			if (missing) {
+				// Shader-model pair doesn't exist, so create a new one.
+				// Create an instance object for each shader, even if the shader isn't used.
+				e = ARENA_ALLOC(g_renderObjectArena, &iro, sizeof(InstancedRenderObjects));
+				if (e) return e;
+				iro->shader_index = shader_key;
+				iro->model_index = model_key;
+				iro->glVertices_length = model->glVertices_length;
+				iro->glVertices = model->glVertices;
+				iro->glNormals_length = model->glNormals_length;
+				iro->glNormals = model->glNormals;
+				iro->glTexCoords_length = model->glTexCoords_length;
+				iro->glTexCoords = model->glTexCoords;
+				iro->material = material;
+				(void) array_init(&iro->orientations, &g_renderObjectArena, sizeof(quat_t));
+				(void) array_init(&iro->positions, &g_renderObjectArena, sizeof(vec3_t));
+				(void) array_init(&iro->scales, &g_renderObjectArena, sizeof(vec_t));
+			}
 
-			e = array_push(&iro->orientations, &orientation);
+			float glOrientation[4] = {orientation.v[0], orientation.v[1], orientation.v[2], orientation.s};
+			e = array_push(&iro->orientations, &glOrientation);
 			if (e) return e;
 			e = array_push(&iro->positions, position);
 			if (e) return e;
 			e = array_push(&iro->scales, &scale);
 			if (e) return e;
 
-			// Insert `iro` into the array selected by its shader-model pair.
-			size_t model_key = modelIndex;
-			size_t shader_key = shader->shader_index;
-			// Search for shader-model pair.
-			bool found = false;
-			InstancedRenderObjectArray iroa;
-			for (size_t index = 0; index < g_instancedRenderObjectArrays.elements_length; index++) {
-				e = array_getElement(&g_instancedRenderObjectArrays, &iroa, index);
-				if (e) return e;
-				if (iroa.shader_index == shader_key && iroa.model_index == model_key) {
-					found = true;
-					break;
-				}
-			}
-			if (found) {
-				// Shader-model pair exists, so push `iro` into its array.
-				e = array_push(&iroa.instancedRenderObjects, &iro);
-				if (e) return e;
-			}
-			else {
-				// Shader-model pair doesn't exist, so create a new one and push it into the associative array.
-				// Shadow iroa.
-				InstancedRenderObjectArray iroa;
-				iroa.shader_index = shader_key;
-				iroa.model_index = model_key;
-				(void) array_init(&iroa.instancedRenderObjects, g_instancedRenderObjectArrays.allocator, sizeof(InstancedRenderObjects *));
-				e = array_push(&g_instancedRenderObjectArrays, &iroa);
+			if (missing) {
+				// Put the shader-model pair into the associative array.
+				e = array_push(&g_instancedRenderObjects, &iro);
 				if (e) return e;
 			}
 			continue;
@@ -451,6 +473,66 @@ int renderEntity(entity_t *entity, vec3_t *position, quat_t *orientation, vec_t 
 	return error;
 }
 
+int renderInstanced(array_t *instancedRenderObjects) {
+	array_t *iros = instancedRenderObjects;
+	Allocator *a = iros->allocator;
+	size_t iros_length = array_length(iros);
+	printf("draws: %zu\n", iros_length);
+	for (size_t iros_index = 0; iros_index < iros_length; iros_index++) {
+		InstancedRenderObjects *iro;
+		int e = array_getElement(iros, &iro, iros_index);
+		if (e) return e;
+
+		/* For normal renderObjects, we would iterate over the objects and render them as we extract them. In this case,
+		   we only need one InstancedRenderObjects to extract the model and shader information from, then we pass the
+		   position, orientation, and scale to the GPU. */
+		size_t iro_length = array_length(&iro->positions);
+		{
+			material_t *material = iro->material;
+			Shader *shader = material->shader;
+
+			glUseProgram(shader->program);
+
+			glBindBuffer(GL_ARRAY_BUFFER, g_VertexVbo);
+			glBufferData(GL_ARRAY_BUFFER, iro->glVertices_length * sizeof(float), iro->glVertices, GL_DYNAMIC_DRAW);
+
+			glBindBuffer(GL_ARRAY_BUFFER, g_colorVbo);
+			glBufferData(GL_ARRAY_BUFFER, iro->glNormals_length * sizeof(float), iro->glNormals, GL_DYNAMIC_DRAW);
+
+			glBindBuffer(GL_ARRAY_BUFFER, g_texCoordVbo);
+			glBufferData(GL_ARRAY_BUFFER, iro->glTexCoords_length * sizeof(float), iro->glTexCoords, GL_DYNAMIC_DRAW);
+
+			glBindBuffer(GL_ARRAY_BUFFER, g_positionVbo);
+			glBufferData(GL_ARRAY_BUFFER, iro_length * 3 * sizeof(float), iro->positions.elements, GL_DYNAMIC_DRAW);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glVertexAttribDivisor(3, 1);
+
+			glBindBuffer(GL_ARRAY_BUFFER, g_orientationVbo);
+			glBufferData(GL_ARRAY_BUFFER, iro_length * 4 * sizeof(float), iro->orientations.elements, GL_DYNAMIC_DRAW);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glVertexAttribDivisor(4, 1);
+
+			glBindBuffer(GL_ARRAY_BUFFER, g_scaleVbo);
+			glBufferData(GL_ARRAY_BUFFER, iro_length * sizeof(float), iro->scales.elements, GL_DYNAMIC_DRAW);
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glVertexAttribDivisor(5, 1);
+
+			glUniform1f(shader->uniform.aspectRatio, 16.0f/9.0f);
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, material->texture);
+			glBindVertexArray(g_vao);
+
+			if (material->cull) glEnable(GL_CULL_FACE);
+
+			// glVertices_length is always a multiple of three.
+			glDrawArraysInstanced(GL_TRIANGLES, 0, iro->glVertices_length / 3, iro_length);
+			glDisable(GL_CULL_FACE);
+		}
+	}
+	return 0;
+}
+
 void renderRenderObject(renderObject_t *renderObject) {
 	material_t *material = renderObject->material;
 	Shader *shader = material->shader;
@@ -524,7 +606,7 @@ int render(entity_t *entity) {
 	e = allocator_create_stdlibArena(&g_renderObjectArena);
 	(void) array_init(&g_transparencyRenderObjects, &g_renderObjectArena, sizeof(renderObject_t *));
 	(void) array_init(&g_sortedTransparencyRenderObjects, &g_renderObjectArena, sizeof(renderObject_t *));
-	(void) array_init(&g_instancedRenderObjectArrays, &g_renderObjectArena, sizeof(InstancedRenderObjectArray));
+	(void) array_init(&g_instancedRenderObjects, &g_renderObjectArena, sizeof(InstancedRenderObjects *));
 
 
 	// Render world node.
@@ -534,7 +616,7 @@ int render(entity_t *entity) {
 
 
 	// Render scene nodes with instanced shaders.
-	e = renderInstanced();
+	e = renderInstanced(&g_instancedRenderObjects);
 	if (e) goto cleanup;
 
 

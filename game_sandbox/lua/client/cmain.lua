@@ -117,6 +117,7 @@ function startup()
 	if e ~= 0 then quit() end
 	local defaultShader, e = loadShader("default")
 	if e ~= 0 then quit() end
+	-- cubeShader = defaultShader
 
 	function loadCubeMaterial(name, file, model, transparent)
 		local shader = nil
@@ -483,6 +484,8 @@ function main()
 			-- Delete loading cube.
 			e = modelEntity_delete(g_loadingEntity)
 			if e ~= 0 then quit() end
+
+			info("main", "Loaded cubes.")
 		end
 
 		mainGame()
