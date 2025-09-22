@@ -367,7 +367,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	error = 0;
 	cleanup_l:
 	
-	MEMORY_FREE(&tempString);
+	if (tempString) MEMORY_FREE(&tempString);
 	
 	return error;
 }

@@ -4,6 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if 0
+#include <execinfo.h>
+#endif
 #include "memory.h"
 
 /*
@@ -74,6 +77,19 @@ void log_warning(const char *function, const char *fmt, ...) {
 	va_end(va);
 	
 	free(buf);
+
+
+#if 0
+	{
+		void *pointers[50];
+		int pointers_length = backtrace(pointers, sizeof(pointers)/sizeof(*pointers));
+		char **strings = backtrace_symbols(pointers, pointers_length);
+		if (strings == NULL) return;
+		for (int i = 0; i < pointers_length; i++) {
+			puts(strings[i]);
+		}
+	}
+#endif
 }
 
 void log_error(const char *function, const char *fmt, ...) {

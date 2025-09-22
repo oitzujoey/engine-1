@@ -131,13 +131,13 @@ void model_init(model_t *model) {
 }
 
 void model_free(model_t *model) {
-	MEMORY_FREE(&model->vertices);
+	if (model->vertices) MEMORY_FREE(&model->vertices);
 	model->vertices_length = 0;
-	MEMORY_FREE(&model->surface_normals);
+	if (model->surface_normals) MEMORY_FREE(&model->surface_normals);
 	for (int i = 0; i < model->faces_length; i++) {
 		MEMORY_FREE(&model->faces[i]);
 	}
-	MEMORY_FREE(&model->faces);
+	if (model->faces) MEMORY_FREE(&model->faces);
 #ifdef CLIENT
 	MEMORY_FREE(&model->glVertices);
 	MEMORY_FREE(&model->glNormals);
@@ -147,8 +147,8 @@ void model_free(model_t *model) {
 	for (ptrdiff_t i = 0; i < model->faces_length; i++) {
 		MEMORY_FREE(&model->texCoords[i]);
 	}
-	MEMORY_FREE(&model->texCoords);
-	MEMORY_FREE(&model->texCoords_textures);
+	if (model->texCoords) MEMORY_FREE(&model->texCoords);
+	if (model->texCoords_textures) MEMORY_FREE(&model->texCoords_textures);
 	MEMORY_FREE(&model->glTexCoords);
 #endif
 	model->faces_length = 0;

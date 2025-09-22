@@ -271,7 +271,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	error = ERR_OK;
 	cleanup_l:
 	
-	MEMORY_FREE(&tempString);
+	if (tempString) MEMORY_FREE(&tempString);
 
 	return error;
 }
@@ -304,7 +304,6 @@ int main(int argc, char *argv[]) {
 	const char *luaFileName = "smain.lua";
 	char *luaFilePath = NULL;
 	cfg2_var_t *lua_main_v;
-	char *tempString = NULL;
 	bool proceed;
 	
 	info("Starting engine-1 v0.0 (Server)", "");
@@ -441,7 +440,6 @@ int main(int argc, char *argv[]) {
 	cfg2_free();
 	
 	MEMORY_FREE(&luaFilePath);
-	MEMORY_FREE(&tempString);
 	
 	// Exit.
 	

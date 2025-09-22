@@ -887,7 +887,7 @@ void terminal_quitConsole(void) {
 	
 	cleanup_l:
 	
-	MEMORY_FREE(&g_commandComplete);
+	if (g_commandComplete) MEMORY_FREE(&g_commandComplete);
 	MEMORY_FREE(&g_consoleCommand);
 	
 	return;

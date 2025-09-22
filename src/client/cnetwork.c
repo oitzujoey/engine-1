@@ -18,12 +18,12 @@ ENetHost *g_clientHost;
 ENetPeer *g_serverPeer;
 cnetwork_clientState_t g_clientState;
 
-/*
-A packet to send to the server. Will eventually contain keys and things like
-that.
-*/
-enet_uint8 *g_clientStateArray = NULL;
-int g_clientStateArray_length = 0;
+/* /\* */
+/* A packet to send to the server. Will eventually contain keys and things like */
+/* that. */
+/* *\/ */
+/* enet_uint8 *g_clientStateArray = NULL; */
+/* int g_clientStateArray_length = 0; */
 
 extern cfg2_t g_cfg2;
 
@@ -160,9 +160,9 @@ static int cnetwork_sendState(lua_State *luaState) {
 	
 	error = ERR_OK;
 	cleanup_l:
-	
-	MEMORY_FREE(&g_clientStateArray);
-	g_clientStateArray_length = 0;
+
+	/* MEMORY_FREE(&g_clientStateArray); */
+	/* g_clientStateArray_length = 0; */
 	
 	return error;
 }

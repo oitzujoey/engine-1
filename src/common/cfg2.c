@@ -1811,11 +1811,9 @@ int cfg2_createVariables(const cfg2_var_init_t *varInit, lua_State *luaState) {
 
 void cfg2_free(void) {
 	for (int i = 0; i < g_cfg2.vars_length; i++) {
-		MEMORY_FREE(&g_cfg2.vars[i].name);
-		// MEMORY_FREE(g_cfg2.vars[i].command);
-		MEMORY_FREE(&g_cfg2.vars[i].string);
-		// string_free(&g_cfg2.vars[i].string);
-		MEMORY_FREE(&g_cfg2.vars[i].script);
+		if (g_cfg2.vars[i].name) MEMORY_FREE(&g_cfg2.vars[i].name);
+		if (g_cfg2.vars[i].string) MEMORY_FREE(&g_cfg2.vars[i].string);
+		if (g_cfg2.vars[i].script) MEMORY_FREE(&g_cfg2.vars[i].script);
 	}
 	MEMORY_FREE(&g_cfg2.vars);
 	g_cfg2.vars_length = 0;

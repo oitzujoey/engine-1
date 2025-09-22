@@ -137,7 +137,6 @@ typedef struct cfg2_var_s {
 	vec_t vector;           // vec_t (float)
 	int integer;            // int
 	char *string;           // string
-	// char *command;          // Command sent to variable
 	cfg2_var_type_t type;   // Type of variable: none, vect, int, string
 	cfg2_admin_t permissionRead;        // Permission level required to read
 	cfg2_admin_t permissionWrite;       // Permission level required to write

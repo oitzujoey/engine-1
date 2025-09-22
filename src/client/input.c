@@ -474,7 +474,7 @@ int input_stringToKeybind(const char * const key, keybind_t *keybind) {
 	error = ERR_OK;
 	cleanup_l:
 
-	MEMORY_FREE(&deviceId);
+	if (deviceId) MEMORY_FREE(&deviceId);
 	MEMORY_FREE(&name);
 	
 	return error;

@@ -63,7 +63,7 @@ void entity_freeEntityList(void) {
 	}
 	MEMORY_FREE(&g_entityList.entities);
 	g_entityList.entities_length = 0;
-	MEMORY_FREE(&g_entityList.deletedEntities);
+	if (g_entityList.deletedEntities) MEMORY_FREE(&g_entityList.deletedEntities);
 	g_entityList.deletedEntities_length = 0;
 	g_entityList.deletedEntities_length_allocated = 0;
 }
