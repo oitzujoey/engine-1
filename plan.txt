@@ -1055,6 +1055,12 @@ entity_delete modelEntity
 Should I modify the renderer for each game?
 
 
+Instancing is partially working. The only issue is I need a way to change the textures for each cubes since they are currently all using the white texture, except for the frog which is a different model than the rest of the cubes.
+Some ways to solve this issue:
+    Sprite sheet, then pass the index or coordinates of the texture in the sprite sheet to the fragment shader, which pulls the correct texture out.
+    Do one instanced draw for each set of cubes with matching texture-shader-model. This will result in about 10 draws. Probably acceptable.
+
+
 
 
 Custom data for each package, server:
