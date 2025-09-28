@@ -101,6 +101,14 @@ function key_color8_d() Keys.color = 8 end
 function key_color9_d() Keys.color = 9 end
 function key_color0_d() Keys.color = 10 end
 
+function key_space_d()
+	g_jump = true
+end
+
+function key_space_u()
+	g_jump = false
+end
+
 
 function mouse_leftPress()
 	g_selectCube = true

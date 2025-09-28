@@ -188,14 +188,18 @@ function startup()
 	g_loadingMaterial, e = loadMaterial(defaultShader, "loading.png")
 	if e ~= 0 then quit() end
 
-	-- a
+	-- a, left array
 	keys_createFullBind("k_100", "key_strafeLeft", "key_strafeLeft_d", "key_strafeLeft_u")
-	-- d
+	keys_createFullBind("k_1073741903", "key_leftarrow", "key_strafeLeft_d", "key_strafeLeft_u")
+	-- d, right arrow
 	keys_createFullBind("k_97", "key_strafeRight", "key_strafeRight_d", "key_strafeRight_u")
-	-- w
+	keys_createFullBind("k_1073741904", "key_rightarrow", "key_strafeRight_d", "key_strafeRight_u")
+	-- w, up arrow
 	keys_createFullBind("k_119", "key_backward", "key_backward_d", "key_backward_u")
-	-- s
-	keys_createFullBind("k_115", "key_forward",	"key_forward_d", "key_forward_u")
+	keys_createFullBind("k_1073741906", "key_downarrow", "key_backward_d", "key_backward_u")
+	-- s, down arrow
+	keys_createFullBind("k_115", "key_forward", "key_forward_d", "key_forward_u")
+	keys_createFullBind("k_1073741905", "key_uparrow", "key_forward_d", "key_forward_u")
 	-- Box colors
 	keys_createHalfBind("k_49", "key_color1", "key_color1_d")
 	keys_createHalfBind("k_50", "key_color2", "key_color2_d")
@@ -207,9 +211,11 @@ function startup()
 	keys_createHalfBind("k_56", "key_color8", "key_color8_d")
 	keys_createHalfBind("k_57", "key_color9", "key_color9_d")
 	keys_createHalfBind("k_48", "key_color0", "key_color0_d")
-	-- Left mouse
+	-- Space (jump)
+	keys_createFullBind("k_32", "key_space", "key_space_d", "key_space_u")
+	-- Left mouse (select)
 	keys_createFullBind("m_1", "mouse_leftButton", "mouse_leftPress", "mouse_leftRelease")
-	-- Right mouse
+	-- Right mouse (jump)
 	keys_createFullBind("m_3", "mouse_rightButton", "mouse_rightPress", "mouse_rightRelease")
 	-- Mouse x-y
 	keys_createMouseBind("mouse_motion")
