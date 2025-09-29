@@ -309,7 +309,9 @@ function playerMoveAndCollide(state)
 																   0)
 				endComponent = endComponent - startingPoint[component]
 				if traceCollided then
-					if abs(endComponent - position[component]) < abs(minEndComponent - position[component]) then
+					if oldVelocity[component] > 0 and endComponent < minEndComponent then
+						minEndComponent = endComponent
+					elseif oldVelocity[component] < 0 and endComponent > minEndComponent then
 						minEndComponent = endComponent
 					end
 					tracesCollided = true
