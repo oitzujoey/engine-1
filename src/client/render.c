@@ -385,7 +385,7 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 				e = array_push(&g_instancedRenderObjects, &iro);
 				if (e) return e;
 			}
-			continue;
+			return e;
 		}
 
 		/* Render */
