@@ -29,6 +29,9 @@
 #include "../common/memory.h"
 #include "../common/random.h"
 #include "shader.h"
+#ifdef LINUX
+#include "named_pipe.h"
+#endif
 
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
@@ -47,6 +50,9 @@ luaCFunc_t luaClientFunctions[] = {
 	{.func = l_material_setCull,            .name = "material_setCull"},
 	{.func = l_model_linkDefaultMaterial,   .name = "model_linkDefaultMaterial"},
 	{.func = l_entity_linkMaterial,         .name = "entity_linkMaterial"},
+#ifdef LINUX
+	{.func = l_namedPipe_readAsString,      .name = "namedPipe_readAsString"},
+#endif
 	{.func = NULL,                          .name = NULL}
 };
 
@@ -265,19 +271,19 @@ static void windowQuit(void) {
 }
 
 static int main_init(const int argc, char *argv[], lua_State *luaState) {
-	int error;
+	int e;
 	
 	char *tempString = NULL;
 
 	(void) random_init();
 
-	error = vfs_init((uint8_t *) argv[0]);
-	if (error) goto cleanup_l;
+	e = vfs_init((uint8_t *) argv[0]);
+	if (e) goto cleanup_l;
 
-	error = input_init();
-	if (error) {
+	e = input_init();
+	if (e) {
 		critical_error("Could not initialize user input", "");
-		error = ERR_CRITICAL;
+		e = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 	
@@ -285,35 +291,35 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	
 	cfg2_init(luaState);
 	
-	error = cfg2_createVariables(g_commonVarInit, luaState);
-	if (error == ERR_GENERIC) {
+	e = cfg2_createVariables(g_commonVarInit, luaState);
+	if (e == ERR_GENERIC) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
-		error = ERR_GENERIC;
+		e = ERR_GENERIC;
 		goto cleanup_l;
 	}
-	else if (error == ERR_OUTOFMEMORY) {
+	else if (e == ERR_OUTOFMEMORY) {
 		outOfMemory();
-		error = ERR_OUTOFMEMORY;
+		e = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
 	
-	error = cfg2_createVariables(g_clientVarInit, luaState);
-	if (error) {
+	e = cfg2_createVariables(g_clientVarInit, luaState);
+	if (e) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
-		error = ERR_GENERIC;
+		e = ERR_GENERIC;
 		goto cleanup_l;
 	}
-	else if (error == ERR_OUTOFMEMORY) {
+	else if (e == ERR_OUTOFMEMORY) {
 		outOfMemory();
-		error = ERR_OUTOFMEMORY;
+		e = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
 
 	// Mount engine directory.
-	error = PHYSFS_mount("./", "", true);
-	if (!error) {
+	e = PHYSFS_mount("./", "", true);
+	if (!e) {
 		error("Could not add directory \"%s\" to the search path: %s", "./", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-		error = ERR_GENERIC;
+		e = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
@@ -325,10 +331,10 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	}
 	
 	// Unmount engine directory.
-	error = PHYSFS_unmount("./");
-	if (!error) {
+	e = PHYSFS_unmount("./");
+	if (!e) {
 		error("Could not remove directory \"%s\" from the search path: %s", "./", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-		error = ERR_GENERIC;
+		e = ERR_GENERIC;
 		goto cleanup_l;
 	}
 
@@ -339,15 +345,15 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		for (int i = 1; i < argc; i++) {
 			str2_copyMalloc(&tempString, argv[i]);
 			g_cfg2.recursionDepth = 0;
-			error = cfg2_execString(tempString, luaState, "Console");
-			if (error == ERR_OUTOFMEMORY) {
+			e = cfg2_execString(tempString, luaState, "Console");
+			if (e == ERR_OUTOFMEMORY) {
 				outOfMemory();
 				goto cleanup_l;
 			}
-			if (error == ERR_CRITICAL) {
+			if (e == ERR_CRITICAL) {
 				goto cleanup_l;
 			}
-			if (error) {
+			if (e) {
 				break;
 			}
 		}
@@ -355,22 +361,22 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 
 	g_cfg2.adminLevel = savedAdminLevel;
 	
-	error = windowInit();
-	if (error) {
+	e = windowInit();
+	if (e) {
 		critical_error("windowInit returned %i", error);
-		error = ERR_CRITICAL;
+		e = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 
 	if (g_workspace.str_length == 0) {
 		log_critical_error(__func__, "\"workspace\" has not been set.");
-		error = ERR_GENERIC;
+		e = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
 	// string_copy_c(&tempString, g_workspace);
-	// error = vfs_init(&g_vfs, &tempString);
-	// if (error) {
+	// e = vfs_init(&g_vfs, &tempString);
+	// if (e) {
 	// 	log_critical_error(__func__, "Could not start VFS");
 	// 	goto cleanup_l;
 	// }
@@ -379,36 +385,45 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	modelList_init();
 
 	if (g_multiplayer) {
-		error = cnetwork_init();
-		if (error) {
-			critical_error("cnetwork_init failed with error %i", error);
-			error = ERR_CRITICAL;
+		e = cnetwork_init();
+		if (e) {
+			critical_error("cnetwork_init failed with error %i", e);
+			e = ERR_CRITICAL;
 			goto cleanup_l;
         }
 	}
 
 #ifndef NOTERMINAL
-	error = terminal_initConsole();
-	if (error) {
+	e = terminal_initConsole();
+	if (e) {
 		goto cleanup_l;
 	}
-	error = terminal_terminalInit();
-	if (error) {
+	e = terminal_terminalInit();
+	if (e) {
 		critical_error("Could not initialize the terminal", "");
-		error = ERR_CRITICAL;
+		e = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 #endif
-	
-	error = 0;
+
+#ifdef LINUX
+	// I don't really care if this succeeds.
+	(void) namedPipe_init();
+#endif
+
+	e = 0;
 	cleanup_l:
 	
 	if (tempString) MEMORY_FREE(&tempString);
 	
-	return error;
+	return e;
 }
 
 void main_quit(void) {
+
+#ifdef LINUX
+	(void) namedPipe_quit();
+#endif
 
 #ifndef NOTERMINAL
 	terminal_quitConsole();

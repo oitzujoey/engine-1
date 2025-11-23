@@ -4,6 +4,7 @@
 #include "common.h"
 #include "log.h"
 
+// Can return ERR_OUTOFMEMORY.
 int allocator_create_stdlibArena(Allocator *arena) {
 	static Allocator host_allocator = {.context=NULL,
 	                                   .alloc=allocator_stdlib_malloc,
@@ -12,6 +13,7 @@ int allocator_create_stdlibArena(Allocator *arena) {
 	return allocator_create_arena(arena, &host_allocator);
 }
 
+// Can return ERR_OUTOFMEMORY.
 int allocator_create_arena(Allocator *arena, Allocator *host_allocator) {
 	int e = ERR_OK;
 

@@ -24,7 +24,7 @@ typedef struct {
    if (e) panic();
    // Do stuff with `newDataBlock`.
    // ...
-   e = a.free(a.context &newDataBlock);
+   e = a.free(a.context, &newDataBlock);
    if (e) panic(); */
 
 // Wrapper around stdlib's malloc and free.

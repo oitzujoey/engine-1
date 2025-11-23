@@ -83,6 +83,34 @@ void str4_concatenate(Str4 *destination, Str4 *left, Str4 *right) {
 	destination->str_length = destination_str_length;
 }
 
+void str4_appendC(Str4 *destination, const uint8_t *right, size_t right_length) {
+	if (destination->error) {
+		return;
+	}
+	if ((right == NULL) && (right_length != 0)) {
+		destination->error = ERR_GENERIC;
+		return;
+	}
+	if (right_length == 0) return;
+	Allocator *destination_allocator = destination->allocator;
+	size_t destination_str_length = destination->str_length + right_length;
+	uint8_t *destination_str = NULL;
+	int e = destination_allocator->alloc(destination_allocator->context,
+	                                     (void **) &destination_str,
+	                                     (destination_str_length + 1) * sizeof(uint8_t));
+	if (e) {
+		destination->error = e;
+		return;
+	}
+	(void) memcpy(destination_str, destination->str, destination->str_length);
+	(void) memcpy(destination_str + destination->str_length, right, right_length);
+	destination_str[destination_str_length] = '\0';
+
+	// Commit.
+	destination->str = destination_str;
+	destination->str_length = destination_str_length;
+}
+
 void str4_append(Str4 *destination, Str4 *right) {
 	if (destination->error || right->error) {
 		if (destination->error < right->error) destination->error = right->error;

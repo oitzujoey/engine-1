@@ -11,7 +11,11 @@
 
 /* IMPORTANT:
    STR4 MUST BE USED WITH AN ARENA ALLOCATOR.
-   It will call `Allocator:alloc` many times, and then you are expected to call `Allocator:quit` once. */
+   It will call `Allocator:alloc` many times, and then you are expected to call `Allocator:quit`
+   once, otherwise none of the memory will be freed. */
+/* Important:
+   The character at string[string_length] is always '\0'. Binary strings are permitted, so there
+   may be null characters at other places in the string as well. */
 
 
 typedef struct {
@@ -28,6 +32,7 @@ Str4 str4_createConstant(const uint8_t *str, size_t str_length);
 void str4_copyC(Str4 *str4, const uint8_t *str, size_t str_length);
 void str4_copy(Str4 *destination, Str4 *source);
 void str4_concatenate(Str4 *destination, Str4 *left, Str4 *right);
+void str4_appendC(Str4 *destination, const uint8_t *right, size_t right_length);
 void str4_append(Str4 *destination, Str4 *right);
 size_t str4_length(Str4 *string);
 void str4_substring(Str4 *destination, Str4 *source, ptrdiff_t start_index, ptrdiff_t end_index);
