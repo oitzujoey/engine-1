@@ -33,6 +33,8 @@
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
 
+int g_multiplayer;
+
 extern SDL_Window *g_window;
 // extern SDL_Surface *g_screenSurface;
 
@@ -47,6 +49,24 @@ luaCFunc_t luaClientFunctions[] = {
 	{.func = l_entity_linkMaterial,         .name = "entity_linkMaterial"},
 	{.func = NULL,                          .name = NULL}
 };
+
+
+#define CFG_MULTIPLAYER           "multiplayer"
+#define CFG_MULTIPLAYER_DEFAULT         1
+
+static int main_callback_multiplayer(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	const char *string = var->string;
+	if (string[1] != '\0') {
+		g_multiplayer = 0;
+		return ERR_OK;
+	}
+	if (string[0] == '0') {
+		g_multiplayer = 0;
+		return ERR_OK;
+	}
+	g_multiplayer = 1;
+	return ERR_OK;
+}
 
 const cfg2_var_init_t g_clientVarInit[] = {
 	// Commands
@@ -112,6 +132,18 @@ const cfg2_var_init_t g_clientVarInit[] = {
 		.callback = cnetwork_callback_setIpAddress
 	},
 	{
+		.name = CFG_MULTIPLAYER,
+		.vector = 0,
+		.integer = CFG_MULTIPLAYER_DEFAULT,
+		.string = CFG_IP_ADDRESS_DEFAULT,
+		.type = cfg2_var_type_string,
+		.permissionRead = cfg2_admin_game,
+		.permissionWrite = cfg2_admin_supervisor,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = main_callback_multiplayer
+	},
+	{
 		.name = NULL,
 		.vector = 0,
 		.integer = 0,
@@ -140,9 +172,11 @@ static void main_housekeeping(lua_State *luaState) {
 	}
 #endif
 
-	error = cnetwork_runEvents(luaState);
-	if (error) {
-		goto cleanup_l;
+	if (g_multiplayer) {
+		error = cnetwork_runEvents(luaState);
+		if (error) {
+			goto cleanup_l;
+        }
 	}
 
 	// for (int i = 0; i < g_entityList.entities_length; i++) {
@@ -343,14 +377,16 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	
 	entity_initEntityList();
 	modelList_init();
-	
-	error = cnetwork_init();
-	if (error) {
-		critical_error("cnetwork_init failed with error %i", error);
-		error = ERR_CRITICAL;
-		goto cleanup_l;
+
+	if (g_multiplayer) {
+		error = cnetwork_init();
+		if (error) {
+			critical_error("cnetwork_init failed with error %i", error);
+			error = ERR_CRITICAL;
+			goto cleanup_l;
+        }
 	}
-	
+
 #ifndef NOTERMINAL
 	error = terminal_initConsole();
 	if (error) {
@@ -378,9 +414,11 @@ void main_quit(void) {
 	terminal_quitConsole();
 	terminal_terminalQuit();
 #endif
-	
-	cnetwork_quit();
-	
+
+	if (g_multiplayer) {
+		cnetwork_quit();
+	}
+
 	modelList_free();
 	entity_freeEntityList();
 	
