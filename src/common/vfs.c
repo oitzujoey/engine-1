@@ -190,10 +190,10 @@ int vfs_callback_loadGame(cfg2_var_t *var, const char *command, lua_State *luaSt
 		(void) str4_append(&fullWorkspacePath, &g_game);
 		e = fullWorkspacePath.error;
 		if (e) goto cleanup;
-		e = PHYSFS_mount((char *) fullWorkspacePath.str, "", true);
+		e = PHYSFS_mount((char *)fullWorkspacePath.str, "", true);
 		if (!e) {
 			error("Could not add workspace directory \"%s\" to the search path: %s",
-			      fullWorkspacePath,
+			      (char *)fullWorkspacePath.str,
 			      PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		}
 		else {
