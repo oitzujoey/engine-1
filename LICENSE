@@ -1,9 +1,11 @@
 Unless otherwise specified, all files in this project are unlicensed. Files that were not written by me (Joey Herguth) may be licensed. They retain whatever license they were released other.
 
 
-stb_image.h — Dual licensed under Public Domain or MIT license.
-insane.h — Don't recognize the license. Author can be found at http://insanecoding.blogspot.com/ or http://asprintf.insanecoding.org/.
-insane.c — Don't recognize the license. Author can be found at http://insanecoding.blogspot.com/ or http://asprintf.insanecoding.org/.
+src/client/stb_image.h — Dual licensed under Public Domain or MIT license.
+src/sqlite/shell.c — SQLite's license.
+src/sqlite/sqlite3.c — SQLite's license.
+src/sqlite/sqlite3ext.h — SQLite's license.
+src/sqlite/sqlite3.h — SQLite's license.
 
 
 You have two options:

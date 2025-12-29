@@ -754,7 +754,7 @@ int cfg2_callback_suDisguise(cfg2_var_t *var, const char *command, lua_State *lu
 		g_cfg2.adminLevelDisguise = cfg2_admin_administrator;
 	}
 	
-	printf(COLOR_CYAN"You are a pretend level %i admin."COLOR_NORMAL"\n", g_cfg2.adminLevelDisguise);
+	printf(COLOR_CYAN"You are a pretend level %i admin and a real level %i admin."COLOR_NORMAL"\n", g_cfg2.adminLevelDisguise, g_cfg2.adminLevel);
 	
 	error = ERR_OK;
 	cleanup_l:

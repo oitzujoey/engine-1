@@ -36,6 +36,7 @@ typedef struct {
 typedef struct {
 	size_t shader_index;
 	size_t model_index;
+	GLuint texture_index;
 	size_t glVertices_length;
 	vec_t *glVertices;
 	size_t glNormals_length;

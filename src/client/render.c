@@ -342,13 +342,14 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 			// Insert `iro` into the array selected by its shader-model pair.
 			size_t model_key = modelIndex;
 			size_t shader_key = shader->shader_index;
+			GLuint texture_key = material->texture;
 			// Search for shader-model pair.
 			bool missing = true;
 			InstancedRenderObjects *iro = NULL;
 			for (size_t index = 0; index < g_instancedRenderObjects.elements_length; index++) {
 				e = array_getElement(&g_instancedRenderObjects, &iro, index);
 				if (e) return e;
-				if (iro->shader_index == shader_key && iro->model_index == model_key) {
+				if (iro->shader_index == shader_key && iro->model_index == model_key && iro->texture_index == texture_key) {
 					missing = false;
 					break;
 				}
@@ -360,6 +361,7 @@ int renderModels(entity_t *entity, vec3_t *position, quat_t orientation, vec_t s
 				if (e) return e;
 				iro->shader_index = shader_key;
 				iro->model_index = model_key;
+				iro->texture_index = texture_key;
 				iro->glVertices_length = model->glVertices_length;
 				iro->glVertices = model->glVertices;
 				iro->glNormals_length = model->glNormals_length;
@@ -520,7 +522,7 @@ int renderInstanced(array_t *instancedRenderObjects) {
 			glUniform1f(shader->uniform.aspectRatio, 16.0f/9.0f);
 
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, material->texture);
+			glBindTexture(GL_TEXTURE_2D, iro->texture_index);
 			glBindVertexArray(g_vao);
 
 			if (material->cull) glEnable(GL_CULL_FACE);

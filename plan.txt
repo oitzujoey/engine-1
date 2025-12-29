@@ -1061,6 +1061,10 @@ Some ways to solve this issue:
     Do one instanced draw for each set of cubes with matching texture-shader-model. This will result in about 10 draws. Probably acceptable.
 
 
+I added a quick workaround, which was to simply group all entities with the same together, but not entities with different textures. This probably increases the number of render passes on instanced objects by about 10 (one for each texture), so it might be an issue if instancing entities with many different textures. Another reason that this rendering method might eventually be slow is that instanced entity access in the instanced entities array has linear time complexity. With how the code is currently setup, this probably results in an overall O(n^2) complexity.
+
+
+
 
 
 Custom data for each package, server:
@@ -1120,14 +1124,14 @@ Other improvements:
     [*] (Common) Create file_concatenatePath()
     [*] (Common) Only allow file paths that remain in the workspace
 [/] (Common) Load and parse Wavefront MTL files
-[/] (Common) Load and parse Oolite DAT files
+![/] (Common) Load and parse Oolite DAT files
 [*] (Common) Create entity tree from Lua
     [*] (Common) Set position and orientation from Lua.
-[/] (Server) Send entity tree over the network
+![/] (Server) Send entity tree over the network
     [*] (All) Decide on network protocol
     [*] (Client Server) Send and receive packet over the network.
     [/] (Client Server) Send and receive packets reliably over the network.
-    [*] (Server) Send entity tree over the network.
+!    [*] (Server) Send entity tree over the network.
 [*] (Client) Receive entity tree from the network
 [*] (All)    Get on those TODOs (ugly ones)
 [*] (Client) Render entity tree in basic 3D using OpenGL
@@ -1152,7 +1156,7 @@ Other improvements:
         [*] Create `bind` scripting command.
     [*] Send keys to Lua.
         [*] Allow Lua to manipulate and read scripting variables and callbacks.
-[/] (Client) Get mouse input
+[*] (Client) Get mouse input
 [*] (Client) Send input
     [*] Allow Lua to send arbitrary network messages using unreliable packets.
     [*] Make server communicate with clients individually.
@@ -1192,7 +1196,7 @@ Other improvements:
 	[ ] Make player models
 [*] (Lua) Texture boxes with different colors corresponding to the keyboard numbers 0-9.
 [*] (Lua) Add physics and collision handling.
-[ ] (All) Profile and optimize for speed.
+[/] (All) Profile and optimize for speed.
 
 =========================
 */* Multiplayer Elite ***
