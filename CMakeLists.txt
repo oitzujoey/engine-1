@@ -69,7 +69,7 @@ target_compile_options(engine-1-runner PRIVATE -DRUNNER)
 
 add_subdirectory(src)
 
-target_link_libraries(sengine-1 SDL2 m enet physfs-static)
-target_link_libraries(cengine-1 SDL2 m enet GL GLEW physfs-static)
-# target_link_libraries(cengine-1 SDL2 m enet opengl32 glew32 physfs-static)
+target_link_libraries(sengine-1 m physfs-static enet SDL2-static)
+target_link_libraries(cengine-1 m GL GLEW physfs-static enet SDL2-static)
+# target_link_libraries(cengine-1 m enet opengl32 glew32 physfs-static SDL2-static)
 target_link_libraries(engine-1-runner PUBLIC Qt6::Widgets)
