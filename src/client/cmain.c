@@ -315,12 +315,18 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 
-	// Mount engine directory.
-	e = PHYSFS_mount("./", "", true);
+	// Mount zip file if it exists.
+	e = PHYSFS_mount("game.zip", "", true);
 	if (!e) {
-		error("Could not add directory \"%s\" to the search path: %s", "./", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-		e = ERR_GENERIC;
-		goto cleanup_l;
+		error("Could not add directory \"%s\" to the search path: %s", "game.zip", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+
+		// Mount engine directory since zip file doesn't exist.
+		e = PHYSFS_mount("./", "", true);
+		if (!e) {
+			error("Could not add directory \"./\" to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+			e = ERR_GENERIC;
+			goto cleanup_l;
+		}
 	}
 	
 	// Execute autoexec.
@@ -329,13 +335,22 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		g_cfg2.recursionDepth = 0;
 		cfg2_execFile(AUTOEXEC, luaState);
 	}
+	else {
+		warning("\""AUTOEXEC"\" not found.", "");
+	}
 	
 	// Unmount engine directory.
 	e = PHYSFS_unmount("./");
 	if (!e) {
-		error("Could not remove directory \"%s\" from the search path: %s", "./", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-		e = ERR_GENERIC;
-		goto cleanup_l;
+		PHYSFS_ErrorCode errorCode = PHYSFS_getLastErrorCode();
+		if (errorCode == 10) {
+			info("Attempted to remove directory \"./\" from the search path, but it wasn't mounted.", "");
+		}
+		else {
+			error("Could not remove directory \"./\" from the search path: %s", PHYSFS_getErrorByCode(errorCode));
+			e = ERR_GENERIC;
+			goto cleanup_l;
+		}
 	}
 
 	cfg2_admin_t savedAdminLevel = g_cfg2.adminLevel;
