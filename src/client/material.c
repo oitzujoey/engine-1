@@ -246,7 +246,9 @@ static int material_loadTexture(GLuint *textureIndex, bool *transparent, const c
 	// glGenerateMipmap(GL_TEXTURE_2D);
 	
 	g_textures_length++;
-	
+
+	info("Loaded %stexture \"%s\".", ((channels == 4) ? "transparent " : ""), filePath);
+
 	error = ERR_OK;
 	cleanupPHYSFS_l:
 	
