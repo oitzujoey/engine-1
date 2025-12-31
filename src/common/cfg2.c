@@ -7,7 +7,7 @@
 #include "log.h"
 #include "str2.h"
 #include "file.h"
-#include "physfs.h"
+#include "../physfs-3.0.2/src/physfs.h"
 #include "memory.h"
 
 #ifdef CLIENT

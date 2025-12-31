@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <lauxlib.h>
 #include <SDL2/SDL.h>
-#include <physfs.h>
+#include "../physfs-3.0.2/src/physfs.h"
 #include <string.h>
 #include "../lua-5.4.8/lua.h"
 #include "../lua-5.4.8/lualib.h"

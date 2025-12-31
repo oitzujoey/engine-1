@@ -2,7 +2,7 @@
 #include "file.h"
 #include <string.h>
 #include <stdlib.h>
-#include <physfs.h>
+#include "../physfs-3.0.2/src/physfs.h"
 #include "common.h"
 #include "str2.h"
 

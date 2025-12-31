@@ -34,11 +34,8 @@ set(CMAKE_USE_PTHREADS_INIT 1)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
-find_package(SDL2 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
-find_package(PhysFS REQUIRED)
-find_package(ENet REQUIRED)
 
 include_directories(${ENET_INCLUDE_DIRS})
 

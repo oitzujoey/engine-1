@@ -22,6 +22,7 @@ Just for your information. You don't install these yourself.
     Lua 5.4.8
     PhysicsFS 3.0.2
     ENet 1.3.18
+    SDL 2.32.8
 ```
 
 ### Dependencies
@@ -29,7 +30,6 @@ Just for your information. You don't install these yourself.
 Make sure you have these dependencies before building. GL and GLEW are required for the client only. Qt is only required for the runner.
 
 ```text
-    SDL2
     GL
     GLEW
     Qt6

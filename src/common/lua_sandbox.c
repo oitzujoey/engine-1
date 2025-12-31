@@ -1,6 +1,6 @@
 #include "lua_sandbox.h"
-#include <physfs.h>
 #include <string.h>
+#include "../physfs-3.0.2/src/physfs.h"
 #include "../lua-5.4.8/lualib.h"
 #include "../lua-5.4.8/lauxlib.h"
 #include "common.h"

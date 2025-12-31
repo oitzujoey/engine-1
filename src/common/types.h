@@ -4,12 +4,11 @@
 
 #include <stdbool.h>
 #include <time.h>
-#include <GL/glew.h>
 #include <SDL2/SDL.h>
 #ifdef CLIENT
 #include <GL/glew.h>
 #endif
-#include <physfs.h>
+#include "../physfs-3.0.2/src/physfs.h"
 #include "../enet-1.3.18/include/enet/enet.h"
 #include "../lua-5.4.8/lua.h"
 
@@ -304,6 +303,7 @@ typedef enum {
 /* shader.h */
 /* ======== */
 
+#ifdef CLIENT
 typedef struct {
 	size_t shader_index;
 	GLuint program;
@@ -315,6 +315,7 @@ typedef struct {
 	} uniform;
 	bool instanced;  // Enable GPU instancing for this shader.
 } Shader;
+#endif
 
 /* material.h */
 /* ========= */
