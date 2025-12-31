@@ -169,7 +169,7 @@ if(PHYSFS_BUILD_STATIC)
     set(PHYSFS_INSTALL_TARGETS ${PHYSFS_INSTALL_TARGETS} ";physfs-static")
 endif()
 
-option(PHYSFS_BUILD_SHARED "Build shared library" TRUE)
+option(PHYSFS_BUILD_SHARED "Build shared library" FALSE)
 if(PHYSFS_BUILD_SHARED)
     add_library(physfs SHARED ${PHYSFS_SRCS})
     set_target_properties(physfs PROPERTIES MACOSX_RPATH 1)

@@ -502,9 +502,9 @@ set_option(SDL_CCACHE              "Use Ccache to speed up build" ON)
 
 option(SDL_WERROR "Enable -Werror" OFF)
 
-option(SDL_SHARED "Build a shared version of the library" ${SDL_SHARED_ENABLED_BY_DEFAULT})
+option(SDL_SHARED "Build a shared version of the library" OFF)
 option(SDL_STATIC "Build a static version of the library" ${SDL_STATIC_ENABLED_BY_DEFAULT})
-option(SDL_TEST   "Build the SDL2_test library" ${SDL_TEST_ENABLED_BY_DEFAULT})
+option(SDL_TEST   "Build the SDL2_test library" OFF)
 
 dep_option(SDL_STATIC_PIC      "Static version of the library should be built with Position Independent Code" "${CMAKE_POSITION_INDEPENDENT_CODE}" "SDL_STATIC" OFF)
 dep_option(SDL_TESTS           "Build the test directory" OFF SDL_TEST OFF)
