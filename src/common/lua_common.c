@@ -1,7 +1,12 @@
 #include "lua_common.h"
+#include <lua.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
+#include "common.h"
 #include "log.h"
 #include "obj.h"
 #include "vfs.h"
@@ -16,6 +21,8 @@
 luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_puts,             .name = "puts"},
 	{.func = l_common_toString,         .name = "toString"},
+	{.func = l_common_string_sub,       .name = "string_sub"},
+	{.func = l_common_parse_double,     .name = "parse_double"},
 	{.func = l_common_sin,              .name = "sin"},
 	{.func = l_common_cos,              .name = "cos"},
 	{.func = l_common_round,            .name = "round"},
@@ -251,6 +258,55 @@ int l_common_toString(lua_State *luaState) {
 	return 1;
 }
 
+int l_common_string_sub(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 3) {
+		error("Requires 3 arguments", "");
+		lua_error(l);
+	}
+
+	if (!lua_isstring(l, 1)) {
+		error("First argument must be a string.", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 2)) {
+		error("Second argument must be an integer.", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 3)) {
+		error("Third argument must be an integer.", "");
+		lua_error(l);
+	}
+
+	const char *string = lua_tostring(l, 1);
+	const size_t string_length = strlen(string);
+	const lua_Integer i = lua_tointeger(l, 2);
+	const lua_Integer j = lua_tointeger(l, 3);
+	if (i < 1) {
+		error("Second argument must be greater than 0. Got %li\n", i);
+		lua_error(l);
+	}
+	if (i > string_length+1) {
+		error("Second argument must not be greater than the length of the string plus 1. Got %li\n", i);
+		lua_error(l);
+	}
+	if (j < i-1) {
+		error("Third argument must not be more than 1 less than the second argument. Got %li, %li\n", i, j);
+		lua_error(l);
+	}
+	if (j > string_length) {
+		error("Third argument must not be greater than the length of the string. Got %li\n", j);
+		lua_error(l);
+	}
+	if ((i > string_length) || (j < i)) {
+		(void) lua_pushlstring(l, &string[i-1], 0);
+	}
+	else {
+		(void) lua_pushlstring(l, &string[i-1], (j) - (i-1));
+	}
+	return 1;
+}
+
 int l_cfg2_getVariable(lua_State *l) {
 	int e = ERR_OK;
 
@@ -439,4 +495,208 @@ int lua_common_printTable(lua_State *luaState) {
 	cleanup_l:
 	
 	return error;
+}
+
+
+#define string_toLower(c) (((c >= 'A') && (c <= 'Z')) ? (c - 'A' + 'a') : c)
+
+static bool string_isDigit(uint8_t character) {
+	return (character >= '0') && (character <= '9');
+}
+
+static int string_toDouble(double *result, const uint8_t *string, const size_t string_length) {
+	int e = ERR_OK;
+
+	ptrdiff_t index = 0;
+	bool tempBool;
+	bool negative = false;
+	ptrdiff_t power = 0;
+	bool power_negative = false;
+
+	*result = 0.0;
+
+	if (string[index] == '-') {
+		index++;
+
+		if ((size_t) index >= string_length) {
+			e = ERR_GENERIC;
+			goto cleanup;
+		}
+
+		negative = true;
+	}
+
+	/* Try .1 */
+	if (string[index] == '.') {
+		index++;
+
+		if ((size_t) index >= string_length) {
+			e = ERR_GENERIC;
+			goto cleanup;
+		}
+
+		power = 10;
+
+		if (!string_isDigit(string[index])) {
+			e = ERR_GENERIC;
+			goto cleanup;
+		}
+
+		*result += (double) (string[index] - '0') / (double) power;
+
+		index++;
+
+		while (((size_t) index < string_length) && (string_toLower(string[index]) != 'e')) {
+			power = 10 * power;
+
+			tempBool = string_isDigit(string[index]);
+			if (!tempBool) {
+				e = ERR_GENERIC;
+				goto cleanup;
+			}
+
+			*result += (double) (string[index] - '0') / (double) power;
+			index++;
+		}
+	}
+	// Try 1.2, 1., and 1
+	else {
+		if (!string_isDigit(string[index])) {
+			e = ERR_GENERIC;
+			goto cleanup;
+		}
+
+		*result = string[index] - '0';
+
+		index++;
+
+		while (((size_t) index < string_length)
+		       && (string_toLower(string[index]) != 'e')
+		       && (string[index] != '.')) {
+			if (!string_isDigit(string[index])) {
+				e = ERR_GENERIC;
+				goto cleanup;
+			}
+
+			*result = *result * 10.0 + (double) (string[index] - '0');
+
+			index++;
+		}
+
+		if (string[index] == '.') {
+			index++;
+
+			if ((size_t) index >= string_length) {
+				// eError = duckLisp_error_push(duckLisp, DL_STR("Expected a digit after decimal point."), index);
+				// e = eError ? eError : dl_error_bufferOverflow;
+				// This is expected. 1. 234.e61  435. for example.
+				goto cleanup;
+			}
+
+			power = 1;
+		}
+
+		while (((size_t) index < string_length) && (string_toLower(string[index]) != 'e')) {
+			power = 10 * power;
+			if (!string_isDigit(string[index])) {
+				e = ERR_GENERIC;
+				goto cleanup;
+			}
+
+			*result += (double) (string[index] - '0') / (double) power;
+
+			index++;
+		}
+	}
+
+	// …e3
+	if (string_toLower(string[index]) == 'e') {
+		index++;
+
+		if ((size_t) index >= string_length) {
+			e = ERR_GENERIC;
+			goto cleanup;
+		}
+
+		if (string[index] == '-') {
+			index++;
+
+			if ((size_t) index >= string_length) {
+				e = ERR_GENERIC;
+				goto cleanup;
+			}
+
+			power_negative = true;
+		}
+
+		if (!string_isDigit(string[index])) {
+			e = ERR_GENERIC;
+			goto cleanup;
+		}
+
+		power = string[index] - '0';
+
+		index++;
+
+		while ((size_t) index < string_length) {
+			if (!string_isDigit(string[index])) {
+				e = ERR_GENERIC;
+				goto cleanup;
+			}
+
+			power = power * 10 + string[index] - '0';
+
+			index++;
+		}
+
+		if (power_negative) {
+			if (power == 0) {
+				e = ERR_GENERIC;
+				goto cleanup;
+			}
+
+			for (ptrdiff_t i = 0; i < power; i++) {
+				*result /= 10.0;
+			}
+		}
+		else {
+			for (ptrdiff_t i = 0; i < power; i++) {
+				*result *= 10.0;
+			}
+		}
+	}
+
+	if ((size_t) index != string_length) {
+		e = ERR_CRITICAL;
+		goto cleanup;
+	}
+
+	if (negative) {
+		*result = -*result;
+	}
+
+	cleanup:
+
+	return e;
+}
+
+int l_common_parse_double(lua_State *l) {
+	int error = ERR_CRITICAL;
+	
+	if (!lua_isstring(l, 1)) {
+		error("Argument must be a string.", "");
+		lua_error(l);
+	}
+
+	size_t string_length = 0;
+	const uint8_t *string = (uint8_t *) lua_tolstring(l, 1, &string_length);
+	double result = 0.0;
+	error = string_toDouble(&result, string, string_length);
+	if (error) {
+		(void) lua_pushnil(l);
+	}
+	else {
+		(void) lua_pushnumber(l, result);
+	}
+	return 1;
 }

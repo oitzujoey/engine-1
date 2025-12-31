@@ -13,9 +13,11 @@ int l_common_round(lua_State *l);
 int l_common_cos(lua_State *l);
 int l_common_sin(lua_State *l);
 int l_common_toString(lua_State *luaState);
+int l_common_string_sub(lua_State *luaState);
 int l_cfg2_getVariable(lua_State *luaState);
 int l_cfg2_setVariable(lua_State *luaState);
 int l_cfg2_setCallback(lua_State *luaState);
+int l_common_parse_double(lua_State *l);
 
 int lua_common_printTable(lua_State *luaState);
 
