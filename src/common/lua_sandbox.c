@@ -1,8 +1,8 @@
 #include "lua_sandbox.h"
-#include <lualib.h>
-#include <lauxlib.h>
 #include <physfs.h>
 #include <string.h>
+#include "../lua-5.4.8/lualib.h"
+#include "../lua-5.4.8/lauxlib.h"
 #include "common.h"
 #include "log.h"
 #include "file.h"

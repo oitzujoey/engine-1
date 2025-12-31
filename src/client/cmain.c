@@ -2,12 +2,12 @@
 #define SDL_MAIN_HANDLED
 
 #include <stdio.h>
-#include <lua.h>
 #include <lauxlib.h>
-#include <lualib.h>
 #include <SDL2/SDL.h>
 #include <physfs.h>
 #include <string.h>
+#include "../lua-5.4.8/lua.h"
+#include "../lua-5.4.8/lualib.h"
 #include "render.h"
 #include "input.h"
 #include "../common/common.h"

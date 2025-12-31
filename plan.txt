@@ -1178,7 +1178,7 @@ Other improvements:
 [*] (Common) Allow Lua to include Lua source code.
 [*] (Common) Import .obj files.
 ===========================
-*/* Start work on games. ***
+*** Start work on games. ***
 ===========================
 [*] (Client) Texture models.
     [*] (Client) Load images.
@@ -1196,7 +1196,7 @@ Other improvements:
 	[ ] Make player models
 [*] (Lua) Texture boxes with different colors corresponding to the keyboard numbers 0-9.
 [*] (Lua) Add physics and collision handling.
-[/] (All) Profile and optimize for speed.
+[*] (All) Profile and optimize for speed.
 
 =========================
 */* Multiplayer Elite ***

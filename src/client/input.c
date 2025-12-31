@@ -1,8 +1,8 @@
 #include "input.h"
-#include <lua.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include "../lua-5.4.8/lua.h"
 #include "../common/common.h"
 #include "../common/log.h"
 #include "../common/cfg2.h"

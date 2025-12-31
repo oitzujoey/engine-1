@@ -1,6 +1,6 @@
-
 add_subdirectory(client)
 add_subdirectory(server)
 add_subdirectory(common)
 add_subdirectory(runner)
 add_subdirectory(sqlite)
+add_subdirectory(lua-5.4.8)

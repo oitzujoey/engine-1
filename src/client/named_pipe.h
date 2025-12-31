@@ -1,4 +1,4 @@
-#include <lua.h>
+#include "../lua-5.4.8/lua.h"
 #include "../common/str4.h"
 
 #ifdef LINUX

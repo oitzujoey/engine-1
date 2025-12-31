@@ -7,8 +7,8 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <SDL2/SDL.h>
-#include <lua.h>
 #include <physfs.h>
+#include "../lua-5.4.8/lua.h"
 #include "../common/common.h"
 #include "../common/lua_sandbox.h"
 #include "../common/obj.h"
