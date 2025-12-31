@@ -13,15 +13,23 @@ Here is what I do know:
 
 EVERYTHING THAT FOLLOWS IS OUT OF DATE AND IS UNLIKELY TO WORK.
 
+### Built-in libraries
+
+Just for your information. You don't install these yourself.
+
+```text
+    SQLite 3.49.0
+    Lua 5.4.8
+    PhysicsFS  3.0.2
+```
+
 ### Dependencies
 
 Make sure you have these dependencies before building. GL and GLEW are required for the client only. Qt is only required for the runner.
 
 ```text
     SDL2
-    Lua
     ENet
-    PhysicsFS
     GL
     GLEW
     Qt6
