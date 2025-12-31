@@ -3,7 +3,7 @@
 #define SERVER_H
 
 #include <stdbool.h>
-#include <enet/enet.h>
+#include "../enet-1.3.18/include/enet/enet.h"
 #include "../common/common.h"
 
 typedef struct {

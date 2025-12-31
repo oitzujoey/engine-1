@@ -20,7 +20,8 @@ Just for your information. You don't install these yourself.
 ```text
     SQLite 3.49.0
     Lua 5.4.8
-    PhysicsFS  3.0.2
+    PhysicsFS 3.0.2
+    ENet 1.3.18
 ```
 
 ### Dependencies
@@ -29,7 +30,6 @@ Make sure you have these dependencies before building. GL and GLEW are required 
 
 ```text
     SDL2
-    ENet
     GL
     GLEW
     Qt6

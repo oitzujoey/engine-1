@@ -6,11 +6,11 @@
 #include <time.h>
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
-#include <enet/enet.h>
 #ifdef CLIENT
 #include <GL/glew.h>
 #endif
 #include <physfs.h>
+#include "../enet-1.3.18/include/enet/enet.h"
 #include "../lua-5.4.8/lua.h"
 
 #define MAX_CLIENTS         2
