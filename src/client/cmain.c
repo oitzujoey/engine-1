@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <lauxlib.h>
-#include <SDL2/SDL.h>
+#include "../SDL-release-2.32.8/include/SDL.h"
 #include "../physfs-3.0.2/src/physfs.h"
 #include <string.h>
 #include "../lua-5.4.8/lua.h"

@@ -23,15 +23,16 @@ Just for your information. You don't install these yourself.
     PhysicsFS 3.0.2
     ENet 1.3.18
     SDL 2.32.8
+    GLEW 2.3.0
 ```
 
 ### Dependencies
 
-Make sure you have these dependencies before building. GL and GLEW are required for the client only. Qt is only required for the runner.
+Make sure you have these dependencies before building. GL and GLU are required for the client only. Qt is only required for the runner.
 
 ```text
     GL
-    GLEW
+    GLU
     Qt6
 ```
 

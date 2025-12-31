@@ -4,9 +4,9 @@
 
 #include <stdbool.h>
 #include <time.h>
-#include <SDL2/SDL.h>
+#include "../SDL-release-2.32.8/include/SDL.h"
 #ifdef CLIENT
-#include <GL/glew.h>
+#include "../glew-2.3.0/include/GL/glew.h"
 #endif
 #include "../physfs-3.0.2/src/physfs.h"
 #include "../enet-1.3.18/include/enet/enet.h"

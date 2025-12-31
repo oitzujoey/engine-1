@@ -6,8 +6,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdbool.h>
-#include <SDL2/SDL.h>
-#include <GL/glew.h>
+#include "../SDL-release-2.32.8/include/SDL.h"
 #include "../physfs-3.0.2/src/physfs.h"
 #include "../lua-5.4.8/lua.h"
 #include "../common/common.h"

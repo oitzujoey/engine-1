@@ -35,9 +35,6 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
 find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
-
-include_directories(${ENET_INCLUDE_DIRS})
 
 # if(CMAKE_BUILD_TYPE STREQUAL Debug)
 # 	add_compile_options(-pedantic-errors -Werror -Wall -Wstrict-prototypes -DDEBUG -g -O0)
@@ -67,6 +64,6 @@ target_compile_options(engine-1-runner PRIVATE -DRUNNER)
 add_subdirectory(src)
 
 target_link_libraries(sengine-1 m physfs-static enet SDL2-static)
-target_link_libraries(cengine-1 m GL GLEW physfs-static enet SDL2-static)
+target_link_libraries(cengine-1 m GL physfs-static enet SDL2-static glew_s)
 # target_link_libraries(cengine-1 m enet opengl32 glew32 physfs-static SDL2-static)
 target_link_libraries(engine-1-runner PUBLIC Qt6::Widgets)

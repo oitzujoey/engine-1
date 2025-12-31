@@ -4,8 +4,8 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include <GL/glew.h>
-#include <SDL2/SDL_opengl.h>
+#include "../SDL-release-2.32.8/include/SDL_opengl.h"
+#include "../glew-2.3.0/include/GL/glew.h"
 #include "../common/common.h"
 #include "../common/log.h"
 #include "../common/entity.h"
