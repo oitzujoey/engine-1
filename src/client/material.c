@@ -1,9 +1,9 @@
 
 #include "material.h"
-#include <lauxlib.h>
+#include "../lua-5.4.8/lauxlib.h"
+#include "../glew-2.3.0/include/GL/glew.h"
 #define STB_IMAGE_IMPLEMENTATION
 // #define STBI_ASSERT(x)
-#include "../glew-2.3.0/include/GL/glew.h"
 #include "stb_image.h"
 #include "../common/common.h"
 #include "../common/log.h"

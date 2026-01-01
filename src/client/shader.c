@@ -1,5 +1,5 @@
 
-#include <lauxlib.h>
+#include "../lua-5.4.8/lauxlib.h"
 #include "../common/types.h"
 #include "../common/array.h"
 #include "../common/str4.h"
