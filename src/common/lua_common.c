@@ -1,11 +1,11 @@
 #include "lua_common.h"
-#include <lua.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include "../lua-5.4.8/lua.h"
 #include "common.h"
 #include "log.h"
 #include "obj.h"
