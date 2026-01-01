@@ -199,13 +199,12 @@ int vfs_callback_loadGame(cfg2_var_t *var, const char *command, lua_State *luaSt
 		else {
 			info("Mounted \"%s\".", fullWorkspacePath.str);
 		}
-		e = ERR_OK;
 		e = arena.quit(arena.context);
 		if (e) goto cleanup;
 	}
 
 	// Make space for the next mod.
-	
+	// TODO: Only one "mod" (game) should ever be loaded at one time.
 	g_mods.mods_length++;
 	g_mods.mods = realloc(g_mods.mods, g_mods.mods_length * sizeof(vfs_mod_t));
 	if (g_mods.mods == NULL) {

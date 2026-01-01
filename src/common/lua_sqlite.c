@@ -13,6 +13,12 @@
 int l_sqlite_open(lua_State *l) {
 	int e = ERR_OK;
 
+	if (g_workspace.str_length == 0) {
+		error("The workspace path is not set, so the database cannot be read or written to.", "");
+		e = ERR_GENERIC;
+		goto cleanup;
+	}
+
 	int argc = lua_gettop(l);
 	if (argc != 1) {
 		error("Requires 1 argument", "");

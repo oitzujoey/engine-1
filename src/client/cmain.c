@@ -316,9 +316,9 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	}
 
 	// Mount zip file if it exists.
-	e = PHYSFS_mount("game.zip", "", true);
+	e = PHYSFS_mount(DEFAULT_GAME_ZIP_NAME, "", true);
 	if (!e) {
-		error("Could not add directory \"%s\" to the search path: %s", "game.zip", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error("Could not add file \""DEFAULT_GAME_ZIP_NAME"\" to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 
 		// Mount engine directory since zip file doesn't exist.
 		e = PHYSFS_mount("./", "", true);
@@ -384,11 +384,9 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	}
 
 	if (g_workspace.str_length == 0) {
-		log_critical_error(__func__, "\"workspace\" has not been set.");
-		e = ERR_GENERIC;
-		goto cleanup_l;
+		warning("\"workspace\" has not been set.", "");
 	}
-	
+
 	// string_copy_c(&tempString, g_workspace);
 	// e = vfs_init(&g_vfs, &tempString);
 	// if (e) {
