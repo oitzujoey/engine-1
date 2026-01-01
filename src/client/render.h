@@ -2,7 +2,7 @@
 #ifndef RENDER_H
 #define RENDER_H
 
-#include "lua.h"
+#include "../lua-5.4.8/lua.h"
 #include "../common/cfg2.h"
 #include "../common/types.h"
 #include "../common/array.h"
