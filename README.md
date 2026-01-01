@@ -11,8 +11,6 @@ Here is what I do know:
 
 ## Installation
 
-EVERYTHING THAT FOLLOWS IS OUT OF DATE AND IS UNLIKELY TO WORK.
-
 ### Built-in libraries
 
 Just for your information. You don't install these yourself.
@@ -42,13 +40,14 @@ On Windows, you will either need these installed, or you will need the DLLs in t
 ### Building
 
 ```bash
-mkdir build && cd build
-cmake ..
-cmake --build . # or "make"
+cmake -B build
+cmake --build build --parallel $(nproc)
 ```
 
 I recommend using MSYS2 and mingw to build for Windows. It was pretty painless compared to building on Ubuntu (WSL) and Arch Linux.  
 If you want to run the client or server in the background, be sure to define the preprocessor constant NOTERMINAL before compiling.
+
+### EVERYTHING THAT FOLLOWS IS OUT OF DATE AND IS UNLIKELY TO WORK.
 
 ### Configuration
 
