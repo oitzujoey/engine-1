@@ -266,7 +266,7 @@ function main()
 	processBoxes(g_boxes)
 	sendQueuedEvents()
 
-	puts("FPS: "..toString(1/deltaT))
+	-- puts("FPS: "..toString(1/deltaT))
 end
 
 function shutdown()

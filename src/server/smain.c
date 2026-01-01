@@ -63,6 +63,18 @@ const cfg2_var_init_t g_serverVarInit[] = {
 		.callback = snetwork_callback_setServerPort
 	},
 	{
+		.name = CFG_IP_ADDRESS,
+		.vector = 0,
+		.integer = 0,
+		.string = CFG_IP_ADDRESS_DEFAULT,
+		.type = cfg2_var_type_string,
+		.permissionRead = cfg2_admin_game,
+		.permissionWrite = cfg2_admin_supervisor,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = snetwork_callback_setIpAddress
+	},
+	{
 		.name = CFG_MAX_CLIENTS,
 		.vector = 0,
 		.integer = CFG_MAX_CLIENTS_DEFAULT,

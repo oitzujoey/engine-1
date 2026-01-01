@@ -12,6 +12,7 @@
 // extern client_t g_clients[MAX_CLIENTS];
 // extern UDPsocket g_serverSocket;
 
+int snetwork_callback_setIpAddress(cfg2_var_t *var, const char *command, lua_State *luaState);
 int snetwork_callback_setServerPort(cfg2_var_t *var, const char *command, lua_State *luaState);
 int snetwork_callback_maxClients(cfg2_var_t *var, const char *command, lua_State *luaState);
 

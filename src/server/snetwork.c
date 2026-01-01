@@ -19,6 +19,17 @@ serverState_t g_server;
 client_t g_clients[MAX_CLIENTS];
 
 
+int snetwork_callback_setIpAddress(cfg2_var_t *var, const char *command, lua_State *luaState) {
+	int error = ERR_OK;
+
+	error = enet_address_set_host(&g_server.ipAddress, var->string);
+	if (error < 0) {
+		critical_error("Could not set IP address to host \"%s\".", var->string);
+		return ERR_CRITICAL;
+	}
+	return error;
+}
+
 int snetwork_callback_setServerPort(cfg2_var_t *var, const char *command, lua_State *luaState) {
 
 	// Shouldn't have to check type because it will always be hard coded when this function is run.
@@ -445,10 +456,9 @@ int snetwork_init(void) {
 		error = ERR_GENERIC;
 		goto cleanup_l;
 	}
-	
-	g_server.ipAddress.host = ENET_HOST_ANY;
-	// Port set by cvar handle.
-	
+
+	// IP address and port set by cvar handle.
+
 	// Create UDP server.
 	// @TODO: Decide if we need to limit bandwidth.
 	g_server.host = enet_host_create(&g_server.ipAddress, MAX_CLIENTS, ENET_CHANNELS, 0, 0);
