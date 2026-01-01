@@ -1,7 +1,7 @@
 #include "lua_sqlite.h"
 #include <stdio.h>
 #include <string.h>
-#include <lauxlib.h>
+#include "../lua-5.4.8/lauxlib.h"
 #include "log.h"
 #include "../sqlite/sqlite3.h"
 #include "vfs.h"
