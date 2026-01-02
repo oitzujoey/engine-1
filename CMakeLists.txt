@@ -57,7 +57,7 @@ add_executable(lua)
 add_executable(luac)
 
 target_compile_options(sengine-1 PRIVATE -DSERVER)
-target_compile_options(cengine-1 PRIVATE -DCLIENT)
+target_compile_options(cengine-1 PRIVATE -DCLIENT -DNOTERMINAL)
 #target_compile_options(engine-1-runner PRIVATE -DRUNNER)
 
 # target_link_options(sengine-1 PRIVATE -fsanitize=address)
