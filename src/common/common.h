@@ -66,6 +66,8 @@
 #define CFG_OPENGL_LOG_FILE_DEFAULT     "opengl.log"
 #define CFG_LOG_LEVEL           "log_level"
 #define CFG_LOG_LEVEL_DEFAULT           0
+#define CFG_NAMED_PIPE          "named_pipe"
+#define CFG_NAMED_PIPE_DEFAULT           0
 
 #define MAIN_LUA_STARTUP_TIMEOUT    10000
 #define MAIN_LUA_MAIN_TIMEOUT       100

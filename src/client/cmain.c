@@ -144,8 +144,20 @@ const cfg2_var_init_t g_clientVarInit[] = {
 		.name = CFG_MULTIPLAYER,
 		.vector = 0,
 		.integer = CFG_MULTIPLAYER_DEFAULT,
-		.string = CFG_IP_ADDRESS_DEFAULT,
+		.string = "",
 		.type = cfg2_var_type_string,
+		.permissionRead = cfg2_admin_game,
+		.permissionWrite = cfg2_admin_supervisor,
+		.permissionDelete = cfg2_admin_supervisor,
+		.permissionCallback = cfg2_admin_supervisor,
+		.callback = main_callback_multiplayer
+	},
+	{
+		.name = CFG_NAMED_PIPE,
+		.vector = 0,
+		.integer = CFG_NAMED_PIPE_DEFAULT,
+		.string = "",
+		.type = cfg2_var_type_integer,
 		.permissionRead = cfg2_admin_game,
 		.permissionWrite = cfg2_admin_supervisor,
 		.permissionDelete = cfg2_admin_supervisor,
@@ -430,8 +442,16 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 #endif
 
 #ifdef LINUX
-	// I don't really care if this succeeds.
-	(void) namedPipe_init();
+	cfg2_var_t *v_namedPipe = cfg2_findVar(CFG_NAMED_PIPE);
+	if (v_namedPipe == NULL) {
+		log_critical_error(__func__, "\""CFG_NAMED_PIPE"\" does not exist.");
+		error = ERR_GENERIC;
+		goto cleanup_l;
+	}
+	if (v_namedPipe->integer) {
+		// I don't really care if this succeeds.
+		(void) namedPipe_init();
+	}
 #endif
 
 	e = 0;
