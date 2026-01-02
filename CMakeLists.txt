@@ -51,14 +51,14 @@ endif()
 
 add_executable(sengine-1)
 add_executable(cengine-1)
-add_executable(engine-1-runner)
+#add_executable(engine-1-runner)
 add_executable(sqlite3)
 add_executable(lua)
 add_executable(luac)
 
 target_compile_options(sengine-1 PRIVATE -DSERVER)
 target_compile_options(cengine-1 PRIVATE -DCLIENT)
-target_compile_options(engine-1-runner PRIVATE -DRUNNER)
+#target_compile_options(engine-1-runner PRIVATE -DRUNNER)
 
 # target_link_options(sengine-1 PRIVATE -fsanitize=address)
 # target_link_options(cengine-1 PRIVATE -fsanitize=address)
