@@ -38,16 +38,3 @@ set password {password}
 
     ## Zip it all up.
     shutil.make_archive("build/game", 'zip', temp_directory_name)
-
-
-if platform.system() == 'Linux':
-    ## Make a single-file bundle for the client.
-    game_name = '_'.join(game_directory.split('_')[1:])
-    game_file_name = game_name + "." + platform.machine()
-    with open(game_file_name, 'wb') as game_file:
-        with open("build/cengine-1", 'rb') as engine_file:
-            shutil.copyfileobj(engine_file, game_file)
-        with open("game.zip", 'rb') as resources_file:
-            shutil.copyfileobj(resources_file, game_file)
-    os.chmod(game_file_name, 0o755)
-    print(f"Generated {game_file_name}.")
