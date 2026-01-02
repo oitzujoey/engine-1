@@ -8,6 +8,8 @@ g_sensitivity = 1.0
 g_cursorScale = 1.05
 g_selectionScale = 1.1
 
+G_STANDARD_FRAMERATE = 60
+
 Keys = {}
 g_mouse = {}
 g_eventQueue = {}
@@ -22,7 +24,9 @@ function client_sendQueuedEvents()
 	g_eventQueue = {}
 end
 
-g_averageFramerate = 0
+g_frame = 0
+g_averageFramerate = 0.0
+g_time = 0.0
 
 g_initialBoxesToCreate = {}
 
@@ -293,6 +297,8 @@ end
 function mainGame()
 	local e
 
+	local movementScale = G_STANDARD_FRAMERATE * deltaT
+
 	-- Box manipulation
 
 	local cursorPosition = calculateCursorPosition(g_playerState.position, g_playerState.orientation)
@@ -360,7 +366,7 @@ function mainGame()
 	-- Movement
 
 	-- Friction
-	local scale = 0.90
+	local scale = 1.0 - (1.0 - 0.90) * movementScale
 	g_playerState.velocity.x = g_playerState.velocity.x * scale
 	g_playerState.velocity.y = g_playerState.velocity.y * scale
 
@@ -389,7 +395,7 @@ function mainGame()
 		yaw_x = yaw_x - cos(g_playerState.euler.yaw)
 		yaw_y = yaw_y - sin(g_playerState.euler.yaw)
 	end
-	g_playerState.velocity = vec3_add(g_playerState.velocity, {x=yaw_x, y=yaw_y, z=0})
+	g_playerState.velocity = vec3_add(g_playerState.velocity, vec3_scale({x=yaw_x, y=yaw_y, z=0}, movementScale))
 
 	if (g_mouse.delta_y and g_mouse.delta_y ~= 0) then
 		g_playerState.euler.pitch = g_playerState.euler.pitch - g_mouse.delta_y/1000.0
@@ -402,10 +408,10 @@ function mainGame()
 	if g_playerState.euler.pitch > G_PI/2 then g_playerState.euler.pitch = G_PI/2 end
 	if g_playerState.euler.pitch < -G_PI/2 then g_playerState.euler.pitch = -G_PI/2 end
 
-	g_playerState.velocity.z = g_playerState.velocity.z + G_GRAVITY
+	g_playerState.velocity.z = g_playerState.velocity.z + G_GRAVITY * movementScale
 
 	g_playerState.orientation = hamiltonProduct(eulerToQuat(g_playerState.euler), aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
-	g_playerState = playerMoveAndCollide(g_playerState)
+	g_playerState = playerMoveAndCollide(g_playerState, movementScale)
 
 	-- Display self.
 	entity_setOrientation(g_worldEntity, {w=g_playerState.orientation.w,
@@ -503,6 +509,7 @@ function main()
 
 	g_averageFramerate = g_averageFramerate + (1/deltaT - g_averageFramerate)/1000
 	g_frame = g_frame + 1
+	g_time = g_time + deltaT
 	g_mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
 end
 

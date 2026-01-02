@@ -240,7 +240,7 @@ int vfs_callback_setWorkspace(cfg2_var_t *var, const char *command, lua_State *l
 	if (strlen(var->string) == 0) return ERR_OK;
 	str4_copyC(&g_workspace, (uint8_t *) var->string, strlen(var->string));
 	if ((g_workspace.str_length != 0) && !PHYSFS_setWriteDir((char *) g_workspace.str)) {
-		error("Could not set workspace to \"%s\": %s", g_workspace, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error("Could not set workspace to \"%s\": %s", var->string, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		return ERR_GENERIC;
 	}
 	return ERR_OK;

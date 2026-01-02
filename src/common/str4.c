@@ -200,11 +200,17 @@ int str4_splitLines(array_t *array, Str4 *string) {
 		NEWLINE,
 	} state = NORMAL;
 	for (size_t string_index = 0; string_index < string_length; string_index++) {
-		currentLine = str4_create(&arena);
+		currentLine = str4_create(&arena);  // Does no allocation.
 		uint8_t character = string->str[string_index];
 		if (character == '\n') {
 			if (state != CARRIAGE_RETURN) {
 				(void) str4_substring(&currentLine, string, substring_start, string_index);
+				e = array_push(array, &currentLine);
+				if (e) goto cleanup;
+			}
+			else if (state == CARRIAGE_RETURN) {
+				// Windows.
+				(void) str4_substring(&currentLine, string, substring_start, string_index-1);
 				e = array_push(array, &currentLine);
 				if (e) goto cleanup;
 			}

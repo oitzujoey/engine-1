@@ -5,7 +5,7 @@ project(engine-1
         VERSION 0.0
         DESCRIPTION "Game engine attempt number 2"
         HOMEPAGE_URL https://github.com/oitzujoey/engine-1
-        LANGUAGES C CXX)
+        LANGUAGES C CXX ASM)
 
 message(STATUS "CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME}")
 message(STATUS "CMAKE_C_COMPILER_ID = ${CMAKE_C_COMPILER_ID}")
@@ -43,9 +43,11 @@ find_package(OpenGL REQUIRED)
 # 	add_compile_options(-O3)
 # endif()
 
-# I should learn CMake better.
-add_compile_options(-DLINUX)
-# add_compile_options(-DWINDOWS)
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  add_compile_options(-DWINDOWS -DNOTERMINAL)
+else()
+  add_compile_options(-DLINUX)
+endif()
 
 add_executable(sengine-1)
 add_executable(cengine-1)
@@ -62,9 +64,16 @@ target_compile_options(engine-1-runner PRIVATE -DRUNNER)
 # target_link_options(cengine-1 PRIVATE -fsanitize=address)
 # target_link_options(engine-1-runner PRIVATE -fsanitize=address)
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  target_link_options(cengine-1 PRIVATE "-static")
+endif()
+
 add_subdirectory(src)
 
 target_link_libraries(sengine-1 m physfs-static enet SDL2-static)
-target_link_libraries(cengine-1 m GL physfs-static enet SDL2-static glew_s)
-# target_link_libraries(cengine-1 m enet opengl32 glew32 physfs-static SDL2-static)
-target_link_libraries(engine-1-runner PUBLIC Qt6::Widgets)
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  target_link_libraries(cengine-1 m enet opengl32 glew_s physfs-static SDL2-static)
+else()
+  target_link_libraries(cengine-1 m GL physfs-static enet SDL2-static glew_s)
+endif()
+#target_link_libraries(engine-1-runner PUBLIC Qt6::Widgets)

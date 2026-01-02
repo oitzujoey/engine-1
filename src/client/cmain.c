@@ -36,6 +36,9 @@
 const int SCREEN_WIDTH = 1920;
 const int SCREEN_HEIGHT = 1080;
 
+extern const uint8_t *g_pak;
+extern const uint8_t *g_pak_end;
+
 int g_multiplayer;
 
 extern SDL_Window *g_window;
@@ -318,7 +321,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	// Mount zip file if it exists.
 	e = PHYSFS_mount(DEFAULT_GAME_ZIP_NAME, "", true);
 	if (!e) {
-		error("Could not add file \""DEFAULT_GAME_ZIP_NAME"\" to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		warning("Could not add file \""DEFAULT_GAME_ZIP_NAME"\" to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 
 		// Mount engine directory since zip file doesn't exist.
 		e = PHYSFS_mount("./", "", true);
@@ -327,6 +330,13 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 			e = ERR_GENERIC;
 			goto cleanup_l;
 		}
+	}
+	// Mount the zip file that was incbin'ed into this executable.
+	e = PHYSFS_mountMemory((uint8_t *) &g_pak, (uint8_t *)&g_pak_end - (uint8_t *)&g_pak, NULL, "_______.zip", NULL, 1);
+	if (!e) {
+		error("Could not add embedded resources to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		e = ERR_GENERIC;
+		goto cleanup_l;
 	}
 	
 	// Execute autoexec.

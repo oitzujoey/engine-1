@@ -267,12 +267,13 @@ function boxMoveAndCollide(state)
 end
 
 -- `state` must have `position`, `velocity`, and `aabb` fields.
-function playerMoveAndCollide(state)
+function playerMoveAndCollide(state, movementScale)
 	state.collided = false
 	state.grounded = false
 	local oldPosition = state.position
 	local oldVelocity = state.velocity
-	local newPosition = vec3_add(oldPosition, oldVelocity)
+	local oldPosition_delta = vec3_scale(oldVelocity, movementScale)
+	local newPosition = vec3_add(oldPosition, oldPosition_delta)
 	local newVelocity = {x=oldVelocity.x, y=oldVelocity.y, z=oldVelocity.z}
 	local position = {x=oldPosition.x, y=oldPosition.y, z=oldPosition.z}
 	-- Construct bounding volume vertices.

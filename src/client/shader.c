@@ -108,21 +108,21 @@ int shader_create(Shader **shader, Str4 *vertexShader_sourceCode, Str4 *fragment
 		if (!instanced) {
 			localShader->uniform.orientation = glGetUniformLocation(localShader->program, "orientation");
 			if (localShader->uniform.orientation < 0) {
-				critical_error("Could not get uniform from program.", "");
+				critical_error("Could not get uniform \"orientation\" from program.", "");
 				e = ERR_CRITICAL;
 				break;
 			}
 	
 			localShader->uniform.position = glGetUniformLocation(localShader->program, "position");
 			if (localShader->uniform.position < 0) {
-				critical_error("Could not get uniform from program.", "");
+				critical_error("Could not get uniform \"position\" from program.", "");
 				e = ERR_CRITICAL;
 				break;
 			}
 
 			localShader->uniform.scale = glGetUniformLocation(localShader->program, "scale");
 			if (localShader->uniform.scale < 0) {
-				critical_error("Could not get uniform from program.", "");
+				critical_error("Could not get uniform \"scale\" from program.", "");
 				e = ERR_CRITICAL;
 				break;
 			}
@@ -130,7 +130,7 @@ int shader_create(Shader **shader, Str4 *vertexShader_sourceCode, Str4 *fragment
 	
 		localShader->uniform.aspectRatio = glGetUniformLocation(localShader->program, "aspectRatio");
 		if (localShader->uniform.aspectRatio < 0) {
-			critical_error("Could not get uniform from program.", "");
+			critical_error("Could not get uniform \"aspectRatio\" from program.", "");
 			e = ERR_CRITICAL;
 			break;
 		}
@@ -189,6 +189,8 @@ int shader_load(Shader **shader, Str4 *shader_path) {
 	if (e) goto cleanup;
 
 	do {
+		info("Loading shader \"%s\".", shader_path->str);
+
 		Str4 vertexShader_path = str4_create(&a);
 		Str4 vertexShader_extension = STR4(".vert");
 		(void) str4_concatenate(&vertexShader_path, shader_path, &vertexShader_extension);
