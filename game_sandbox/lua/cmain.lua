@@ -420,7 +420,7 @@ function mainGame()
 	                   {x=-g_playerState.position.x, y=-g_playerState.position.y, z=-g_playerState.position.z})
 
 
-	processBoxes(g_boxes)
+	processBoxes(g_boxes, movementScale)
 end
 
 function loadingScreen()
