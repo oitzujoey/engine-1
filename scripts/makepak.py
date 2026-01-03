@@ -8,7 +8,7 @@ def abort(): return sys.exit(1)
 
 if len(argv) != 4:
     print(f'usage: scripts/makepak.py <config file> <source directory> <destination directory>')
-    print(f'example: scripts/makepak.py custom_binary.json ./ build/')
+    print(f'example: scripts/makepak.py build.json ./ build/')
     print(f'This script generates the game.zip file.')
     abort()
 

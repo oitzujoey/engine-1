@@ -98,7 +98,7 @@ set(additional_assets
 add_custom_command(
   OUTPUT ${PROJECT_BINARY_DIR}/game.zip ${PROJECT_SOURCE_DIR}/src/common/pak.s
   DEPENDS ${PROJECT_SOURCE_DIR}/custom_binary.json ${additional_assets} ${models_msh}
-  COMMAND ${PROJECT_SOURCE_DIR}/scripts/makepak.py ${PROJECT_SOURCE_DIR}/custom_binary.json ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR}
+  COMMAND ${PROJECT_SOURCE_DIR}/scripts/makepak.py ${PROJECT_SOURCE_DIR}/build.json ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR}
 )
 add_custom_target(resources_target ALL DEPENDS ${PROJECT_BINARY_DIR}/game.zip ${additional_assets} models_target)
 
