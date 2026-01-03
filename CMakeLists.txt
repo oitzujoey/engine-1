@@ -72,22 +72,8 @@ foreach(model ${models})
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/obj2cmsh.py ${PROJECT_SOURCE_DIR}/${model}.obj
     COMMAND ${PROJECT_SOURCE_DIR}/scripts/obj2rmsh.py ${PROJECT_SOURCE_DIR}/${model}.obj
   )
+  list(APPEND models_msh ${PROJECT_SOURCE_DIR}/${model}.cmsh ${PROJECT_SOURCE_DIR}/${model}.rmsh)
 endforeach()
-set(models_msh
-  game_sandbox/blender/cube.rmsh
-  game_sandbox/blender/cube.cmsh
-  game_sandbox/blender/frogcube.rmsh
-  game_sandbox/blender/frogcube.cmsh
-  game_sandbox/blender/plane.rmsh
-  game_sandbox/blender/plane.cmsh
-  game_sandbox/blender/sandbox.rmsh
-  game_sandbox/blender/sandbox.cmsh
-
-  game_opensauce26/models/airliner.rmsh
-  game_opensauce26/models/airliner.cmsh
-  game_opensauce26/models/cube.rmsh
-  game_opensauce26/models/cube.cmsh
-)
 add_custom_target(models_target ALL DEPENDS ${models_msh})
 
 set(additional_assets
