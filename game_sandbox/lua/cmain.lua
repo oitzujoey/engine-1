@@ -4,6 +4,7 @@ include "common.lua"
 include "keys.lua"
 
 g_sensitivity = 1.0
+g_fly = false
 
 g_cursorScale = 1.05
 g_selectionScale = 1.1
@@ -215,6 +216,11 @@ function startup()
 	keys_createHalfBind("k_48", "key_color0", "key_color0_d")
 	-- Space (jump)
 	keys_createFullBind("k_32", "key_space", "key_space_d", "key_space_u")
+	-- Ctrl (crouch)
+	keys_createFullBind("k_1073742048", "key_ctrl", "key_ctrl_d", "key_ctrl_u")
+	keys_createFullBind("k_99", "key_c", "key_c_d", "key_c_u")
+	-- Fly toggle
+	keys_createFullBind("k_102", "key_f", "key_f_d", "key_f_u")
 	-- Left mouse (select)
 	keys_createFullBind("m_1", "mouse_leftButton", "mouse_leftPress", "mouse_leftRelease")
 	-- Right mouse (jump)
@@ -367,11 +373,25 @@ function mainGame()
 	local scale = 1.0 - (1.0 - 0.90) * movementScale
 	g_playerState.velocity.x = g_playerState.velocity.x * scale
 	g_playerState.velocity.y = g_playerState.velocity.y * scale
+	if g_fly then
+		g_playerState.velocity.z = g_playerState.velocity.z * scale
+	end
 
-	-- Jumping
-	if g_playerState.grounded then
+	if g_fly then
+		-- Move up.
 		if g_jump then
-			g_playerState.velocity.z = g_playerState.velocity.z + G_JUMPVELOCITY
+			g_playerState.velocity.z = g_playerState.velocity.z + movementScale
+		end
+		-- Move down.
+		if g_crouch then
+			g_playerState.velocity.z = g_playerState.velocity.z - movementScale
+		end
+	else
+		-- Jumping
+		if g_playerState.grounded then
+			if g_jump then
+				g_playerState.velocity.z = g_playerState.velocity.z + G_JUMPVELOCITY
+			end
 		end
 	end
 
@@ -393,7 +413,8 @@ function mainGame()
 		yaw_x = yaw_x - cos(g_playerState.euler.yaw)
 		yaw_y = yaw_y - sin(g_playerState.euler.yaw)
 	end
-	g_playerState.velocity = vec3_add(g_playerState.velocity, vec3_scale({x=yaw_x, y=yaw_y, z=0}, movementScale))
+	g_playerState.velocity = vec3_add(g_playerState.velocity,
+	                                  vec3_scale({x=yaw_x, y=yaw_y, z=0}, movementScale))
 
 	if (g_mouse.delta_y and g_mouse.delta_y ~= 0) then
 		g_playerState.euler.pitch = g_playerState.euler.pitch - g_mouse.delta_y/1000.0
@@ -406,7 +427,9 @@ function mainGame()
 	if g_playerState.euler.pitch > G_PI/2 then g_playerState.euler.pitch = G_PI/2 end
 	if g_playerState.euler.pitch < -G_PI/2 then g_playerState.euler.pitch = -G_PI/2 end
 
-	g_playerState.velocity.z = g_playerState.velocity.z + G_GRAVITY * movementScale
+	if not g_fly then
+		g_playerState.velocity.z = g_playerState.velocity.z + G_GRAVITY * movementScale
+	end
 
 	g_playerState.orientation = hamiltonProduct(eulerToQuat(g_playerState.euler), aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
 	g_playerState = playerMoveAndCollide(g_playerState, movementScale)
