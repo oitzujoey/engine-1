@@ -1,14 +1,12 @@
 G_CLIENT=true
 
-include "../common/common.lua"
-include "../client/keys.lua"
+include "common.lua"
+include "keys.lua"
 
 g_sensitivity = 1.0
 
 g_cursorScale = 1.05
 g_selectionScale = 1.1
-
-G_STANDARD_FRAMERATE = 60
 
 Keys = {}
 g_mouse = {}

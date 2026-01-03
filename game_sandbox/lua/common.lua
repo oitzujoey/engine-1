@@ -136,6 +136,8 @@ end
 --------------------------
 
 
+G_STANDARD_FRAMERATE = 60
+
 g_worldOrientation = {w=1.0, x=0.0, y=0.0, z=0.0}
 
 g_gridSpacing = 40
@@ -489,11 +491,11 @@ function updateNeighborBoxes(position)
 	end
 end
 
-function processBoxes(boxes)
+function processBoxes(boxes, movementScale)
 	for i = 1,g_boxes_length,1 do
 		if boxes[i].needsUpdate then
 			puts("Update: "..toString(boxes[i].position.x).." "..toString(boxes[i].position.y).." "..toString(boxes[i].position.z))
-			boxes[i].velocity.z = boxes[i].velocity.z + G_GRAVITY
+			boxes[i].velocity.z = boxes[i].velocity.z + G_GRAVITY * movementScale
 			local oldPosition = boxes[i].position
 			boxes[i] = boxMoveAndCollide(boxes[i])
 			local newPosition = boxes[i].position

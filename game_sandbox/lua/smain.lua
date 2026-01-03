@@ -1,7 +1,7 @@
 G_SERVER=true
 
 -- `include` is the engine's version of `require`.
-include "../common/common.lua"
+include "common.lua"
 
 g_eventQueues = {}
 g_clients = {}
@@ -263,7 +263,8 @@ function main()
 		end
 	end
 
-	processBoxes(g_boxes)
+	local movementScale = G_STANDARD_FRAMERATE * deltaT
+	processBoxes(g_boxes, movementScale)
 	sendQueuedEvents()
 
 	-- puts("FPS: "..toString(1/deltaT))
