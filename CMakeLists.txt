@@ -78,6 +78,8 @@ add_custom_target(models_target ALL DEPENDS ${models_msh})
 
 set(additional_assets
   game_sandbox/autoexec.cfg
+  game_sandbox/client.cfg
+  game_sandbox/server.cfg
 
   game_opensauce26/autoexec.cfg
 )

@@ -328,22 +328,19 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 
-	/* // Mount engine directory. */
-	/* e = PHYSFS_mount("./", "", true); */
-	/* if (!e) { */
-	/* 	error("Could not add directory \"./\" to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode())); */
-	/* 	e = ERR_GENERIC; */
-	/* 	goto cleanup_l; */
-	/* } */
-
 	// Mount the zip file that was incbin'ed into this executable.
-	e = PHYSFS_mountMemory((uint8_t *) &g_pak, (uint8_t *)&g_pak_end - (uint8_t *)&g_pak, NULL, "_______.zip", NULL, 1);
+	e = PHYSFS_mountMemory((uint8_t *) &g_pak,
+						   (uint8_t *)&g_pak_end - (uint8_t *)&g_pak,
+						   NULL,
+						   "_.zip",
+						   NULL,
+						   1);
 	if (!e) {
 		error("Could not add embedded resources to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		e = ERR_GENERIC;
 		goto cleanup_l;
 	}
-	
+
 	// Execute autoexec.
 	if (PHYSFS_exists(AUTOEXEC)) {
 		info("Found \""AUTOEXEC"\"", "");
@@ -352,20 +349,6 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	}
 	else {
 		warning("\""AUTOEXEC"\" not found.", "");
-	}
-	
-	// Unmount engine directory.
-	e = PHYSFS_unmount("./");
-	if (!e) {
-		PHYSFS_ErrorCode errorCode = PHYSFS_getLastErrorCode();
-		if (errorCode == 10) {
-			info("Attempted to remove directory \"./\" from the search path, but it wasn't mounted.", "");
-		}
-		else {
-			error("Could not remove directory \"./\" from the search path: %s", PHYSFS_getErrorByCode(errorCode));
-			e = ERR_GENERIC;
-			goto cleanup_l;
-		}
 	}
 
 	cfg2_admin_t savedAdminLevel = g_cfg2.adminLevel;
