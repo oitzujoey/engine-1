@@ -57,11 +57,13 @@ add_executable(lua)
 add_executable(luac)
 
 set(models
-  game_opensauce26/models/airliner
   game_sandbox/blender/cube
   game_sandbox/blender/frogcube
   game_sandbox/blender/plane
   game_sandbox/blender/sandbox
+
+  game_opensauce26/models/airliner
+  game_opensauce26/models/cube
 )
 foreach(model ${models})
   add_custom_command(
@@ -74,17 +76,31 @@ endforeach()
 set(models_msh
   game_sandbox/blender/cube.rmsh
   game_sandbox/blender/cube.cmsh
+  game_sandbox/blender/frogcube.rmsh
+  game_sandbox/blender/frogcube.cmsh
+  game_sandbox/blender/plane.rmsh
+  game_sandbox/blender/plane.cmsh
+  game_sandbox/blender/sandbox.rmsh
+  game_sandbox/blender/sandbox.cmsh
+
   game_opensauce26/models/airliner.rmsh
   game_opensauce26/models/airliner.cmsh
+  game_opensauce26/models/cube.rmsh
+  game_opensauce26/models/cube.cmsh
 )
 add_custom_target(models_target ALL DEPENDS ${models_msh})
 
+set(additional_assets
+  game_sandbox/autoexec.cfg
+
+  game_opensauce26/autoexec.cfg
+)
 add_custom_command(
-  OUTPUT ${PROJECT_BINARY_DIR}/game.zip
-  DEPENDS ${PROJECT_SOURCE_DIR}/custom_binary.json
+  OUTPUT ${PROJECT_BINARY_DIR}/game.zip ${PROJECT_SOURCE_DIR}/src/common/pak.s
+  DEPENDS ${PROJECT_SOURCE_DIR}/custom_binary.json ${additional_assets} ${models_msh}
   COMMAND ${PROJECT_SOURCE_DIR}/scripts/makepak.py ${PROJECT_SOURCE_DIR}/custom_binary.json ${PROJECT_SOURCE_DIR} ${PROJECT_BINARY_DIR}
 )
-add_custom_target(resources_target ALL DEPENDS ${PROJECT_BINARY_DIR}/game.zip models_target)
+add_custom_target(resources_target ALL DEPENDS ${PROJECT_BINARY_DIR}/game.zip ${additional_assets} models_target)
 
 target_compile_options(sengine-1 PRIVATE -DSERVER)
 target_compile_options(cengine-1 PRIVATE -DCLIENT -DNOTERMINAL)

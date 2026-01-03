@@ -66,7 +66,7 @@ rmsh.vertexNormals_length = len(rmsh.vertexNormals)
 rmsh.vertexTextureCoordinates_length = len(rmsh.vertexTextureCoordinates)
 
 
-print(obj)
+# print(obj)
 # print(rmsh)
 
 
