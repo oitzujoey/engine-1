@@ -142,7 +142,7 @@ static void main_housekeeping(lua_State *luaState) {
 }
 
 static int main_init(int argc, char *argv[], lua_State *luaState) {
-	int error = ERR_CRITICAL;
+	int e = ERR_CRITICAL;
 	
 	char *tempString = NULL;
 
@@ -150,8 +150,8 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	
 	// Start the VFS.
 
-	error = vfs_init((uint8_t *) argv[0]);
-	if (error) goto cleanup_l;
+	e = vfs_init((uint8_t *) argv[0]);
+	if (e) goto cleanup_l;
 	
 	// Start config system.
 	
@@ -159,42 +159,42 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	
 	cfg2_init(luaState);
 	
-	error = cfg2_createVariables(g_commonVarInit, luaState);
-	if (error == ERR_GENERIC) {
+	e = cfg2_createVariables(g_commonVarInit, luaState);
+	if (e == ERR_GENERIC) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
-		error = ERR_GENERIC;
+		e = ERR_GENERIC;
 		goto cleanup_l;
 	}
-	else if (error == ERR_OUTOFMEMORY) {
+	else if (e == ERR_OUTOFMEMORY) {
 		outOfMemory();
-		error = ERR_OUTOFMEMORY;
+		e = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
 	
-	error = cfg2_createVariables(g_serverVarInit, luaState);
-	if (error == ERR_GENERIC) {
+	e = cfg2_createVariables(g_serverVarInit, luaState);
+	if (e == ERR_GENERIC) {
 		log_critical_error(__func__, "Could not load initial config vars due to bad initialization table.");
-		error = ERR_GENERIC;
+		e = ERR_GENERIC;
 		goto cleanup_l;
 	}
-	else if (error == ERR_OUTOFMEMORY) {
+	else if (e == ERR_OUTOFMEMORY) {
 		outOfMemory();
-		error = ERR_OUTOFMEMORY;
+		e = ERR_OUTOFMEMORY;
 		goto cleanup_l;
 	}
 	
 #ifndef NOTERMINAL
-	error = terminal_initConsole();
-	if (error) {
+	e = terminal_initConsole();
+	if (e) {
 		goto cleanup_l;
 	}
 #endif
 
 	/* // Mount engine directory. */
-	/* error = PHYSFS_mount("./", "", true); */
-	/* if (!error) { */
+	/* e = PHYSFS_mount("./", "", true); */
+	/* if (!e) { */
 	/* 	error("Could not add directory \"./\" to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode())); */
-	/* 	error = ERR_GENERIC; */
+	/* 	e = ERR_GENERIC; */
 	/* 	goto cleanup_l; */
 	/* } */
 
@@ -209,15 +209,15 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	}
 	
 	// Unmount engine directory.
-	error = PHYSFS_unmount("./");
-	if (!error) {
+	e = PHYSFS_unmount("./");
+	if (!e) {
 		PHYSFS_ErrorCode errorCode = PHYSFS_getLastErrorCode();
 		if (errorCode == 10) {
 			info("Attempted to remove directory \"./\" from the search path, but it wasn't mounted.", "");
 		}
 		else {
 			error("Could not remove directory \"./\" from the search path: %s", PHYSFS_getErrorByCode(errorCode));
-			error = ERR_GENERIC;
+			e = ERR_GENERIC;
 			goto cleanup_l;
 		}
 	}
@@ -231,15 +231,15 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 		for (int i = 1; i < argc; i++) {
 			str2_copyMalloc(&tempString, argv[i]);
 			g_cfg2.recursionDepth = 0;
-			error = cfg2_execString(tempString, luaState, "Console");
-			if (error == ERR_OUTOFMEMORY) {
+			e = cfg2_execString(tempString, luaState, "Console");
+			if (e == ERR_OUTOFMEMORY) {
 				outOfMemory();
 				goto cleanup_l;
 			}
-			if (error == ERR_CRITICAL) {
+			if (e == ERR_CRITICAL) {
 				goto cleanup_l;
 			}
-			if (error) {
+			if (e) {
 				break;
 			}
 		}
@@ -251,7 +251,7 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	
 	if (g_workspace.str_length == 0) {
 		log_critical_error(__func__, "\"workspace\" has not been set.");
-		error = ERR_GENERIC;
+		e = ERR_GENERIC;
 		goto cleanup_l;
 	}
 	
@@ -263,8 +263,8 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	/*  As of SDL v2.0.14:
 		Allocates 220 bytes that SDL_Quit doesn't free.
 		I don't think I can do anything about it. */
-	error = SDL_Init(0);
-	if (error != 0) {
+	e = SDL_Init(0);
+	if (e != 0) {
 		critical_error("SDL_Init returned %s", SDL_GetError());
 		return ERR_CRITICAL;
 	}
@@ -272,27 +272,27 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	entity_initEntityList();
 	modelList_init();
 	
-	error = snetwork_init();
-	if (error) {
+	e = snetwork_init();
+	if (e) {
 		critical_error("Could not initialize network", "");
 		return ERR_CRITICAL;
 	}
 	
 #ifndef NOTERMINAL
-	error = terminal_terminalInit();
-	if (error) {
+	e = terminal_terminalInit();
+	if (e) {
 		critical_error("Could not initialize the terminal", "");
-		error = ERR_CRITICAL;
+		e = ERR_CRITICAL;
 		goto cleanup_l;
 	}
 #endif
 	
-	error = ERR_OK;
+	e = ERR_OK;
 	cleanup_l:
 	
 	if (tempString) MEMORY_FREE(&tempString);
 
-	return error;
+	return e;
 }
 
 static void main_quit(void) {
