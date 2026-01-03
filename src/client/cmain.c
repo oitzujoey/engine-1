@@ -334,7 +334,7 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 						   NULL,
 						   "_.zip",
 						   NULL,
-						   1);
+						   0);
 	if (!e) {
 		error("Could not add embedded resources to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		e = ERR_GENERIC;
@@ -342,13 +342,47 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 	}
 
 	// Execute autoexec.
-	if (PHYSFS_exists(AUTOEXEC)) {
-		info("Found \""AUTOEXEC"\"", "");
+	if (PHYSFS_exists(AUTOEXEC_CFG)) {
+		info("Found \""AUTOEXEC_CFG"\"", "");
 		g_cfg2.recursionDepth = 0;
-		cfg2_execFile(AUTOEXEC, luaState);
+		cfg2_execFile(AUTOEXEC_CFG, luaState);
 	}
 	else {
-		warning("\""AUTOEXEC"\" not found.", "");
+		warning("\""AUTOEXEC_CFG"\" not found.", "");
+	}
+
+	// Mount current directory.
+	bool currentDirectoryMounted = false;
+	e = PHYSFS_mount("./", "", true);
+	if (!e) {
+		warning("Could not add directory \"./\" to the search path: %s",
+				PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		// This is not a major issue.
+	}
+	else {
+		currentDirectoryMounted = true;
+	}
+
+	// Execute user settings config.
+	if (PHYSFS_exists(SETTINGS_CFG)) {
+		info("Found \""SETTINGS_CFG"\"", "");
+		g_cfg2.recursionDepth = 0;
+		cfg2_execFile(SETTINGS_CFG, luaState);
+	}
+	else {
+		warning("\""SETTINGS_CFG"\" not found.", "");
+	}
+
+	// Unmount engine directory.
+	if (currentDirectoryMounted) {
+		e = PHYSFS_unmount("./");
+		if (!e) {
+			PHYSFS_ErrorCode errorCode = PHYSFS_getLastErrorCode();
+			error("Could not remove directory \"./\" from the search path: %s",
+				  PHYSFS_getErrorByCode(errorCode));
+			e = ERR_GENERIC;
+			goto cleanup_l;
+		}
 	}
 
 	cfg2_admin_t savedAdminLevel = g_cfg2.adminLevel;

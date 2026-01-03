@@ -37,7 +37,8 @@
 #define B_COLOR_CYAN      "\x1B[46m"
 #define B_COLOR_WHITE     "\x1B[47m"
 
-#define AUTOEXEC    "autoexec.cfg"
+#define AUTOEXEC_CFG "autoexec.cfg"
+#define SETTINGS_CFG "settings.cfg"
 
 #define ENGINE_MAN_NAME "Scott"
 
