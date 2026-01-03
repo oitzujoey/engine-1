@@ -1,3 +1,3 @@
 def error(msg):
     print(msg)
-    exit()
+    exit(1)

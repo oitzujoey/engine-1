@@ -330,19 +330,14 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 		goto cleanup_l;
 	}
 
-	// Mount zip file if it exists.
-	e = PHYSFS_mount(DEFAULT_GAME_ZIP_NAME, "", true);
-	if (!e) {
-		warning("Could not add file \""DEFAULT_GAME_ZIP_NAME"\" to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+	/* // Mount engine directory. */
+	/* e = PHYSFS_mount("./", "", true); */
+	/* if (!e) { */
+	/* 	error("Could not add directory \"./\" to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode())); */
+	/* 	e = ERR_GENERIC; */
+	/* 	goto cleanup_l; */
+	/* } */
 
-		// Mount engine directory since zip file doesn't exist.
-		e = PHYSFS_mount("./", "", true);
-		if (!e) {
-			error("Could not add directory \"./\" to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-			e = ERR_GENERIC;
-			goto cleanup_l;
-		}
-	}
 	// Mount the zip file that was incbin'ed into this executable.
 	e = PHYSFS_mountMemory((uint8_t *) &g_pak, (uint8_t *)&g_pak_end - (uint8_t *)&g_pak, NULL, "_______.zip", NULL, 1);
 	if (!e) {

@@ -190,20 +190,13 @@ static int main_init(int argc, char *argv[], lua_State *luaState) {
 	}
 #endif
 
-	// Mount zip file if it exists. (This is likely the engine binary itself)
-	error = PHYSFS_mount(DEFAULT_GAME_ZIP_NAME, "", true);
-	if (!error) {
-		error("Could not add \""DEFAULT_GAME_ZIP_NAME"\" to the search path: %s",
-			  PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-
-		// Mount engine directory since zip file doesn't exist.
-		error = PHYSFS_mount("./", "", true);
-		if (!error) {
-			error("Could not add directory \"./\" to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-			error = ERR_GENERIC;
-			goto cleanup_l;
-		}
-	}
+	/* // Mount engine directory. */
+	/* error = PHYSFS_mount("./", "", true); */
+	/* if (!error) { */
+	/* 	error("Could not add directory \"./\" to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode())); */
+	/* 	error = ERR_GENERIC; */
+	/* 	goto cleanup_l; */
+	/* } */
 
 	// Execute autoexec.
 	if (PHYSFS_exists(AUTOEXEC)) {

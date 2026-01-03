@@ -67,7 +67,7 @@ rmsh.vertexTextureCoordinates_length = len(rmsh.vertexTextureCoordinates)
 
 
 print(obj)
-print(rmsh)
+# print(rmsh)
 
 
 ## Serialize rmsh
