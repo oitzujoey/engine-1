@@ -52,9 +52,9 @@ endif()
 add_executable(sengine-1)
 add_executable(cengine-1)
 #add_executable(engine-1-runner)
-add_executable(sqlite3)
-add_executable(lua)
-add_executable(luac)
+# add_executable(sqlite3)
+# add_executable(lua)
+# add_executable(luac)
 
 set(models
   game_sandbox/blender/cube
