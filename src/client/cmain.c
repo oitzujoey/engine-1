@@ -33,8 +33,6 @@
 #include "named_pipe.h"
 #endif
 
-const int SCREEN_WIDTH = 1920;
-const int SCREEN_HEIGHT = 1080;
 
 extern const uint8_t *g_pak;
 extern const uint8_t *g_pak_end;
