@@ -62,5 +62,8 @@ set password {password}
     ## Zip it all up.
     shutil.make_archive(f"{destination_directory}/game", 'zip', temp_directory_name)
 
+## Tell CMake that the pak needs to be reassembled into the engine.
+(pathlib.Path(source_directory)/"src/common/pak.s").touch()
+
 print(f"  Generated \"{destination_directory}/game.zip\".")
 print("}")
