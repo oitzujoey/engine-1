@@ -538,7 +538,7 @@ function createBox(id, position, materialName)
 	entity_setScale(boxEntity, g_boxes_scale)
 	box.position = position
 	entity_setPosition(boxEntity, box.position)
-	entity_setOrientation(boxEntity, {w=1, x=0, y=0, z=0})
+	entity_setOrientation(boxEntity, {w=1, x=1, y=0, z=0})
 
 	box.velocity = {x=0, y=0, z=0}
 	box.aabb = G_BOX_BB
@@ -576,7 +576,7 @@ function changeBoxMaterial(box, materialName)
 		if e ~= 0 then return e end
 		entity_setScale(box_entity, g_boxes_scale)
 		entity_setPosition(box_entity, box.position)
-		entity_setOrientation(box_entity, {w=1, x=0, y=0, z=0})
+		entity_setOrientation(box_entity, {w=1, x=1, y=0, z=0})
 	end
 
 	-- Set material.

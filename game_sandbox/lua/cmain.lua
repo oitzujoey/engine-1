@@ -293,7 +293,7 @@ function startup()
 
 	info("startup", "Starting game")
 
-	g_loadingScreen = aaToQuat({w=5*G_PI/4, x=0, y=0, z=1})
+	g_loadingScreen = aaToQuat({w=-1*G_PI/4, x=0, y=0, z=1})
 	g_loadingEntity = modelEntity_create({x=0, y=0, z=-100}, g_loadingScreen, g_boxes_scale)
 	e = entity_linkMaterial(g_loadingEntity, g_loadingMaterial)
 end
