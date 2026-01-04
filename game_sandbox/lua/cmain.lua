@@ -532,9 +532,10 @@ function main()
 	g_frame = g_frame + 1
 	g_time = g_time + deltaT
 	g_mouse = {x=nil, y=nil, delta_x=0, delta_y=0}
+	puts("FPS: "..toString(1.0/deltaT))
 end
 
 function shutdown()
 	info("shutdown", "Client quit")
-	puts("FPS: "..toString(g_averageFramerate))
+	puts("Average FPS: "..toString(g_averageFramerate))
 end

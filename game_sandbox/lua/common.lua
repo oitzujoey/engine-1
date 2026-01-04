@@ -487,6 +487,7 @@ function updateNeighborBoxes(position)
 			local box_index = getBoxEntry(direction)
 			if box_index then
 				g_boxes[box_index].needsUpdate = true
+				g_boxes[box_index].velocity.z = 0
 			end
 		end
 	end
@@ -531,7 +532,7 @@ function createBox(id, position, materialName)
 	e = entity_linkChild(boxEntity, model)
 	box.id = id
 	box.entity = boxEntity
-	-- Enable gravity.
+	-- Enable gravity. Bug?
 	box.needsUpdate = false
 
 	entity_setScale(boxEntity, g_boxes_scale)
