@@ -1067,16 +1067,10 @@ I added a quick workaround, which was to simply group all entities with the same
 
 
 
-Custom data for each package, server:
-    identity.cfg
-    client.cfg
-
 Stuff I need to add before public release:
-    Make movement mostly framerate independent.
+    Make falling boxes mostly framerate independent.
     Add more textures?
-    Windows test
-    Multiple architecture test?
-    Final package
+    Make frog always face the player when it is placed.
 
 Stuff I need to document:
     Rmsh & script
@@ -1190,13 +1184,13 @@ Other improvements:
 =====================
 */* Boxes sandbox ***
 =====================
-[/] (Art) Make models
+[*] (Art) Make models
     [*] Make boxes
 	[*] Make map
-	[ ] Make player models
+!	[ ] Make player models
 [*] (Lua) Texture boxes with different colors corresponding to the keyboard numbers 0-9.
 [*] (Lua) Add physics and collision handling.
-[*] (All) Profile and optimize for speed.
+[/] (All) Profile and optimize for speed.
 
 =========================
 */* Multiplayer Elite ***

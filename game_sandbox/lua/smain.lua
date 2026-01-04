@@ -93,7 +93,7 @@ function initializeBoxes()
 		local p = snapToGrid({x=((i-1)%10 - 4.5)*g_gridSpacing,
 							  y=((((i-1)-(i-1)%10)/10)%10 - 4.5)*g_gridSpacing,
 							  z=(((i-1)-(i-1)%10-(i-1)%100)/100 - 4.5)*g_gridSpacing})
-		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z) VALUES ('red', "..p.x..", "..p.y..", "..p.z..");")
+		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z, angle) VALUES ('red', "..p.x..", "..p.y..", "..p.z..", 0);")
 	end
 end
 
@@ -125,7 +125,7 @@ function consoleCommandCreateBox()
 		info("createBox", "Cannot spawn box. Another box is currently at the origin.")
 	else
 		local materialName = g_materialNames[random()%#g_materialNames + 1]
-		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z) VALUES ('red', 0, 0, 0);")
+		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z, angle) VALUES ('red', 0, 0, 0, 0);")
 		local result = sqlite_exec(g_db, "SELECT id FROM boxes WHERE x == 0 AND y == 0 AND z == 0;")
 		local id = result[1].id
 		createBox(id, position, materialName)
