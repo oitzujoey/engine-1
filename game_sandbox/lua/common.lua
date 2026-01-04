@@ -39,6 +39,7 @@ G_PI = 3.14159265358979323
 
 
 function quit()
+	info("quit", "quit")
 	cfg2_setVariable("quit")
 end
 
