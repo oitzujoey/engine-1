@@ -64,9 +64,10 @@ function server_processEvents(events, client_index)
 			if start_occupied and box_index and not end_occupied then
 				local box_index = getBoxEntry(d.start_position)
 				g_boxes[box_index].position = d.end_position
+				g_boxes[box_index].angle = d.angle
 				moveBox(box_index, d.end_position, d.start_position)
 				g_boxes[box_index].needsUpdate = true
-				sendEvent("move box", {start_position=d.start_position, end_position=d.end_position})
+				sendEvent("move box", {start_position=d.start_position, end_position=d.end_position, angle=d.angle})
 
 				-- Enable physics for box above. We could do all boxes above, but I noticed that the boxes don't move until
 				-- the box below them moves entirely out of the way, meaning that the box above doesn't move immediately,
@@ -77,7 +78,7 @@ function server_processEvents(events, client_index)
 					local id = g_boxes[box_index].id
 					local n = snapToGrid(d.end_position)
 					n.z = n.z + g_backOff
-					sqlite_exec(g_db, "UPDATE boxes SET x = "..n.x..", y = "..n.y..", z = "..n.z.." WHERE id == "..id..";")
+					sqlite_exec(g_db, "UPDATE boxes SET x = "..n.x..", y = "..n.y..", z = "..n.z..", angle = "..d.angle.." WHERE id == "..id..";")
 				end
 			end
 		else
@@ -106,7 +107,7 @@ function loadBoxes()
 		local y = boxDescriptor.y
 		local z = boxDescriptor.z
 		local position = {x=x, y=y, z=z}
-		createBox(boxDescriptor.id, position, boxDescriptor.color)
+		createBox(boxDescriptor.id, position, boxDescriptor.color, boxDescriptor.angle)
 	end
 	for i = 1,boxDescriptors_length,1 do
 		if checkIfBoxNeedsUpdate(g_boxes[i].position) then
@@ -125,10 +126,10 @@ function consoleCommandCreateBox()
 		info("createBox", "Cannot spawn box. Another box is currently at the origin.")
 	else
 		local materialName = g_materialNames[random()%#g_materialNames + 1]
-		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z, angle) VALUES ('red', 0, 0, 0, 0);")
+		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z, angle) VALUES ('"..materialName.."', 0, 0, 0, 0);")
 		local result = sqlite_exec(g_db, "SELECT id FROM boxes WHERE x == 0 AND y == 0 AND z == 0;")
 		local id = result[1].id
-		createBox(id, position, materialName)
+		createBox(id, position, materialName, 0.0)
 		sendEvent("create box", {position=position, materialName=materialName})
 		info("createBox", "Created box at origin.")
 	end
@@ -199,9 +200,10 @@ function clientMain(clientIndex)
 	if not serverState[clientIndex].boxesCreated then
 		for box_index = 1,g_boxes_length,1 do
 			sendEventToClient(clientIndex,
-							  "create initial box",
-							  {position=g_boxes[box_index].position,
-							   materialName=g_boxes[box_index].materialName})
+			                  "create initial box",
+			                  {position=g_boxes[box_index].position,
+			                   materialName=g_boxes[box_index].materialName,
+			                   angle=g_boxes[box_index].angle})
 		end
 		if g_boxes_length == 0 then
 			sendEventToClient(clientIndex, "no initial boxes", nil)

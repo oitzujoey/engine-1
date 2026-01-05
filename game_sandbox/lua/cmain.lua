@@ -39,7 +39,7 @@ function processEvents(events)
 		local c = event.command
 		local d = event.data
 		if c == "create box" then
-			createBox(nil, d.position, d.materialName)
+			createBox(nil, d.position, d.materialName, d.angle)
 		elseif c == "create initial box" then
 			if not g_initialBoxesCreated then
 				push(g_initialBoxesToCreate, d)
@@ -55,10 +55,13 @@ function processEvents(events)
 			-- Move box.
 			local box_index = getBoxEntry(d.start_position)
 			g_boxes[box_index].position = d.end_position
+			g_boxes[box_index].angle = d.angle
 			moveBox(box_index, d.end_position, d.start_position)
 			-- Enable physics.
 			g_boxes[box_index].needsUpdate = true
 			entity_setPosition(g_boxes[box_index].entity, g_boxes[box_index].position)
+			local o = hamiltonProduct(g_boxes[box_index].orientation_base, aaToQuat({w=d.angle, x=0, y=1, z=0}))
+			entity_setOrientation(g_boxes[box_index].entity, o)
 
 			updateNeighborBoxes(d.start_position)
 		else
@@ -323,9 +326,28 @@ function mainGame()
 		if g_selectedPosition and not occupied then
 			e = modelEntity_delete(g_selectionEntity)
 			if e ~= 0 then quit() end
+			angle = g_playerState.euler.yaw - G_PI/2
+			while angle > G_PI do
+				angle = angle - 2*G_PI
+			end
+			while angle < -G_PI do
+				angle = angle + 2*G_PI
+			end
+			if angle > 3*G_PI/4 then
+				angle = G_PI
+			elseif angle > 1*G_PI/4 then
+				angle = G_PI/2
+			elseif angle > -1*G_PI/4 then
+				angle = 0.0
+			elseif angle > -3*G_PI/4 then
+				angle = -G_PI/2
+			else
+				angle = -G_PI
+			end
 			client_sendEvent("move box",
-							 {start_position=g_selectedPosition,
-							  end_position={x=cursorPosition.x, y=cursorPosition.y, z=cursorPosition.z + g_backOff}})
+			                 {start_position=g_selectedPosition,
+			                  end_position={x=cursorPosition.x, y=cursorPosition.y, z=cursorPosition.z + g_backOff},
+			                  angle=angle})
 			g_selectedPosition = nil
 
 			e = modelEntity_delete(g_cursorEntity)
@@ -509,7 +531,7 @@ function main()
 				local boxes_length = #g_initialBoxesToCreate
 				for box_index = 1,boxes_length,1 do
 					local boxDescriptor = g_initialBoxesToCreate[box_index]
-					createBox(nil, boxDescriptor.position, boxDescriptor.materialName)
+					createBox(nil, boxDescriptor.position, boxDescriptor.materialName, boxDescriptor.angle)
 				end
 				g_initialBoxesToCreate = nil
 			end

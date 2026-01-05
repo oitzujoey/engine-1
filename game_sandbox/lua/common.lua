@@ -520,7 +520,7 @@ function processBoxes(boxes, movementScale)
 end
 
 
-function createBox(id, position, materialName)
+function createBox(id, position, materialName, angle)
 	local box = {}
 	local boxEntity, e = entity_createEntity(g_entity_type_model)
 	e = entity_linkChild(g_cameraEntity, boxEntity)
@@ -538,7 +538,10 @@ function createBox(id, position, materialName)
 	entity_setScale(boxEntity, g_boxes_scale)
 	box.position = position
 	entity_setPosition(boxEntity, box.position)
-	entity_setOrientation(boxEntity, {w=1, x=1, y=0, z=0})
+	box.orientation_base = aaToQuat({w=G_PI/2, x=1, y=0, z=0})
+	box.angle = angle
+	local o = hamiltonProduct(box.orientation_base, aaToQuat({w=angle, x=0, y=1, z=0}))
+	entity_setOrientation(boxEntity, o)
 
 	box.velocity = {x=0, y=0, z=0}
 	box.aabb = G_BOX_BB
