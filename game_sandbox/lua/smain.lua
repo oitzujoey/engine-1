@@ -95,7 +95,7 @@ function initializeBoxes()
 		local p = snapToGrid({x=((i-1)%10 - 4.5)*g_gridSpacing,
 							  y=((((i-1)-(i-1)%10)/10)%10 - 4.5)*g_gridSpacing,
 							  z=(((i-1)-(i-1)%10-(i-1)%100)/100 - 4.5)*g_gridSpacing})
-		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z, angle, perp) VALUES ('red', "..p.x..", "..p.y..", "..p.z..", 0, 'default');")
+		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z, angle, perp) VALUES ('white', "..p.x..", "..p.y..", "..p.z..", 0, 'default');")
 	end
 end
 
