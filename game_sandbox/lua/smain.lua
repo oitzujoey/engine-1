@@ -53,7 +53,7 @@ function server_processEvents(events, client_index)
 				local y = p.y
 				local z = p.z
 				changeBoxMaterial(g_boxes[box_index], c)
-				sendEvent("change box color", {position=p, color=c})
+				sendEvent("change box color", {position=p, color=c, angle=g_boxes[box_index].angle})
 				local id = g_boxes[getBoxEntry(p)].id
 				sqlite_exec(g_db, "UPDATE boxes SET color = '"..c.."' WHERE id == "..id..";")
 			end

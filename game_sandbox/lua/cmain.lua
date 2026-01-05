@@ -50,7 +50,10 @@ function processEvents(events)
 				createdBoxes = true
 			end
 		elseif c == "change box color" then
-			changeBoxMaterial(g_boxes[getBoxEntry(d.position)], d.color)
+			local box_index = getBoxEntry(d.position)
+			changeBoxMaterial(g_boxes[box_index], d.color)
+			local o = hamiltonProduct(g_boxes[box_index].orientation_base, aaToQuat({w=d.angle, x=0, y=1, z=0}))
+			entity_setOrientation(g_boxes[box_index].entity, o)
 		elseif c == "move box" then
 			-- Move box.
 			local box_index = getBoxEntry(d.start_position)
