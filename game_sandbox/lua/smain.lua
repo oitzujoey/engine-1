@@ -37,6 +37,7 @@ end
 
 -- This function can be run multiple times a frame.
 function server_processEvents(events, client_index)
+	local perp = clientState[client_index][1].username
 	local createdBoxes = false
 	if not events then return end
 	local events_length = #events
@@ -55,7 +56,7 @@ function server_processEvents(events, client_index)
 				changeBoxMaterial(g_boxes[box_index], c)
 				sendEvent("change box color", {position=p, color=c, angle=g_boxes[box_index].angle})
 				local id = g_boxes[getBoxEntry(p)].id
-				sqlite_exec(g_db, "UPDATE boxes SET color = '"..c.."' WHERE id == "..id..";")
+				sqlite_exec(g_db, "UPDATE boxes SET color = '"..c.."', perp = '"..perp.."' WHERE id == "..id..";")
 			end
 		elseif c == "move box" then
 			local start_occupied, box_index = isOccupied(d.start_position)
@@ -78,7 +79,7 @@ function server_processEvents(events, client_index)
 					local id = g_boxes[box_index].id
 					local n = snapToGrid(d.end_position)
 					n.z = n.z + g_backOff
-					sqlite_exec(g_db, "UPDATE boxes SET x = "..n.x..", y = "..n.y..", z = "..n.z..", angle = "..d.angle.." WHERE id == "..id..";")
+					sqlite_exec(g_db, "UPDATE boxes SET x = "..n.x..", y = "..n.y..", z = "..n.z..", angle = "..d.angle..", perp = '"..perp.."' WHERE id == "..id..";")
 				end
 			end
 		else
@@ -94,7 +95,7 @@ function initializeBoxes()
 		local p = snapToGrid({x=((i-1)%10 - 4.5)*g_gridSpacing,
 							  y=((((i-1)-(i-1)%10)/10)%10 - 4.5)*g_gridSpacing,
 							  z=(((i-1)-(i-1)%10-(i-1)%100)/100 - 4.5)*g_gridSpacing})
-		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z, angle) VALUES ('red', "..p.x..", "..p.y..", "..p.z..", 0);")
+		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z, angle, perp) VALUES ('red', "..p.x..", "..p.y..", "..p.z..", 0, 'default');")
 	end
 end
 
@@ -126,7 +127,7 @@ function consoleCommandCreateBox()
 		info("createBox", "Cannot spawn box. Another box is currently at the origin.")
 	else
 		local materialName = g_materialNames[random()%#g_materialNames + 1]
-		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z, angle) VALUES ('"..materialName.."', 0, 0, 0, 0);")
+		sqlite_exec(g_db, "INSERT INTO boxes(color, x, y, z, angle, perp) VALUES ('"..materialName.."', 0, 0, 0, 0, 'server');")
 		local result = sqlite_exec(g_db, "SELECT id FROM boxes WHERE x == 0 AND y == 0 AND z == 0;")
 		local id = result[1].id
 		createBox(id, position, materialName, 0.0)
