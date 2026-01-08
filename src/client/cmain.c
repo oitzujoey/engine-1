@@ -336,7 +336,8 @@ static int main_init(const int argc, char *argv[], lua_State *luaState) {
 						   NULL,
 						   0);
 	if (!e) {
-		error("Could not add embedded resources to the search path: %s", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+		error("Could not add embedded resources to the search path: %s",
+			  PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
 		e = ERR_GENERIC;
 		goto cleanup_l;
 	}
