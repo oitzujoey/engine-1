@@ -67,13 +67,13 @@ function server_processEvents(events, client_index)
 				g_boxes[box_index].position = d.end_position
 				g_boxes[box_index].angle = d.angle
 				moveBox(box_index, d.end_position, d.start_position)
-				g_boxes[box_index].needsUpdate = true
+				g_boxes[box_index].needsUpdate = checkIfBoxNeedsUpdate(d.end_position, 2)
 				sendEvent("move box", {start_position=d.start_position, end_position=d.end_position, angle=d.angle})
 
 				-- Enable physics for box above. We could do all boxes above, but I noticed that the boxes don't move until
 				-- the box below them moves entirely out of the way, meaning that the box above doesn't move immediately,
 				-- `needsUpdate` is set to false, and the box ends up *never* moving.
-				updateNeighborBoxes(d.start_position)
+				updateNeighborBoxes(d.start_position, 3)
 
 				do -- Update database
 					local id = g_boxes[box_index].id
@@ -111,7 +111,7 @@ function loadBoxes()
 		createBox(boxDescriptor.id, position, boxDescriptor.color, boxDescriptor.angle)
 	end
 	for i = 1,boxDescriptors_length,1 do
-		if checkIfBoxNeedsUpdate(g_boxes[i].position) then
+		if checkIfBoxNeedsUpdate(g_boxes[i].position, 2) then
 			local p = g_boxes[i].position
 			puts("Update: "..toString(p.x).." "..toString(p.y).." "..toString(p.z))
 			g_boxes[i].needsUpdate = true
@@ -267,7 +267,7 @@ function main()
 	end
 
 	local movementScale = G_STANDARD_FRAMERATE * deltaT
-	processBoxes(g_boxes, movementScale)
+	processBoxes(g_boxes, movementScale, 3)
 	sendQueuedEvents()
 
 	-- puts("FPS: "..toString(1/deltaT))

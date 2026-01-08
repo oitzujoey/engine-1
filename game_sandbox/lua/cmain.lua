@@ -61,12 +61,12 @@ function processEvents(events)
 			g_boxes[box_index].angle = d.angle
 			moveBox(box_index, d.end_position, d.start_position)
 			-- Enable physics.
-			g_boxes[box_index].needsUpdate = true
+			g_boxes[box_index].needsUpdate = checkIfBoxNeedsUpdate(d.end_position, 2)
 			entity_setPosition(g_boxes[box_index].entity, g_boxes[box_index].position)
 			local o = hamiltonProduct(g_boxes[box_index].orientation_base, aaToQuat({w=d.angle, x=0, y=1, z=0}))
 			entity_setOrientation(g_boxes[box_index].entity, o)
 
-			updateNeighborBoxes(d.start_position)
+			updateNeighborBoxes(d.start_position, 3)
 		else
 			warning("processEvents", "Unrecognized event \""..c.."\"")
 		end
@@ -78,7 +78,7 @@ function processEvents(events)
 		for i = 1,boxes_length,1 do
 			local p = g_boxes[i].position
 			puts("Check: "..toString(p.x).." "..toString(p.y).." "..toString(p.z))
-			if checkIfBoxNeedsUpdate(p) then
+			if checkIfBoxNeedsUpdate(p, 2) then
 				puts("Update: "..toString(p.x).." "..toString(p.y).." "..toString(p.z))
 				g_boxes[i].needsUpdate = true
 			end
@@ -468,7 +468,7 @@ function mainGame()
 	                   {x=-g_playerState.position.x, y=-g_playerState.position.y, z=-g_playerState.position.z})
 
 
-	processBoxes(g_boxes, movementScale)
+	processBoxes(g_boxes, movementScale, 3)
 end
 
 function loadingScreen()

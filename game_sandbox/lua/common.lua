@@ -437,7 +437,7 @@ function moveBox(box_index, newPosition, oldPosition)
 	return true
 end
 
-function checkIfBoxNeedsUpdate(position)
+function checkIfBoxNeedsUpdate(position, limit)
 	local centerPosition = snapToGrid(position)
 	-- Doubt these are the correct directions. What is important is that they are all different cardinal directions.
 	local d = vec3_copy(centerPosition)
@@ -462,10 +462,10 @@ function checkIfBoxNeedsUpdate(position)
 			box_count = box_count + 1
 		end
 	end
-	return box_count < 3
+	return box_count < limit
 end
 
-function updateNeighborBoxes(position)
+function updateNeighborBoxes(position, limit)
 	local centerPosition = snapToGrid(position)
 	-- Doubt these are the correct directions. What is important is that they are all different cardinal directions.
 	local u = vec3_copy(centerPosition)
@@ -483,7 +483,7 @@ function updateNeighborBoxes(position)
 	local box_count = 0
 	for i = 1,directions_length,1 do
 		local direction = directions[i]
-		if checkIfBoxNeedsUpdate(direction) then
+		if checkIfBoxNeedsUpdate(direction, limit) then
 			local box_index = getBoxEntry(direction)
 			if box_index then
 				g_boxes[box_index].needsUpdate = true
@@ -493,7 +493,7 @@ function updateNeighborBoxes(position)
 	end
 end
 
-function processBoxes(boxes, movementScale)
+function processBoxes(boxes, movementScale, limit)
 	for i = 1,g_boxes_length,1 do
 		if boxes[i].needsUpdate then
 			puts("Update: "..toString(boxes[i].position.x).." "..toString(boxes[i].position.y).." "..toString(boxes[i].position.z))
@@ -506,7 +506,7 @@ function processBoxes(boxes, movementScale)
 			end
 			local moved = moveBox(i, newPosition, oldPosition)
 			if moved then
-				updateNeighborBoxes(oldPosition)
+				updateNeighborBoxes(oldPosition, limit)
 			end
 			if G_SERVER and moved then
 				local id = boxes[i].id
