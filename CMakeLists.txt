@@ -86,6 +86,10 @@ set(additional_assets
   game_sandbox/server.cfg
 
   game_opensauce26/autoexec.cfg
+  game_opensauce26/lua/common/common.lua
+  game_opensauce26/lua/client/keys.lua
+  game_opensauce26/lua/client/cmain.lua
+  game_opensauce26/lua/client/gcode.lua
 )
 add_custom_command(
   OUTPUT ${PROJECT_BINARY_DIR}/game.zip ${PROJECT_SOURCE_DIR}/src/common/pak.s

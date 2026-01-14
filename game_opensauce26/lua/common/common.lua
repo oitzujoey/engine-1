@@ -27,6 +27,7 @@ end
 
 function abort(message)
 	critical_error("abort", message)
+    cfg2_setVariable("quit")
 end
 
 function createConsoleCommand(configVariable, callback)

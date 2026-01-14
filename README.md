@@ -45,7 +45,8 @@ cmake --build build --parallel $(nproc)
 ```
 
 I recommend using MSYS2 and mingw to build for Windows. It was pretty painless compared to building on Ubuntu (WSL) and Arch Linux.  
-If you want to run the client or server in the background, be sure to define the preprocessor constant NOTERMINAL before compiling.
+If you want to run the client or server in the background, be sure to define the preprocessor constant NOTERMINAL before compiling.  
+I doubt the game will startup properly for you. There's some config files and database files that will likely need to be changed or created before the game will run.
 
 ### EVERYTHING THAT FOLLOWS IS OUT OF DATE AND IS UNLIKELY TO WORK.
 

@@ -61,7 +61,7 @@ function startup()
 	if e ~= 0 then quit() end
 	e = entity_linkChild(g_airliner_entity, g_cube_model)
 	if e ~= 0 then quit() end
-	g_airliner_scale = 0.1
+	g_airliner_scale = 1.0
 	entity_setScale(g_airliner_entity, g_airliner_scale)
 	entity_setPosition(g_airliner_entity, {x=0, y=1000, z=0})
 	entity_setOrientation(g_airliner_entity, {w=1, x=1, y=1, z=1})
@@ -160,17 +160,18 @@ function mainGame()
 	-- Plane position
 
 	if g_print then
-		for i = 1, 100 do
-			command = gcode.getNextCommand()
+		local command = gcode.getNextCommand_nonblocking()
+		if command then
 			if command.opcode == "PRINT_END" then
 				g_print = false
-				break
+				puts("PRINT_END")
+				quit()
 			end
-			puts(command.opcode)
-			X = parse_double(command.X)
-			Y = parse_double(command.Y)
-			Z = parse_double(command.Z)
-			E = parse_double(command.E)
+			puts("opcode: "..command.opcode)
+			local X = parse_double(command.X)
+			local Y = parse_double(command.Y)
+			local Z = parse_double(command.Z)
+			local E = parse_double(command.E)
 			puts(parse_double(command.X)..", "..parse_double(command.Y)..", "..parse_double(command.Z))
 
 			if E > 0.0 then
@@ -179,7 +180,7 @@ function mainGame()
 				if e ~= 0 then quit() end
 				e = entity_linkChild(g_cameraEntity, new_entity)
 				if e ~= 0 then quit() end
-				e = entity_linkChild(new_entity, g_cube_model)
+				e = entity_linkChild(new_entity, g_airliner_model)
 				if e ~= 0 then quit() end
 				entity_setScale(new_entity, g_airliner_scale)
 				entity_setPosition(new_entity, {x=X, y=(1000 + Y), z=Z})
