@@ -11,3 +11,10 @@ void memory_free(void **pointer) {
 		log_warning("memory_free", "Attempted to free a null pointer.");
 	}
 }
+
+void memory_free_noNullWarning(void **pointer) {
+	if (*pointer) {
+		free(*pointer);
+		*pointer = NULL;
+	}
+}

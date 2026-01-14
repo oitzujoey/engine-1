@@ -15,7 +15,7 @@ int allocator_stdlib_malloc(void *allocator, void **data, size_t data_length) {
 }
 
 int allocator_stdlib_free(void *allocator, void **data) {
-	memory_free(data);
+	memory_free_noNullWarning(data);
 	return ERR_OK;
 }
 

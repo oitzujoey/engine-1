@@ -1064,6 +1064,9 @@ Some ways to solve this issue:
 I added a quick workaround, which was to simply group all entities with the same together, but not entities with different textures. This probably increases the number of render passes on instanced objects by about 10 (one for each texture), so it might be an issue if instancing entities with many different textures. Another reason that this rendering method might eventually be slow is that instanced entity access in the instanced entities array has linear time complexity. With how the code is currently setup, this probably results in an overall O(n^2) complexity.
 
 
+Stuff falls faster on Windows. I don't know why. The table falls faster on Windows, probably because the propagation of blocks being told to fall is faster because of the faster frame rate.
+
+
 
 
 
