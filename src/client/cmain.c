@@ -160,7 +160,7 @@ const cfg2_var_init_t g_clientVarInit[] = {
 		.permissionWrite = cfg2_admin_supervisor,
 		.permissionDelete = cfg2_admin_supervisor,
 		.permissionCallback = cfg2_admin_supervisor,
-		.callback = main_callback_multiplayer
+		.callback = NULL
 	},
 	{
 		.name = NULL,
