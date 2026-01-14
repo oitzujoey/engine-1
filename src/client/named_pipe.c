@@ -40,7 +40,7 @@ Str4 namedPipe_readAsString(Allocator *arena) {
 		return string;
 	}
 	if (namedPipe_fd < 0) {
-		namedPipe_fd = open(fifo_path, O_RDONLY);
+		namedPipe_fd = open(fifo_path, O_RDONLY | O_NONBLOCK);
 		if (namedPipe_fd < 0) {
 			error("Could not open named pipe.", "");
 			failure = 1;
@@ -51,10 +51,15 @@ Str4 namedPipe_readAsString(Allocator *arena) {
 	}
 
 	ssize_t read_length;
-	while (0 != (read_length = read(namedPipe_fd,
-									(char *) read_buffer,
-									sizeof(read_buffer)/sizeof(*read_buffer)))) {
-		(void) str4_appendC(&string, read_buffer, read_length);
+	if (0 != (read_length = read(namedPipe_fd,
+		                         (char *) read_buffer,
+		                         sizeof(read_buffer)/sizeof(*read_buffer)))) {
+		if (read_length == -1) {
+			/* error("Reading named pipe failed: %s", strerror(errno)); */
+		}
+		else {
+			(void) str4_appendC(&string, read_buffer, read_length);
+		}
 	}
 	return string;
 }
