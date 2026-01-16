@@ -150,6 +150,7 @@ function startup()
 	end
 	gcode.register_reader(read)
 	g_print = true
+	g_head_position = {x=0, y=0, z=0}
 
 	info("startup", "Starting game")
 end
@@ -172,21 +173,41 @@ function mainGame()
 			local Y = parse_double(command.Y)
 			local Z = parse_double(command.Z)
 			local E = parse_double(command.E)
-			puts(parse_double(command.X)..", "..parse_double(command.Y)..", "..parse_double(command.Z))
+			local head_position_last = g_head_position
+			g_head_position = {x=X, y=Y, z=Z}
+			-- puts(parse_double(command.X)..", "..parse_double(command.Y)..", "..parse_double(command.Z))
+			local l_X = head_position_last.x
+			local l_Y = head_position_last.y
+			local l_Z = head_position_last.z
+			local aircraft_displacement = {x=X-l_X, y=Y-l_Y, z=Z-l_Z}
+			vec3_print(aircraft_displacement)
 
 			if E > 0.0 then
-				-- Resource leak:
-				local new_entity, e = entity_createEntity(g_entity_type_model)
-				if e ~= 0 then quit() end
-				e = entity_linkChild(g_cameraEntity, new_entity)
-				if e ~= 0 then quit() end
-				e = entity_linkChild(new_entity, g_airliner_model)
-				if e ~= 0 then quit() end
-				entity_setScale(new_entity, g_airliner_scale)
-				entity_setPosition(new_entity, {x=X, y=(1000 + Y), z=Z})
-				entity_setOrientation(new_entity, {w=1, x=1, y=1, z=1})
-				e = entity_linkMaterial(new_entity, g_airliner_material)
-				if e ~= 0 then quit() end
+				puts("Processing...")
+				if vec3_norm2(aircraft_displacement) ~= 0.0 then
+					-- Resource leak:
+					local new_entity, e = entity_createEntity(g_entity_type_model)
+					if e ~= 0 then quit() end
+					e = entity_linkChild(g_cameraEntity, new_entity)
+					if e ~= 0 then quit() end
+					e = entity_linkChild(new_entity, g_airliner_model)
+					if e ~= 0 then quit() end
+					entity_setScale(new_entity, g_airliner_scale)
+					entity_setPosition(new_entity, g_head_position)
+
+					local aircraft_heading_normal = vec3_normalize(aircraft_displacement)
+					local aircraft_heading_yaw = -atan2(-aircraft_heading_normal.x,
+					                                    -aircraft_heading_normal.y)
+					local aircraft_heading_aa = {w=aircraft_heading_yaw, x=0, y=1, z=0}
+					local aircraft_heading_quat = aaToQuat(aircraft_heading_aa)
+					local base_orientation = {w=1, x=1, y=1, z=1}
+					local orientation = hamiltonProduct(base_orientation, aircraft_heading_quat)
+					entity_setOrientation(new_entity, orientation)
+
+					-- entity_setOrientation(new_entity, {w=1, x=1, y=1, z=1})
+					e = entity_linkMaterial(new_entity, g_airliner_material)
+					if e ~= 0 then quit() end
+				end
 			end
 		end
 	end

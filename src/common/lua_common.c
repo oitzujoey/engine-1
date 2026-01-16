@@ -25,6 +25,7 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_parse_double,     .name = "parse_double"},
 	{.func = l_common_sin,              .name = "sin"},
 	{.func = l_common_cos,              .name = "cos"},
+	{.func = l_common_atan2,            .name = "atan2"},
 	{.func = l_common_round,            .name = "round"},
 	{.func = l_common_abs,              .name = "abs"},
 	{.func = l_common_sqrt,             .name = "sqrt"},
@@ -161,6 +162,51 @@ int l_common_round(lua_State *l) {
 #endif
 
 	(void) lua_pushnumber(l, s);
+
+	return 1;
+}
+
+int l_common_atan2(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 2) {
+		error("`atan2` requires 2 arguments", "");
+		lua_error(l);
+	}
+
+	vec_t y;
+	vec_t x;
+
+	int arg_index = 1;
+	if (lua_isinteger(l, arg_index)) {
+		y = lua_tointeger(l, arg_index);
+	}
+	else if (lua_isnumber(l, arg_index)) {
+		y = lua_tonumber(l, arg_index);
+	}
+	else {
+		error("First argument of `atan2` must be a number.", "");
+		lua_error(l);
+	}
+
+	arg_index++;
+	if (lua_isinteger(l, arg_index)) {
+		x = lua_tointeger(l, arg_index);
+	}
+	else if (lua_isnumber(l, arg_index)) {
+		x = lua_tonumber(l, arg_index);
+	}
+	else {
+		error("Second argument of `atan2` must be a number.", "");
+		lua_error(l);
+	}
+
+#ifdef DOUBLE_VEC
+	vec_t result = atan2(y, x);
+#else
+	vec_t result = atan2f(y, x);
+#endif
+
+	(void) lua_pushnumber(l, result);
 
 	return 1;
 }

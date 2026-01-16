@@ -63,6 +63,24 @@ function pop(stack)
 end
 
 
+
+function vec2_scale(a, s)
+	return {x=a.x*s, y=a.y*s}
+end
+
+function vec2_norm(a)
+	return sqrt(a.x*a.x + a.y*a.y)
+end
+
+function vec2_normalize(a)
+	return vec2_scale(a, 1.0/vec2_norm(a))
+end
+
+
+function vec3_print(v)
+	puts(toString(v.x)..", "..toString(v.y)..", "..toString(v.y))
+end
+
 function vec3_add(a, b)
 	return {x=a.x+b.x, y=a.y+b.y, z=a.z+b.z}
 end

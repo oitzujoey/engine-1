@@ -106,7 +106,7 @@ int input_execMousemotionBind(SDL_Event *event, lua_State *luaState) {
 	int e = ERR_OK;
 
 	SDL_MouseMotionEvent *motionEvent = &event->motion;
-	printf("motionEvent->state %u\n", motionEvent->state);
+	/* printf("motionEvent->state %u\n", motionEvent->state); */
 	// Unlike key presses, the mouse can't be accessed from the console. There is no cvar for it.
 
 	if (g_keybinds.mouseMotionCallbackName) {
