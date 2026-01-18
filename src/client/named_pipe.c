@@ -16,7 +16,7 @@ const char *fifo_path = "engine1_client.pipe";
 int namedPipe_init(void) {
 	int mkfifo_result = mkfifo(fifo_path, 0660);
 	if (mkfifo_result < 0) {
-		error("Couldn't create named pipe. Maybe it already exists. Maybe it doesn't. Don't have time for this.", "");
+		warning("Couldn't create named pipe. Maybe it already exists. Maybe it doesn't. Don't have time for this.", "");
 		return ERR_GENERIC;
 	}
 	info("Created named pipe.", "");

@@ -155,7 +155,7 @@ int input_processSdlEvents(lua_State *luaState) {
 		switch (event.type) {
 		
 		case SDL_FIRSTEVENT:
-			error("Unhandled event type SDL_FIRSTEVENT", "");
+			warning("Unhandled event type SDL_FIRSTEVENT", "");
 			break;
 		
 		// Application events
@@ -176,13 +176,13 @@ int input_processSdlEvents(lua_State *luaState) {
 		case SDL_APP_DIDENTERBACKGROUND:
 		case SDL_APP_WILLENTERFOREGROUND:
 		case SDL_APP_DIDENTERFOREGROUND:
-			error("Unhandled event type %i", event.type);
+			warning("Unhandled event type %i", event.type);
 			break;
 		
 		// Window events
 		case SDL_WINDOWEVENT:
 		case SDL_SYSWMEVENT:
-			error("Unhandled window event type %i", event.type);
+			warning("Unhandled window event type %i", event.type);
 			break;
 		
 		// Keyboard events
@@ -193,12 +193,12 @@ int input_processSdlEvents(lua_State *luaState) {
 			input_execKeyBind(event, buttonType_keyboard, false, luaState);
 			break;
 		case SDL_TEXTEDITING:
-			error("Unhandled keyboard event type %i", event.type);
+			warning("Unhandled keyboard event type %i", event.type);
 			break;
 		case SDL_TEXTINPUT:
 			break;
 		case SDL_KEYMAPCHANGED:
-			error("Unhandled keyboard event type %i", event.type);
+			warning("Unhandled keyboard event type %i", event.type);
 			break;
 		
 		// Mouse events
@@ -212,7 +212,7 @@ int input_processSdlEvents(lua_State *luaState) {
 			input_execKeyBind(event, buttonType_mouse, false, luaState);
 			break;
 		case SDL_MOUSEWHEEL:
-			error("Unhandled mouse event type %i", event.type);
+			warning("Unhandled mouse event type %i", event.type);
 			break;
 		
 		// Joystick events
@@ -228,7 +228,7 @@ int input_processSdlEvents(lua_State *luaState) {
 			// if (SDL_IsGameController(event.jdevice.which)) {
 			// 	break;
 			// }
-			error("Unhandled joystick event type %i", event.type);
+			warning("Unhandled joystick event type %i", event.type);
 			break;
 		case SDL_JOYBUTTONDOWN:
 			// if (SDL_IsGameController(event.jdevice.which)) {
@@ -259,7 +259,7 @@ int input_processSdlEvents(lua_State *luaState) {
 		
 		// Controller events
 		case SDL_CONTROLLERAXISMOTION:
-			error("Unhandled controller event type %i", event.type);
+			warning("Unhandled controller event type %i", event.type);
 			break;
 		case SDL_CONTROLLERBUTTONDOWN:
 			input_execKeyBind(event, buttonType_controller, true, luaState);
@@ -276,26 +276,26 @@ int input_processSdlEvents(lua_State *luaState) {
 			info("Closing controller %i.", event.cdevice.which);
 			break;
 		case SDL_CONTROLLERDEVICEREMAPPED:
-			error("Unhandled controller event type SDL_CONTROLLERDEVICEREMAPPED", "");
+			warning("Unhandled controller event type SDL_CONTROLLERDEVICEREMAPPED", "");
 			break;
 		
 		// Touch events
 		case SDL_FINGERDOWN:
 		case SDL_FINGERUP:
 		case SDL_FINGERMOTION:
-			error("Unhandled touch event type %i", event.type);
+			warning("Unhandled touch event type %i", event.type);
 			break;
 		
 		// Gesture events
 		case SDL_DOLLARGESTURE:
 		case SDL_DOLLARRECORD:
 		case SDL_MULTIGESTURE:
-			error("Unhandled gesture event type %i", event.type);
+			warning("Unhandled gesture event type %i", event.type);
 			break;
 		
 		// Clipboard events
 		case SDL_CLIPBOARDUPDATE:
-			error("Unhandled clipboard event type %i", event.type);
+			warning("Unhandled clipboard event type %i", event.type);
 			break;
 		
 		// Drag and drop events
@@ -303,29 +303,29 @@ int input_processSdlEvents(lua_State *luaState) {
 		case SDL_DROPTEXT:
 		case SDL_DROPBEGIN:
 		case SDL_DROPCOMPLETE:
-			error("Unhandled drag & drop event type %i", event.type);
+			warning("Unhandled drag & drop event type %i", event.type);
 			break;
 		
 		// Audio hotplug events
 		case SDL_AUDIODEVICEADDED:
 		case SDL_AUDIODEVICEREMOVED:
-			error("Unhandled audio hotplug event type %i", event.type);
+			warning("Unhandled audio hotplug event type %i", event.type);
 			break;
 		
 		// Render events
 		case SDL_RENDER_TARGETS_RESET:
 		case SDL_RENDER_DEVICE_RESET:
-			error("Unhandled render event type %i", event.type);
+			warning("Unhandled render event type %i", event.type);
 			break;
 		
 		// These are for your use, and should be allocated with SDL_RegisterEvents()
 		case SDL_USEREVENT:
 		case SDL_LASTEVENT:
-			error("Unhandled user event type %i", event.type);
+			warning("Unhandled user event type %i", event.type);
 			break;
 		
 		default:
-			error("Unhandled event type %i", event.type);
+			warning("Unhandled event type %i", event.type);
 			// error = ERR_GENERIC;
 		}
 	}
