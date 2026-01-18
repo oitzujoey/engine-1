@@ -2,6 +2,7 @@ G_CLIENT=true
 
 include "../common/common.lua"
 include "../client/keys.lua"
+include "../generated/initial.lua"
 include "gcode.lua"
 
 g_sensitivity = 1.0

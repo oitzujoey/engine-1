@@ -1067,6 +1067,11 @@ I added a quick workaround, which was to simply group all entities with the same
 Stuff falls faster on Windows. I don't know why. The table falls faster on Windows, probably because the propagation of blocks being told to fall is faster because of the faster frame rate.
 
 
+I need to add interpolation. I need to keep track of what tokens are at what coordinates. When the write head moves to a position and enables the electromagnet, it needs to grab all tokens within a certain radius. If there is more than one token in the radius, throw an error. For each token, check if it is within the radius. If it is, move it to the write-head's position, then interpolate it to the end position over many frames. This is O(n), which should be fine for about 100 tokens.
+
+Apparently I need to also read the initial token positions from the JSON file in order to know where they are. Or I can just wing it, and create a token at the write head's position if none is in range.
+
+
 
 
 
