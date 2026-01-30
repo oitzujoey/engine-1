@@ -25,9 +25,9 @@ engine_data = ("g_tokens_position_initial = "
                   .join(map((lambda o:
                              (", "
                               .join(map(str, o))
-                              .join("[]"))),
+                              .join("{}"))),
                             engine_objects))
-                  .join("[]"))
+                  .join("{}"))
                + "\n")
 with open("game_opensauce26/lua/generated/initial.lua", "w") as engine_data_file:
     engine_data_file.write(engine_data)

@@ -109,6 +109,33 @@ function key_space_u()
 	g_jump = false
 end
 
+function key_ctrl_d()
+	g_crouch = true
+end
+
+function key_ctrl_u()
+	g_crouch = false
+end
+
+function key_c_d()
+	g_crouch = true
+end
+
+function key_c_u()
+	g_crouch = false
+end
+
+function key_f_d()
+	if not g_flyWasPressed then
+		g_fly = not g_fly
+	end
+	g_flyWasPressed = true
+end
+
+function key_f_u()
+	g_flyWasPressed = false
+end
+
 
 function mouse_leftPress()
 	g_selectCube = true

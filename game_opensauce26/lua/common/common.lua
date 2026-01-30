@@ -64,6 +64,10 @@ end
 
 
 
+function vec2_print(v)
+	puts(toString(v.x)..", "..toString(v.y))
+end
+
 function vec2_scale(a, s)
 	return {x=a.x*s, y=a.y*s}
 end
@@ -74,6 +78,12 @@ end
 
 function vec2_normalize(a)
 	return vec2_scale(a, 1.0/vec2_norm(a))
+end
+
+function vec2_dist(a, b)
+	local d_x = a.x - b.x
+	local d_y = a.y - b.y
+	return sqrt(d_x*d_x + d_y*d_y)
 end
 
 

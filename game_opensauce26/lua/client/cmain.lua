@@ -6,6 +6,7 @@ include "../generated/initial.lua"
 include "gcode.lua"
 
 g_sensitivity = 1.0
+g_fly = false
 
 Keys = {}
 g_mouse = {}
@@ -45,6 +46,9 @@ function startup()
 	g_cube_model, e = mesh_load("models/cube")
 	if e ~= 0 then quit() end
 
+	g_map_model, e = mesh_load("models/map")
+	if e ~= 0 then quit() end
+
 	function loadShader(name)
 		return shader_create("shaders/"..name)
 	end
@@ -62,11 +66,24 @@ function startup()
 	if e ~= 0 then quit() end
 	e = entity_linkChild(g_airliner_entity, g_cube_model)
 	if e ~= 0 then quit() end
-	g_airliner_scale = 1.0
+	g_airliner_scale = 0.25
 	entity_setScale(g_airliner_entity, g_airliner_scale)
-	entity_setPosition(g_airliner_entity, {x=0, y=1000, z=0})
+	entity_setPosition(g_airliner_entity, {x=0, y=0, z=0})
 	entity_setOrientation(g_airliner_entity, {w=1, x=1, y=1, z=1})
 	e = entity_linkMaterial(g_airliner_entity, g_airliner_material)
+	if e ~= 0 then quit() end
+
+	g_map_material, e = loadMaterial(defaultShader, "map-pin.png")
+	g_map_entity, e = entity_createEntity(g_entity_type_model)
+	e = entity_linkChild(g_cameraEntity, g_map_entity)
+	if e ~= 0 then quit() end
+	e = entity_linkChild(g_map_entity, g_map_model)
+	if e ~= 0 then quit() end
+	g_map_scale = 100.0
+	entity_setScale(g_map_entity, g_map_scale)
+	entity_setPosition(g_map_entity, {x=0, y=0, z=-1})
+	entity_setOrientation(g_map_entity, {w=1, x=1, y=1, z=1})
+	e = entity_linkMaterial(g_map_entity, g_map_material)
 	if e ~= 0 then quit() end
 
 
@@ -99,6 +116,11 @@ function startup()
 	keys_createHalfBind("k_48", "key_color0", "key_color0_d")
 	-- Space (jump)
 	keys_createFullBind("k_32", "key_space", "key_space_d", "key_space_u")
+	-- Ctrl (crouch)
+	keys_createFullBind("k_1073742048", "key_ctrl", "key_ctrl_d", "key_ctrl_u")
+	keys_createFullBind("k_99", "key_c", "key_c_d", "key_c_u")
+	-- Fly toggle
+	keys_createFullBind("k_102", "key_f", "key_f_d", "key_f_u")
 	-- Left mouse (select)
 	keys_createFullBind("m_1", "mouse_leftButton", "mouse_leftPress", "mouse_leftRelease")
 	-- Right mouse (jump)
@@ -153,6 +175,28 @@ function startup()
 	g_print = true
 	g_head_position = {x=0, y=0, z=0}
 
+	g_tokens = {}
+	g_tokens_entity = {}
+	for i=1,#g_tokens_position_initial do
+		local position_tuple = g_tokens_position_initial[i]
+		local token = {x=10*position_tuple[1], y=10*position_tuple[3]}
+		g_tokens[i] = token
+
+		local new_entity, e = entity_createEntity(g_entity_type_model)
+		if e ~= 0 then quit() end
+		e = entity_linkChild(g_cameraEntity, new_entity)
+		if e ~= 0 then quit() end
+		e = entity_linkChild(new_entity, g_airliner_model)
+		if e ~= 0 then quit() end
+		entity_setScale(new_entity, g_airliner_scale)
+    	local aircraft_position = {x=token["x"], y=token["y"], z=2.0}
+		entity_setPosition(new_entity, aircraft_position)
+		entity_setOrientation(new_entity, {w=1, x=1, y=1, z=1})
+		e = entity_linkMaterial(new_entity, g_airliner_material)
+		if e ~= 0 then quit() end
+		g_tokens_entity[i] = new_entity
+	end
+
 	info("startup", "Starting game")
 end
 
@@ -185,16 +229,37 @@ function mainGame()
 
 			if E > 0.0 then
 				puts("Processing...")
+				puts("original position:")
+				vec2_print({x=l_X, y=l_Y})
+				local token_index = nil
+				for index=1,#g_tokens do
+					local token = g_tokens[index]
+					puts("token "..toString(index)..":")
+					vec2_print(token)
+					local dist = vec2_dist(token, {x=l_X, y=l_Y})
+					puts("dist: "..toString(dist))
+					-- vec2_print(dist)
+					if vec2_dist(token, {x=l_X, y=l_Y}) < 1.0 then
+						token_index = index
+						break
+					end
+				end
+				if not token_index then
+					abort("Lost a token!")
+				end
+				g_tokens[token_index] = {x=X, y=Y}
 				if vec3_norm2(aircraft_displacement) ~= 0.0 then
 					-- Resource leak:
-					local new_entity, e = entity_createEntity(g_entity_type_model)
-					if e ~= 0 then quit() end
-					e = entity_linkChild(g_cameraEntity, new_entity)
-					if e ~= 0 then quit() end
-					e = entity_linkChild(new_entity, g_airliner_model)
-					if e ~= 0 then quit() end
-					entity_setScale(new_entity, g_airliner_scale)
-					entity_setPosition(new_entity, g_head_position)
+					aircraft_entity = g_tokens_entity[token_index]
+					-- local aircraft_entity, e = entity_createEntity(g_entity_type_model)
+					-- if e ~= 0 then quit() end
+					-- e = entity_linkChild(g_cameraEntity, aircraft_entity)
+					-- if e ~= 0 then quit() end
+					-- e = entity_linkChild(aircraft_entity, g_airliner_model)
+					-- if e ~= 0 then quit() end
+					-- entity_setScale(aircraft_entity, g_airliner_scale)
+                    local aircraft_position = {x=g_head_position['x'], y=g_head_position['y'], z=g_head_position['z'] + 2.0}
+					entity_setPosition(aircraft_entity, aircraft_position)
 
 					local aircraft_heading_normal = vec3_normalize(aircraft_displacement)
 					local aircraft_heading_yaw = -atan2(-aircraft_heading_normal.x,
@@ -203,11 +268,11 @@ function mainGame()
 					local aircraft_heading_quat = aaToQuat(aircraft_heading_aa)
 					local base_orientation = {w=1, x=1, y=1, z=1}
 					local orientation = hamiltonProduct(base_orientation, aircraft_heading_quat)
-					entity_setOrientation(new_entity, orientation)
+					entity_setOrientation(aircraft_entity, orientation)
 
-					-- entity_setOrientation(new_entity, {w=1, x=1, y=1, z=1})
-					e = entity_linkMaterial(new_entity, g_airliner_material)
-					if e ~= 0 then quit() end
+					-- entity_setOrientation(aircraft_entity, {w=1, x=1, y=1, z=1})
+					-- e = entity_linkMaterial(aircraft_entity, g_airliner_material)
+					-- if e ~= 0 then quit() end
 				end
 			end
 		end
@@ -220,6 +285,9 @@ function mainGame()
 	local scale = 0.90
 	g_playerState.velocity.x = g_playerState.velocity.x * scale
 	g_playerState.velocity.y = g_playerState.velocity.y * scale
+	if g_fly then
+		g_playerState.velocity.z = g_playerState.velocity.z * scale
+	end
 	g_playerState.position.x = g_playerState.position.x + g_playerState.velocity.x
 	g_playerState.position.y = g_playerState.position.y + g_playerState.velocity.y
 	g_playerState.position.z = g_playerState.position.z + g_playerState.velocity.z
@@ -231,10 +299,21 @@ function mainGame()
 		g_playerState.grounded = false
 	end
 
-	-- Jumping
-	if g_playerState.grounded then
+	if g_fly then
+		-- Move up.
 		if g_jump then
-			g_playerState.velocity.z = g_playerState.velocity.z + G_JUMPVELOCITY
+			g_playerState.velocity.z = g_playerState.velocity.z + 1.0
+		end
+		-- Move down.
+		if g_crouch then
+			g_playerState.velocity.z = g_playerState.velocity.z - 1.0
+		end
+	else
+		-- Jumping
+		if g_playerState.grounded then
+			if g_jump then
+				g_playerState.velocity.z = g_playerState.velocity.z + G_JUMPVELOCITY
+			end
 		end
 	end
 
@@ -269,7 +348,9 @@ function mainGame()
 	if g_playerState.euler.pitch > G_PI/2 then g_playerState.euler.pitch = G_PI/2 end
 	if g_playerState.euler.pitch < -G_PI/2 then g_playerState.euler.pitch = -G_PI/2 end
 
-	g_playerState.velocity.z = g_playerState.velocity.z + G_GRAVITY
+	if not g_fly then
+		g_playerState.velocity.z = g_playerState.velocity.z + G_GRAVITY
+	end
 
 	g_playerState.orientation = hamiltonProduct(eulerToQuat(g_playerState.euler), aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
 
