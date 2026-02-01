@@ -73,7 +73,7 @@ function startup()
 	e = entity_linkMaterial(g_airliner_entity, g_airliner_material)
 	if e ~= 0 then quit() end
 
-	g_map_material, e = loadMaterial(defaultShader, "map-pin.png")
+	g_map_material, e = loadMaterial(defaultShader, "map.png")
 	g_map_entity, e = entity_createEntity(g_entity_type_model)
 	e = entity_linkChild(g_cameraEntity, g_map_entity)
 	if e ~= 0 then quit() end
