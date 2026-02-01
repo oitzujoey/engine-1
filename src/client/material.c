@@ -247,7 +247,7 @@ static int material_loadTexture(GLuint *textureIndex, bool *transparent, const c
 	
 	g_textures_length++;
 
-	info("Loaded %stexture \"%s\".", ((channels == 4) ? "transparent " : ""), filePath);
+	info("Loaded %s texture \"%s\".", ((channels == 4) ? "transparent" : "opaque"), filePath);
 
 	error = ERR_OK;
 	cleanupPHYSFS_l:
