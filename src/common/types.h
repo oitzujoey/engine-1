@@ -243,8 +243,7 @@ typedef struct {
 	// Rendering:
 #ifdef CLIENT
 	bool shown;
-	ptrdiff_t *materials;
-	ptrdiff_t materials_length;
+	ptrdiff_t material;
 #endif
 } entity_t;
 

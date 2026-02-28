@@ -29,8 +29,7 @@ static void entity_initEntity(entity_t *entity) {
 	entity->inUse = true;
 #ifdef CLIENT
 	entity->shown = true;
-	entity->materials = NULL;
-	entity->materials_length = 0;
+	entity->material = -1;
 #endif
 }
 
@@ -39,8 +38,7 @@ static void entity_freeEntity(entity_t *entity) {
 	entity->children_length = 0;
 	entity->inUse = false;
 #	ifdef CLIENT
-	if (entity->materials) MEMORY_FREE(&entity->materials);
-	entity->materials_length = 0;
+	entity->material = -1;
 #	endif
 }
 
@@ -294,14 +292,7 @@ static inline int entity_linkMaterial(ptrdiff_t parentIndex, ptrdiff_t materialI
 	int error = ERR_CRITICAL;
 
 	entity_t *entity = &g_entityList.entities[parentIndex];
-	entity->materials_length++;
-	entity->materials = realloc(entity->materials, entity->materials_length * sizeof(ptrdiff_t));
-	if (entity->materials == NULL) {
-		outOfMemory();
-		error = ERR_OUTOFMEMORY;
-		goto cleanup;
-	}
-	entity->materials[entity->materials_length-1] = materialIndex;
+	entity->material = materialIndex;
 
 	error = ERR_OK;
  cleanup:

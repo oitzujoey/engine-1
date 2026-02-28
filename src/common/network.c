@@ -229,11 +229,6 @@ int network_packetRead_entity(entity_t *data, const ptrdiff_t data_length, const
 		for (unsigned int j = 0; j < sizeof(bool); j++) {
 			data[i].shown = (bool) ((unsigned long long int) data[i].shown | ((unsigned long long int) packet[*index + structIndex++] << 8*j));
 		}
-
-		if (!data[i].inUse) {
-			MEMORY_FREE(&data[i].materials);
-			data[i].materials_length = 0;
-		}
 #endif
 	}
 	

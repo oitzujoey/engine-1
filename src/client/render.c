@@ -452,7 +452,7 @@ int renderEntity(entity_t *entity, vec3_t *position, quat_t *orientation, vec_t 
 	vec3_add(&localPosition, position, &localPosition);
 	quat_hamilton(&localOrientation, orientation, &entity->orientation);
 	localScale = scale * entity->scale;
-	if (material_index < 0 && entity->materials_length) material_index = entity->materials[0];
+	material_index = entity->material;
 
 	if (entity->childType == entity_childType_model) {
 		error = renderModels(entity, &localPosition, localOrientation, localScale, material_index);
