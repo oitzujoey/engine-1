@@ -65,6 +65,8 @@ set(models
   game_opensauce26/models/airliner
   game_opensauce26/models/cube
   game_opensauce26/models/map
+  game_opensauce26/models/square
+  game_opensauce26/models/circle
 )
 foreach(model ${models})
   add_custom_command(
@@ -93,6 +95,7 @@ set(additional_assets
   game_opensauce26/lua/client/gcode.lua
   game_opensauce26/lua/generated/initial.lua
   game_opensauce26/textures/airliner.png
+  game_opensauce26/textures/map-pin.png
   game_opensauce26/textures/map.png
 )
 add_custom_command(

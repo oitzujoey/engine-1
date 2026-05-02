@@ -7,6 +7,7 @@ include "gcode.lua"
 
 g_sensitivity = 1.0
 g_fly = false
+g_lock = true
 
 Keys = {}
 g_mouse = {}
@@ -49,6 +50,9 @@ function startup()
 	g_map_model, e = mesh_load("models/map")
 	if e ~= 0 then quit() end
 
+	g_circle_model, e = mesh_load("models/circle")
+	if e ~= 0 then quit() end
+
 	function loadShader(name)
 		return shader_create("shaders/"..name)
 	end
@@ -60,18 +64,26 @@ function startup()
 
 	local defaultShader, e = loadShader("default")
 	if e ~= 0 then quit() end
+	local transparentShader, e = loadShader("transparent")
+	if e ~= 0 then quit() end
+
 	g_airliner_material, e = loadMaterial(defaultShader, "airliner.png")
 	g_airliner_entity, e = entity_createEntity(g_entity_type_model)
 	e = entity_linkChild(g_cameraEntity, g_airliner_entity)
 	if e ~= 0 then quit() end
 	e = entity_linkChild(g_airliner_entity, g_cube_model)
 	if e ~= 0 then quit() end
-	g_airliner_scale = 0.25
+	g_airliner_scale = 0.25*7.5/3
 	entity_setScale(g_airliner_entity, g_airliner_scale)
 	entity_setPosition(g_airliner_entity, {x=0, y=0, z=0})
 	entity_setOrientation(g_airliner_entity, {w=1, x=1, y=1, z=1})
 	e = entity_linkMaterial(g_airliner_entity, g_airliner_material)
 	if e ~= 0 then quit() end
+
+	-- Load dots for dotted lines.
+	g_dot_red_material, e = loadMaterial(defaultShader, "red.png")
+	-- g_dot_purple_material, e = loadMaterial(defaultShader, "purple.png")
+	g_dot_orange_material, e = loadMaterial(defaultShader, "orange.png")
 
 	g_map_material, e = loadMaterial(defaultShader, "map.png")
 	g_map_entity, e = entity_createEntity(g_entity_type_model)
@@ -79,12 +91,25 @@ function startup()
 	if e ~= 0 then quit() end
 	e = entity_linkChild(g_map_entity, g_map_model)
 	if e ~= 0 then quit() end
-	g_map_scale = 100.0
+	g_map_scale = 100.0 / 180.27756377319946 * 353.5533905932738
 	entity_setScale(g_map_entity, g_map_scale)
 	entity_setPosition(g_map_entity, {x=0, y=0, z=-1})
 	entity_setOrientation(g_map_entity, {w=1, x=1, y=1, z=1})
 	e = entity_linkMaterial(g_map_entity, g_map_material)
 	if e ~= 0 then quit() end
+
+	-- g_overlay_material, e = loadMaterial(transparentShader, "Static Line.gif")
+	-- g_overlay_entity, e = entity_createEntity(g_entity_type_model)
+	-- e = entity_linkChild(g_cameraEntity, g_overlay_entity)
+	-- if e ~= 0 then quit() end
+	-- e = entity_linkChild(g_overlay_entity, g_map_model)
+	-- if e ~= 0 then quit() end
+	-- g_map_scale = 100.0
+	-- entity_setScale(g_overlay_entity, g_map_scale)
+	-- entity_setPosition(g_overlay_entity, {x=0, y=0, z=-0.9})
+	-- entity_setOrientation(g_overlay_entity, {w=1, x=1, y=1, z=1})
+	-- e = entity_linkMaterial(g_overlay_entity, g_overlay_material)
+	-- if e ~= 0 then quit() end
 
 
 	-- e = material_setCull(clearMaterial, false)
@@ -121,6 +146,8 @@ function startup()
 	keys_createFullBind("k_99", "key_c", "key_c_d", "key_c_u")
 	-- Fly toggle
 	keys_createFullBind("k_102", "key_f", "key_f_d", "key_f_u")
+	-- Lock controls and move to preset position and orientation.
+	keys_createFullBind("k_108", "key_l", "key_l_d", "key_l_u")
 	-- Left mouse (select)
 	keys_createFullBind("m_1", "mouse_leftButton", "mouse_leftPress", "mouse_leftRelease")
 	-- Right mouse (jump)
@@ -177,27 +204,59 @@ function startup()
 
 	g_tokens = {}
 	g_tokens_entity = {}
-	for i=1,#g_tokens_position_initial do
-		local position_tuple = g_tokens_position_initial[i]
-		local token = {x=10*position_tuple[1], y=10*position_tuple[3]}
-		g_tokens[i] = token
+	-- for i=1,#g_tokens_position_initial do
+	-- 	local position_tuple = g_tokens_position_initial[i]
+	-- 	local token = {x=10*position_tuple[1], y=10*position_tuple[3]}
+	-- 	g_tokens[i] = token
 
-		local new_entity, e = entity_createEntity(g_entity_type_model)
-		if e ~= 0 then quit() end
-		e = entity_linkChild(g_cameraEntity, new_entity)
-		if e ~= 0 then quit() end
-		e = entity_linkChild(new_entity, g_airliner_model)
-		if e ~= 0 then quit() end
-		entity_setScale(new_entity, g_airliner_scale)
-    	local aircraft_position = {x=token["x"], y=token["y"], z=2.0}
-		entity_setPosition(new_entity, aircraft_position)
-		entity_setOrientation(new_entity, {w=1, x=1, y=1, z=1})
-		e = entity_linkMaterial(new_entity, g_airliner_material)
-		if e ~= 0 then quit() end
-		g_tokens_entity[i] = new_entity
-	end
+	-- 	local new_entity, e = entity_createEntity(g_entity_type_model)
+	-- 	if e ~= 0 then quit() end
+	-- 	e = entity_linkChild(g_cameraEntity, new_entity)
+	-- 	if e ~= 0 then quit() end
+	-- 	e = entity_linkChild(new_entity, g_airliner_model)
+	-- 	if e ~= 0 then quit() end
+	-- 	entity_setScale(new_entity, g_airliner_scale)
+	-- 	local aircraft_position = {x=token["x"], y=token["y"], z=2.0}
+	-- 	entity_setPosition(new_entity, aircraft_position)
+	-- 	entity_setOrientation(new_entity, {w=1, x=1, y=1, z=1})
+	-- 	e = entity_linkMaterial(new_entity, g_airliner_material)
+	-- 	if e ~= 0 then quit() end
+	-- 	g_tokens_entity[i] = new_entity
+	-- end
+
+	g_lastFrame = g_frame
+
+	g_dots_entities_length_max = 100
+	g_dots_entities = {}
+	g_dots_index = 1
+
+	g_moveMode = "release"
 
 	info("startup", "Starting game")
+end
+
+function dot(position, scale, material)
+	local e = nil
+	local dot_entity = nil
+	if #g_dots_entities > g_dots_entities_length_max then
+		dot_entity = g_dots_entities[g_dots_index]
+		g_dots_index = g_dots_index + 1
+		if g_dots_index > #g_dots_entities then
+			g_dots_index = 1
+		end
+	else
+		dot_entity, e = entity_createEntity(g_entity_type_model)
+		g_dots_entities[#g_dots_entities + 1] = dot_entity
+	end
+	e = entity_linkChild(g_cameraEntity, dot_entity)
+	if e ~= 0 then quit() end
+	e = entity_linkChild(dot_entity, g_circle_model)
+	if e ~= 0 then quit() end
+	entity_setScale(dot_entity, scale)
+	entity_setPosition(dot_entity, position)
+	entity_setOrientation(dot_entity, {w=1, x=1, y=1, z=1})
+	e = entity_linkMaterial(dot_entity, material)
+	if e ~= 0 then quit() end
 end
 
 function mainGame()
@@ -206,73 +265,123 @@ function mainGame()
 	-- Plane position
 
 	if g_print then
+		g_lastFrame = g_frame
 		local command = gcode.getNextCommand_nonblocking()
 		if command then
+			puts("opcode: "..command.opcode)
 			if command.opcode == "PRINT_END" then
 				g_print = false
 				puts("PRINT_END")
 				quit()
-			end
-			puts("opcode: "..command.opcode)
-			local X = parse_double(command.X)
-			local Y = parse_double(command.Y)
-			local Z = parse_double(command.Z)
-			local E = parse_double(command.E)
-			local head_position_last = g_head_position
-			g_head_position = {x=X, y=Y, z=Z}
-			-- puts(parse_double(command.X)..", "..parse_double(command.Y)..", "..parse_double(command.Z))
-			local l_X = head_position_last.x
-			local l_Y = head_position_last.y
-			local l_Z = head_position_last.z
-			local aircraft_displacement = {x=X-l_X, y=Y-l_Y, z=Z-l_Z}
-			vec3_print(aircraft_displacement)
+			elseif command.opcode == "SPAWN" then
+				local token = {x=parse_double(command.X), y=parse_double(command.Y)}
+				g_tokens[#g_tokens+1] = token
 
-			if E > 0.0 then
-				puts("Processing...")
-				puts("original position:")
-				vec2_print({x=l_X, y=l_Y})
-				local token_index = nil
-				for index=1,#g_tokens do
-					local token = g_tokens[index]
-					puts("token "..toString(index)..":")
-					vec2_print(token)
-					local dist = vec2_dist(token, {x=l_X, y=l_Y})
-					puts("dist: "..toString(dist))
-					-- vec2_print(dist)
-					if vec2_dist(token, {x=l_X, y=l_Y}) < 1.0 then
-						token_index = index
-						break
+				local new_entity, e = entity_createEntity(g_entity_type_model)
+				if e ~= 0 then quit() end
+				e = entity_linkChild(g_cameraEntity, new_entity)
+				if e ~= 0 then quit() end
+				e = entity_linkChild(new_entity, g_airliner_model)
+				if e ~= 0 then quit() end
+				entity_setScale(new_entity, g_airliner_scale)
+				local aircraft_position = {x=token.x, y=token.y, z=2.0}
+				entity_setPosition(new_entity, aircraft_position)
+				entity_setOrientation(new_entity, {w=1, x=1, y=1, z=1})
+				e = entity_linkMaterial(new_entity, g_airliner_material)
+				if e ~= 0 then quit() end
+				g_tokens_entity[#g_tokens_entity+1] = new_entity
+				g_dots_entities_length_max = g_dots_entities_length_max + 500
+			elseif command.opcode == "M42" then
+				local S = parse_double(command.S)
+				if S ~= 0.0 then
+					g_moveMode = "release"
+				else
+					g_moveMode = "grab"
+				end
+				puts(g_moveMode)
+			elseif command.opcode == "G1" then
+				local X = parse_double(command.X)
+				local Y = parse_double(command.Y)
+				local Z = parse_double(command.Z)
+				local head_position_last = g_head_position
+				g_head_position = {x=X, y=Y, z=Z}
+				-- puts(parse_double(command.X)..", "..parse_double(command.Y)..", "..parse_double(command.Z))
+				local l_X = head_position_last.x
+				local l_Y = head_position_last.y
+				local l_Z = head_position_last.z
+				local aircraft_displacement = {x=X-l_X, y=Y-l_Y, z=Z-l_Z}
+				vec3_print(aircraft_displacement)
+				local aircraft_distance = vec2_norm(aircraft_displacement)
+
+				if g_moveMode == "grab" then
+					puts("Processing...")
+					puts("original position:")
+					vec2_print({x=l_X, y=l_Y})
+					local token_index = nil
+					for index=1,#g_tokens do
+						local token = g_tokens[index]
+						puts("token "..toString(index)..":")
+						vec2_print(token)
+						local dist = vec2_dist(token, {x=l_X, y=l_Y})
+						puts("dist: "..toString(dist))
+						-- vec2_print(dist)
+						if vec2_dist(token, {x=l_X, y=l_Y}) < 1.0 then
+							token_index = index
+							break
+						end
 					end
-				end
-				if not token_index then
-					abort("Lost a token!")
-				end
-				g_tokens[token_index] = {x=X, y=Y}
-				if vec3_norm2(aircraft_displacement) ~= 0.0 then
-					-- Resource leak:
-					aircraft_entity = g_tokens_entity[token_index]
-					-- local aircraft_entity, e = entity_createEntity(g_entity_type_model)
-					-- if e ~= 0 then quit() end
-					-- e = entity_linkChild(g_cameraEntity, aircraft_entity)
-					-- if e ~= 0 then quit() end
-					-- e = entity_linkChild(aircraft_entity, g_airliner_model)
-					-- if e ~= 0 then quit() end
-					-- entity_setScale(aircraft_entity, g_airliner_scale)
-                    local aircraft_position = {x=g_head_position['x'], y=g_head_position['y'], z=g_head_position['z'] + 2.0}
-					entity_setPosition(aircraft_entity, aircraft_position)
+					if not token_index then
+						abort("Lost token at X"..toString(l_X).." Y"..toString(l_Y).."!")
+					end
+					g_tokens[token_index] = {x=X, y=Y}
+					if vec3_norm2(aircraft_displacement) ~= 0.0 then
+						-- Resource leak:
+						aircraft_entity = g_tokens_entity[token_index]
+						-- local aircraft_entity, e = entity_createEntity(g_entity_type_model)
+						-- if e ~= 0 then quit() end
+						-- e = entity_linkChild(g_cameraEntity, aircraft_entity)
+						-- if e ~= 0 then quit() end
+						-- e = entity_linkChild(aircraft_entity, g_airliner_model)
+						-- if e ~= 0 then quit() end
+						-- entity_setScale(aircraft_entity, g_airliner_scale)
+            	        local aircraft_position = {x=g_head_position['x'], y=g_head_position['y'], z=g_head_position['z'] + 2.0}
+						entity_setPosition(aircraft_entity, aircraft_position)
 
-					local aircraft_heading_normal = vec3_normalize(aircraft_displacement)
-					local aircraft_heading_yaw = -atan2(-aircraft_heading_normal.x,
-					                                    -aircraft_heading_normal.y)
-					local aircraft_heading_aa = {w=aircraft_heading_yaw, x=0, y=1, z=0}
-					local aircraft_heading_quat = aaToQuat(aircraft_heading_aa)
-					local base_orientation = {w=1, x=1, y=1, z=1}
-					local orientation = hamiltonProduct(base_orientation, aircraft_heading_quat)
-					entity_setOrientation(aircraft_entity, orientation)
+						local aircraft_heading_normal = vec3_normalize(aircraft_displacement)
+						vec3_print(aircraft_heading_normal)
+						local aircraft_heading_yaw = -atan2(-aircraft_heading_normal.x,
+						                                    -aircraft_heading_normal.y)
+						local aircraft_heading_aa = {w=aircraft_heading_yaw, x=0, y=1, z=0}
+						local aircraft_heading_quat = aaToQuat(aircraft_heading_aa)
+						local base_orientation = {w=1, x=1, y=1, z=1}
+						local orientation = hamiltonProduct(base_orientation, aircraft_heading_quat)
+						entity_setOrientation(aircraft_entity, orientation)
 
-					-- entity_setOrientation(aircraft_entity, {w=1, x=1, y=1, z=1})
-					-- e = entity_linkMaterial(aircraft_entity, g_airliner_material)
-					-- if e ~= 0 then quit() end
+						-- entity_setOrientation(aircraft_entity, {w=1, x=1, y=1, z=1})
+						-- e = entity_linkMaterial(aircraft_entity, g_airliner_material)
+						-- if e ~= 0 then quit() end
+
+
+						local dot_position = {x=l_X, y=l_Y, z=-0.98}
+						local dot_scale_max = 0.5
+						local dot_scale = aircraft_distance
+						if dot_scale > dot_scale_max then
+							dot_scale = dot_scale_max
+						end
+						dot(dot_position, dot_scale, g_dot_orange_material)
+
+						local dot_heading_normal = vec2_normalize(aircraft_heading_normal)
+						for dot_iteration = 1, aircraft_distance, 0.5 do
+							local dot_x = l_X + dot_iteration * dot_heading_normal.x
+							local dot_y = l_Y + dot_iteration * dot_heading_normal.y
+							local dot_position = {x=dot_x, y=dot_y, z=-0.99}
+							local dot_material = g_dot_red_material
+							dot(dot_position, 0.2, dot_material)
+							-- if aircraft_distance <= 25 then
+							-- 	-- dot_material = g_dot_purple_material
+							-- end
+						end
+					end
 				end
 			end
 		end
@@ -280,6 +389,8 @@ function mainGame()
 
 
 	-- Movement
+
+	local speed_max = 0.5
 
 	-- Friction
 	local scale = 0.90
@@ -302,11 +413,11 @@ function mainGame()
 	if g_fly then
 		-- Move up.
 		if g_jump then
-			g_playerState.velocity.z = g_playerState.velocity.z + 1.0
+			g_playerState.velocity.z = g_playerState.velocity.z + speed_max
 		end
 		-- Move down.
 		if g_crouch then
-			g_playerState.velocity.z = g_playerState.velocity.z - 1.0
+			g_playerState.velocity.z = g_playerState.velocity.z - speed_max
 		end
 	else
 		-- Jumping
@@ -320,20 +431,20 @@ function mainGame()
 	-- Horizontal movement
 	local yaw_x, yaw_y = 0, 0
 	if g_forward then
-		yaw_x = yaw_x + sin(g_playerState.euler.yaw)
-		yaw_y = yaw_y - cos(g_playerState.euler.yaw)
+		yaw_x = yaw_x + speed_max * sin(g_playerState.euler.yaw)
+		yaw_y = yaw_y - speed_max * cos(g_playerState.euler.yaw)
 	end
 	if g_backward then
-		yaw_x = yaw_x - sin(g_playerState.euler.yaw)
-		yaw_y = yaw_y + cos(g_playerState.euler.yaw)
+		yaw_x = yaw_x - speed_max * sin(g_playerState.euler.yaw)
+		yaw_y = yaw_y + speed_max * cos(g_playerState.euler.yaw)
 	end
 	if g_strafeLeft then
-		yaw_x = yaw_x + cos(g_playerState.euler.yaw)
-		yaw_y = yaw_y + sin(g_playerState.euler.yaw)
+		yaw_x = yaw_x + speed_max * cos(g_playerState.euler.yaw)
+		yaw_y = yaw_y + speed_max * sin(g_playerState.euler.yaw)
 	end
 	if g_strafeRight then
-		yaw_x = yaw_x - cos(g_playerState.euler.yaw)
-		yaw_y = yaw_y - sin(g_playerState.euler.yaw)
+		yaw_x = yaw_x - speed_max * cos(g_playerState.euler.yaw)
+		yaw_y = yaw_y - speed_max * sin(g_playerState.euler.yaw)
 	end
 	g_playerState.velocity = vec3_add(g_playerState.velocity, {x=yaw_x, y=yaw_y, z=0})
 
@@ -352,7 +463,15 @@ function mainGame()
 		g_playerState.velocity.z = g_playerState.velocity.z + G_GRAVITY
 	end
 
-	g_playerState.orientation = hamiltonProduct(eulerToQuat(g_playerState.euler), aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
+	if g_lock then
+		g_playerState.velocity = {x=0, y=0, z=0}
+		g_playerState.position = {x=0, y=0, z=500}
+		g_playerState.euler.pitch = -G_PI/2
+		g_playerState.euler.yaw = G_PI/2
+	end
+
+	g_playerState.orientation = hamiltonProduct(eulerToQuat(g_playerState.euler),
+	                                            aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
 
 	-- Display self.
 	entity_setOrientation(g_worldEntity, {w=g_playerState.orientation.w,

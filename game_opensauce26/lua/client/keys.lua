@@ -136,6 +136,17 @@ function key_f_u()
 	g_flyWasPressed = false
 end
 
+function key_l_d()
+	if not g_lockWasPressed then
+		g_lock = not g_lock
+	end
+	g_lockWasPressed = true
+end
+
+function key_l_u()
+	g_lockWasPressed = false
+end
+
 
 function mouse_leftPress()
 	g_selectCube = true
