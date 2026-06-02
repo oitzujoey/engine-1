@@ -33,9 +33,20 @@ gcode = {}
 -- Ignore F for now (in the test code), and go at max speed.
 
 
+function gcode.isValue(character)
+	local digits = "=-.0123456789"
+	for i = 1, #digits do
+		if string_at(digits, i) == character then
+			return true
+		end
+	end
+	return false
+end
+
+
 function gcode.resetState()
 	gcode.buffer = ""
-	gcode.commands_ignored = {"EXCLUDE_OBJECT_DEFINE", "M73", "M190", "M109", "PRINT_START", "G90", "G21", "M83", "M106", "SET_VELOCITY_LIMIT", "EXCLUDE_OBJECT_START", "EXCLUDE_OBJECT_END", "M400"}
+	gcode.commands_ignored = {"EXCLUDE_OBJECT_DEFINE", "M73", "M190", "M109", "PRINT_START", "G90", "G21", "M83", "M106", "SET_VELOCITY_LIMIT", "EXCLUDE_OBJECT_START", "EXCLUDE_OBJECT_END", "M400", "SET_KINEMATIC_POSITION"}
 end
 gcode.resetState()
 
@@ -122,21 +133,33 @@ function gcode.getNextCommand_nonblocking()
 	if gcode.elementInList(command.opcode, gcode.commands_ignored) then
 		return nil
 	end
-	local defaultWords = "EFXYZ"
+	local defaultWords = {"E", "F", "X", "Y", "Z", "VALUE", "PIN"}
 	if gcode.command_previous then
 	--  and (command.opcode == gcode.command_previous.opcode)
 		for i = 1,#defaultWords do
-			command[string_at(defaultWords, i)] = gcode.command_previous[string_at(defaultWords, i)]
+			command[defaultWords[i]] = gcode.command_previous[defaultWords[i]]
 		end
 	else
 		for i = 1,#defaultWords do
-			command[string_at(defaultWords, i)] = "0"
+			command[defaultWords[i]] = "0"
 		end
 	end
 	while true do
 		line, word = gcode.getWord(line)
 		if not word then  break  end
-		command[string_first(word)] = string_sub(word, 2, #word)
+		local index = 2
+		-- Find where the identifier ends and the number begins.
+		while index <= #word do
+			if gcode.isValue(string_at(word, index)) then
+				break
+			end
+			index = index + 1
+		end
+		local value = string_sub(word, index, #word)
+		if string_first(value) == '=' then
+			value = string_sub(value, 2, #value)
+		end
+		command[string_sub(word, 1, index-1)] = value
 	end
 
 	gcode.command_previous = command

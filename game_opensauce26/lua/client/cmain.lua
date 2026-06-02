@@ -85,16 +85,17 @@ function startup()
 	-- g_dot_purple_material, e = loadMaterial(defaultShader, "purple.png")
 	g_dot_orange_material, e = loadMaterial(defaultShader, "orange.png")
 
-	g_map_material, e = loadMaterial(defaultShader, "map.png")
+	g_map_material, e = loadMaterial(defaultShader, "SanFran_2_scaled.png")
 	g_map_entity, e = entity_createEntity(g_entity_type_model)
 	e = entity_linkChild(g_cameraEntity, g_map_entity)
 	if e ~= 0 then quit() end
 	e = entity_linkChild(g_map_entity, g_map_model)
 	if e ~= 0 then quit() end
-	g_map_scale = 100.0 / 180.27756377319946 * 353.5533905932738
+	g_map_scale = 250.0
 	entity_setScale(g_map_entity, g_map_scale)
 	entity_setPosition(g_map_entity, {x=0, y=0, z=-1})
-	entity_setOrientation(g_map_entity, {w=1, x=1, y=1, z=1})
+	-- entity_setOrientation(g_map_entity, {w=1, x=1, y=1, z=1})
+	entity_setOrientation(g_map_entity, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
 	e = entity_linkMaterial(g_map_entity, g_map_material)
 	if e ~= 0 then quit() end
 
@@ -266,8 +267,11 @@ function mainGame()
 
 	if g_print then
 		g_lastFrame = g_frame
-		local command = gcode.getNextCommand_nonblocking()
-		if command then
+		while true do
+			local command = gcode.getNextCommand_nonblocking()
+			if not command then
+				break
+			end
 			puts("opcode: "..command.opcode)
 			if command.opcode == "PRINT_END" then
 				g_print = false
@@ -299,6 +303,18 @@ function mainGame()
 					g_moveMode = "grab"
 				end
 				puts(g_moveMode)
+			elseif command.opcode == "SET_PIN" then
+				if not set_pin_reached then
+					set_pin_reached = true
+				else
+					local VALUE = parse_double(command.VALUE)
+					if VALUE ~= 0.0 then
+						g_moveMode = "release"
+					else
+						g_moveMode = "grab"
+					end
+					puts(g_moveMode)
+				end
 			elseif command.opcode == "G1" then
 				local X = parse_double(command.X)
 				local Y = parse_double(command.Y)

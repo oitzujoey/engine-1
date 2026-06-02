@@ -1,5 +1,6 @@
 {
-    "game_directory": "game_sandbox",
+    "#game_directory": "game_sandbox",
+    "game_directory": "game_opensauce26",
     "username": "username",
     "password": "password"
 }

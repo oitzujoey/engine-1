@@ -95,8 +95,9 @@ set(additional_assets
   game_opensauce26/lua/client/gcode.lua
   game_opensauce26/lua/generated/initial.lua
   game_opensauce26/textures/airliner.png
-  game_opensauce26/textures/map-pin.png
   game_opensauce26/textures/map.png
+  game_opensauce26/textures/SanFran_1_scaled.png
+  game_opensauce26/textures/SanFran_2_scaled.png
 )
 add_custom_command(
   OUTPUT ${PROJECT_BINARY_DIR}/game.zip ${PROJECT_SOURCE_DIR}/src/common/pak.s
