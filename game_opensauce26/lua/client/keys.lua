@@ -147,6 +147,17 @@ function key_l_u()
 	g_lockWasPressed = false
 end
 
+function key_p_d()
+	if not g_pauseWasPressed then
+		g_pause = not g_pause
+	end
+	g_pauseWasPressed = true
+end
+
+function key_p_u()
+	g_pauseWasPressed = false
+end
+
 
 function mouse_leftPress()
 	g_selectCube = true

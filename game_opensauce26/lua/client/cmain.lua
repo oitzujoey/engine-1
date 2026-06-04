@@ -8,6 +8,7 @@ include "gcode.lua"
 g_sensitivity = 1.0
 g_fly = false
 g_lock = true
+g_pause = false
 
 Keys = {}
 g_mouse = {}
@@ -149,6 +150,8 @@ function startup()
 	keys_createFullBind("k_102", "key_f", "key_f_d", "key_f_u")
 	-- Lock controls and move to preset position and orientation.
 	keys_createFullBind("k_108", "key_l", "key_l_d", "key_l_u")
+	-- Pause/resume gcode stream.
+	keys_createFullBind("k_112", "key_p", "key_p_d", "key_p_u")
 	-- Left mouse (select)
 	keys_createFullBind("m_1", "mouse_leftButton", "mouse_leftPress", "mouse_leftRelease")
 	-- Right mouse (jump)
@@ -265,7 +268,7 @@ function mainGame()
 
 	-- Plane position
 
-	if g_print then
+	if g_print and not g_pause then
 		g_lastFrame = g_frame
 		while true do
 			local command = gcode.getNextCommand_nonblocking()
