@@ -71,26 +71,9 @@ index:i     The index of an entity.
 Returns:    1 if index is valid, otherwise 0.
 */
 static int entity_isValidEntityIndex(ptrdiff_t index) {
-	
-	// Out of bounds.
-	if (index < 0) {
-		return 0;
-	}
-	if (index >= g_entityList.entities_length) {
-		return 0;
-	}
-
-	// Freed.
-	for (ptrdiff_t i = 0; i < g_entityList.deletedEntities_length; i++) {
-		if (index == g_entityList.deletedEntities[i]) {
-			return 0;
-		}
-	}
-	
-	// Use this instead? Would be faster.
-	// if (g_entityList.entities[index].inUse) return 1; else return 0;
-	
-	return 1;
+	if ((index < 0) || (g_entityList.entities_length <= index)) return 0;
+	if (g_entityList.entities[index].inUse) return 1;
+	return 0;
 }
 
 int entity_createEntity(int *index, entity_childType_t type) {

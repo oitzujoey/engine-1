@@ -1198,7 +1198,7 @@ Other improvements:
 !	[ ] Make player models
 [*] (Lua) Texture boxes with different colors corresponding to the keyboard numbers 0-9.
 [*] (Lua) Add physics and collision handling.
-[/] (All) Profile and optimize for speed.
+[*] (All) Profile and optimize for speed.
 
 =========================
 */* Multiplayer Elite ***
