@@ -27,6 +27,7 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_cos,              .name = "cos"},
 	{.func = l_common_atan2,            .name = "atan2"},
 	{.func = l_common_round,            .name = "round"},
+	{.func = l_common_truncate,         .name = "truncate"},
 	{.func = l_common_abs,              .name = "abs"},
 	{.func = l_common_sqrt,             .name = "sqrt"},
 	{.func = l_common_random,           .name = "random"},
@@ -131,6 +132,33 @@ int l_common_abs(lua_State *l) {
 		error("Argument of `abs` must be a number.", "");
 		lua_error(l);
 	}
+
+	return 1;
+}
+
+int l_common_truncate(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 1) {
+		error("`truncate` requires 1 argument", "");
+		lua_error(l);
+	}
+
+	vec_t s;
+
+	if (lua_isinteger(l, 1)) {
+		s = lua_tointeger(l, 1);
+	}
+	else if (lua_isnumber(l, 1)) {
+		s = lua_tonumber(l, 1);
+	}
+	else {
+		error("Argument of `truncate` must be a number.", "");
+		lua_error(l);
+	}
+
+	int64_t i = s;
+
+	(void) lua_pushinteger(l, i);
 
 	return 1;
 }
