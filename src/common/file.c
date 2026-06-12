@@ -185,7 +185,10 @@ void file_resolveRelativePaths(char *path) {
 			}
 			
 			// Path separator.
-			*--copyPointer = '\0';
+			--copyPointer;
+			if (copyPointer >= path) {
+				*copyPointer = '\0';
+			}
 		}
 		
 		// Go back a token.
