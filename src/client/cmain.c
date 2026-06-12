@@ -62,16 +62,7 @@ luaCFunc_t luaClientFunctions[] = {
 #define CFG_MULTIPLAYER_DEFAULT         1
 
 static int main_callback_multiplayer(cfg2_var_t *var, const char *command, lua_State *luaState) {
-	const char *string = var->string;
-	if (string[1] != '\0') {
-		g_multiplayer = 0;
-		return ERR_OK;
-	}
-	if (string[0] == '0') {
-		g_multiplayer = 0;
-		return ERR_OK;
-	}
-	g_multiplayer = 1;
+	var->integer = !!var->integer;
 	return ERR_OK;
 }
 
@@ -143,7 +134,7 @@ const cfg2_var_init_t g_clientVarInit[] = {
 		.vector = 0,
 		.integer = CFG_MULTIPLAYER_DEFAULT,
 		.string = "",
-		.type = cfg2_var_type_string,
+		.type = cfg2_var_type_integer,
 		.permissionRead = cfg2_admin_game,
 		.permissionWrite = cfg2_admin_supervisor,
 		.permissionDelete = cfg2_admin_supervisor,
