@@ -63,6 +63,7 @@ luaCFunc_t luaClientFunctions[] = {
 
 static int main_callback_multiplayer(cfg2_var_t *var, const char *command, lua_State *luaState) {
 	var->integer = !!var->integer;
+	g_multiplayer = var->integer;
 	return ERR_OK;
 }
 
