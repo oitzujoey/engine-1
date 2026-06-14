@@ -458,11 +458,15 @@ function mainGame()
 	end
 
 	local special = false
+	local cursorNearWhite = false
 	local cursorPosition = calculateCursorPosition(g_playerState.position, g_playerState.orientation)
 	for white_index = 1,#whites do
 		local white = whites[white_index]
 		if vec3_equal(white, cursorPosition) then
 			special = white
+		end
+		if vec3_distance2(white, cursorPosition) < 9*g_gridSpacing*g_gridSpacing then
+			cursorNearWhite = true
 		end
 	end
 
@@ -539,22 +543,18 @@ function mainGame()
 	-- end
 
 	-- Cursor
-	if g_selectedPosition and vec3_equal(cursorPosition, g_selectedPosition) then
-		if g_cursorEntity then
-			modelEntity_delete(g_cursorEntity)
-			g_cursorEntity = nil
-		end
-	else
+	if cursorNearWhite or #g_inventory > 0 then
 		if g_cursorEntity then
 			entity_setPosition(g_cursorEntity, cursorPosition)
 		else
 			g_cursorEntity = modelEntity_create(cursorPosition, {w=1, x=0, y=0, z=0}, g_boxes_scale * g_cursorScale)
-			if g_selectedPosition then
-				e = entity_linkMaterial(g_cursorEntity, g_selectionMaterial)
-			else
-				e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
-			end
+			e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
 			if e ~= 0 then quit() end
+		end
+	else
+		if g_cursorEntity then
+			modelEntity_delete(g_cursorEntity)
+			g_cursorEntity = nil
 		end
 	end
 		
