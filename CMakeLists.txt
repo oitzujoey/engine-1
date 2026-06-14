@@ -67,6 +67,8 @@ set(models
   game_opensauce26/models/map
   game_opensauce26/models/square
   game_opensauce26/models/circle
+
+  game_maze/blender/cube
 )
 foreach(model ${models})
   add_custom_command(
@@ -98,6 +100,15 @@ set(additional_assets
   game_opensauce26/textures/map.png
   game_opensauce26/textures/SanFran_1_scaled.png
   game_opensauce26/textures/SanFran_2_scaled.png
+
+  game_maze/lua/common.lua
+  game_maze/lua/keys.lua
+  game_maze/lua/cmain.lua
+  game_maze/autoexec.cfg
+  game_maze/shaders/default.vert
+  game_maze/shaders/default.frag
+  game_maze/shaders/cube.vert
+  game_maze/shaders/cube.frag
 )
 add_custom_command(
   OUTPUT ${PROJECT_BINARY_DIR}/game.zip ${PROJECT_SOURCE_DIR}/src/common/pak.s

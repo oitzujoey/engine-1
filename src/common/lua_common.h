@@ -6,6 +6,10 @@
 
 extern luaCFunc_t luaCommonFunctions[];
 
+int l_common_gridColor(lua_State *l);
+int l_common_perlin(lua_State *l);
+int l_common_hash(lua_State *l);
+int l_common_hash3d(lua_State *l);
 int l_common_random(lua_State *l);
 int l_common_sqrt(lua_State *l);
 int l_common_abs(lua_State *l);

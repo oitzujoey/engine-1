@@ -1,0 +1,691 @@
+g_entity_type_none = 0
+g_entity_type_entity = 1
+g_entity_type_model = 2
+
+g_worldEntity = 0
+
+g_models = {}
+g_entities = {}
+
+g_materialNames = {
+	"red",
+	"blue",
+	"green",
+	"yellow",
+	"cyan",
+	"magenta",
+	"white"
+}
+g_materials = {}
+
+g_modelForMaterial = {}
+
+g_frame = 1
+
+g_cursorOffset = {x=0, y=0, z=-75}
+g_backOff = 0.001
+
+Vec3_xn = {x=-1, y=0, z=0}
+Vec3_xp = {x=1, y=0, z=0}
+Vec3_yn = {x=0, y=-1, z=0}
+Vec3_yp = {x=0, y=1, z=0}
+Vec3_zn = {x=0, y=0, z=-1}
+Vec3_zp = {x=0, y=0, z=1}
+
+G_PI = 3.14159265358979323
+
+
+function quit()
+	info("quit", "quit")
+	cfg2_setVariable("quit")
+end
+
+function abort(message)
+	critical_error("abort", message)
+end
+
+function createConsoleCommand(configVariable, callback)
+	cfg2_setVariable("create command " .. configVariable)
+	cfg2_setCallback(configVariable, callback)
+end
+
+
+-- function worleyDistance(x0, y0, z0, gridScale, x1, y1, z1)
+-- 	local ox = truncate(x0 / gridScale)
+-- 	local oy = truncate(y0 / gridScale)
+-- 	local oz = truncate(z0 / gridScale)
+-- 	local hashZYX = hash3d(ox + x1, oy + y1, oz + z1)
+-- 	local hashX = (hashZYX & 0xFFFF) % gridScale
+-- 	local hashY = ((hashZYX >> 16) & 0xFFFF) % gridScale
+-- 	local hashZ = ((hashZYX >> 32) & 0xFFFF) % gridScale
+-- 	local dx = x0 - gridScale*(ox + x1) + hashX
+-- 	local dy = y0 - gridScale*(oy + y1) + hashY
+-- 	local dz = z0 - gridScale*(oz + z1) + hashZ
+-- 	local d2 = dx*dx + dy*dy + dz*dz
+-- 	return d2
+-- end
+
+-- function gridColor(x, y, z)
+-- 	local gridScale = 30
+-- 	local blendScale = 10
+-- 	local offset = hash3d(x, y, z)
+-- 	x = x + offset % blendScale
+-- 	y = y + (offset >> 16) % blendScale
+-- 	z = z + (offset >> 32) % blendScale
+-- 	local min_distance_x = 0
+-- 	local min_distance_y = 0
+-- 	local min_distance_z = 0
+-- 	local min_distance = worleyDistance(x, y, z, gridScale, 0, 0, 0)
+-- 	for iz = -2,2,1 do
+-- 		for iy = -2,2,1 do
+-- 			for ix = -2,2,1 do
+-- 				local d2 = worleyDistance(x, y, z, gridScale, ix, iy, iz)
+-- 				if d2 < min_distance then
+-- 					min_distance = d2
+-- 					min_distance_x = ix
+-- 					min_distance_y = iy
+-- 					min_distance_z = iz
+-- 				end
+-- 			end
+-- 		end
+-- 	end
+-- 	local color = hash3d(truncate(x/gridScale) + min_distance_x, truncate(y/gridScale) + min_distance_y, truncate(z/gridScale) + min_distance_z)
+-- 	return color
+-- end
+
+
+function push(stack, item)
+	stack[#stack+1] = item
+end
+
+function pop(stack)
+	if #stack == 0 then
+		return nil
+	end
+	local item = stack[#stack]
+	stack[#stack] = nil
+	return item
+end
+
+
+function vec2_add(a, b)
+	return {x=a.x+b.x, y=a.y+b.y}
+end
+
+function vec3_add(a, b)
+	return {x=a.x+b.x, y=a.y+b.y, z=a.z+b.z}
+end
+
+function vec2_subtract(a, b)
+	return {x=a.x-b.x, y=a.y-b.y}
+end
+
+function vec3_subtract(a, b)
+	return {x=a.x-b.x, y=a.y-b.y, z=a.z-b.z}
+end
+
+function vec2_scale(a, s)
+	return {x=a.x*s, y=a.y*s}
+end
+
+function vec3_scale(a, s)
+	return {x=a.x*s, y=a.y*s, z=a.z*s}
+end
+
+function vec2_dotProduct(a, b)
+	return a.x*b.x + a.y*b.y
+end
+
+function vec3_dotProduct(a, b)
+	return a.x*b.x + a.y*b.y + a.z*b.z
+end
+
+function vec2_norm2(a)
+	return a.x*a.x + a.y*a.y
+end
+
+function vec3_norm2(a)
+	return a.x*a.x + a.y*a.y + a.z*a.z
+end
+
+function vec2_norm(a)
+	return sqrt(a.x*a.x + a.y*a.y)
+end
+
+function vec3_norm(a)
+	return sqrt(a.x*a.x + a.y*a.y + a.z*a.z)
+end
+
+function vec2_normalize(a)
+	return vec2_scale(a, 1.0/vec2_norm(a))
+end
+
+function vec3_normalize(a)
+	return vec3_scale(a, 1.0/vec3_norm(a))
+end
+
+function vec3_equal(a, b)
+	return a.x==b.x and a.y==b.y and a.z==b.z
+end
+
+function vec3_copy(v)
+	return {x=v.x, y=v.y, z=v.z}
+end
+
+function vec3_distance2(a, b)
+	return vec3_norm2(vec3_subtract(a, b))
+end
+
+function aaToQuat(axisAngle)
+	local angle = axisAngle.w
+	local w_part = cos(angle/2)
+	local v_part = sin(angle/2)
+	return {w=w_part, x=axisAngle.x*v_part, y=axisAngle.y*v_part, z=axisAngle.z*v_part}
+end
+
+function eulerToQuat(euler)
+	local pitch = Vec3_xp
+	pitch.w = euler.pitch
+	local yaw = Vec3_zp
+	yaw.w = euler.yaw
+	return hamiltonProduct(aaToQuat(yaw), aaToQuat(pitch))
+end
+
+
+function modelEntity_create(position, orientation, scale)
+	local entity, e = entity_createEntity(g_entity_type_model)
+	e = entity_linkChild(g_cameraEntity, entity)
+	e = entity_linkChild(entity, g_boxModel)
+	entity_setScale(entity, scale)
+	entity_setPosition(entity, position)
+	entity_setOrientation(entity, orientation)
+	return entity
+end
+
+function modelEntity_delete(entity)
+	local e = entity_deleteEntity(entity)
+	if e ~= 0 then return e end
+	return entity_unlinkChild(g_cameraEntity, entity)
+end
+
+
+--------------------------
+-- Game specific functions
+--------------------------
+
+
+G_STANDARD_FRAMERATE = 60
+
+g_worldOrientation = {w=1.0, x=0.0, y=0.0, z=0.0}
+
+g_gridSpacing = 40
+
+g_boxes_length = 0
+g_boxes_scale = g_gridSpacing/2
+
+g_boxes = {}
+
+g_boundingBoxRadius = g_gridSpacing * 20
+g_boxTable = {}
+G_GRAVITY = -0.4
+G_JUMPVELOCITY = 7.0
+G_PLAYER_BB_SCALE = 40
+G_PLAYER_BB_FATNESS = 2
+G_PLAYER_BB = {mins={x=-G_PLAYER_BB_SCALE*G_PLAYER_BB_FATNESS*0.2, y=-G_PLAYER_BB_SCALE*G_PLAYER_BB_FATNESS*0.2, z=-0.5*G_PLAYER_BB_SCALE},
+			   maxs={x=G_PLAYER_BB_SCALE*G_PLAYER_BB_FATNESS*0.2, y=G_PLAYER_BB_SCALE*G_PLAYER_BB_FATNESS*0.2, z=0.1*G_PLAYER_BB_SCALE}}
+G_BOX_BB = {mins={x=-g_gridSpacing/2, y=-g_gridSpacing/2, z=-g_gridSpacing/2},
+			maxs={x=g_gridSpacing/2, y=g_gridSpacing/2, z=g_gridSpacing/2}}
+
+
+function snapComponentToGrid(component)
+	return truncate(g_gridSpacing*round(component/g_gridSpacing))
+end
+
+function snapToGrid(point)
+	return {x=snapComponentToGrid(point.x),
+			y=snapComponentToGrid(point.y),
+			z=snapComponentToGrid(point.z)}
+end
+
+-- Returns whether the spot on the grid is occupied by something (meaning can we move into it) and what box is in that
+-- spot, if a box is in that spot. If the point is outside of the bounds of the map, then the result will be `true,
+-- nil`.
+function isOccupied(point)
+	function negative() return false, nil end
+	function affirmative(box_index) return true, box_index end
+	function outOfBounds() return true, nil end
+	local boundingBoxRadius = g_boundingBoxRadius
+	-- Only work with grid coordinates.
+	local point = snapToGrid(point)
+	-- -- Check if outside bounds.
+	-- if point.x > boundingBoxRadius then return outOfBounds() end
+	-- if point.x < -boundingBoxRadius then return outOfBounds() end
+	-- if point.y > boundingBoxRadius then return outOfBounds() end
+	-- if point.y < -boundingBoxRadius then return outOfBounds() end
+	-- if point.z > boundingBoxRadius/2 then return outOfBounds() end
+	-- if point.z < -boundingBoxRadius/2 then return outOfBounds() end
+	-- Check if spot contains a box.
+	local box_index = getBoxEntry(point)
+	if box_index then
+		return affirmative(box_index)
+	else
+		return negative()
+	end
+end
+
+-- traceComponent(4.3, "x", {x=23.3, y=4.0, z=-12.3}, -20, 20)
+--
+-- This function traces an axial line of grid points from `startPosition` to an end point determined by the axis name
+-- and the axis offset (`endComponent`). It stops at the first box or out-of-bounds point.
+function traceComponent(endComponent, componentName, startPosition, entityMin, entityMax)
+	local extreme
+	if endComponent > startPosition[componentName] then
+		extreme = entityMax
+	else
+		extreme = entityMin
+	end
+	endComponent = endComponent + extreme
+	local startPosition = {x=startPosition.x, y=startPosition.y, z=startPosition.z}
+	startPosition[componentName] = startPosition[componentName] + extreme
+	startPosition = snapToGrid(startPosition)
+
+	local endPosition = {x=startPosition.x, y=startPosition.y, z=startPosition.z}
+	endPosition[componentName] = snapComponentToGrid(endComponent)
+
+	local displacement = endPosition[componentName] - startPosition[componentName]
+
+	local iterations = round(abs(displacement / g_gridSpacing))
+	local sign
+	if displacement < 0 then
+		sign = -1
+	else
+		sign = 1
+	end
+
+	local hit = false
+	local gridOffset = 0
+	local position = {x=startPosition.x, y=startPosition.y, z=startPosition.z}
+	for gridOffset = 1,iterations,1 do
+		position[componentName] = startPosition[componentName] + g_gridSpacing * gridOffset * sign
+		local occupied, box_index = isOccupied(position)
+		if occupied then
+			return true, startPosition[componentName] + g_gridSpacing * (gridOffset - 0.5 - g_backOff) * sign - extreme
+		end
+	end
+	return false, endComponent - extreme
+
+end
+
+-- `state` must have `position`, `velocity`, and `aabb` fields.
+function boxMoveAndCollide(state)
+	state.collided = false
+	state.grounded = false
+	local oldPosition = state.position
+	local oldVelocity = state.velocity
+	local newPosition = vec3_add(oldPosition, oldVelocity)
+	local newVelocity = {x=oldVelocity.x, y=oldVelocity.y, z=oldVelocity.z}
+	-- Do collision per-axis.
+	components = {'x', 'y', 'z'}
+	local position = {x=oldPosition.x, y=oldPosition.y, z=oldPosition.z}
+	for componentIndex = 1,3,1 do
+		component = components[componentIndex]
+		local traceCollided, endComponent = traceComponent(newPosition[component],
+														   component,
+														   position,
+														   state.aabb.mins[component],
+														   state.aabb.maxs[component])
+		if traceCollided then
+			state.collided = true
+			if component == 'z' and oldVelocity.z < 0 then
+				state.grounded = true
+			end
+			newVelocity[component] = 0.0
+		end
+		position[component] = endComponent
+	end
+	state.position = position
+	state.velocity = newVelocity
+	return state
+end
+
+-- `state` must have `position`, `velocity`, and `aabb` fields.
+function playerMoveAndCollide(state, movementScale)
+	state.collided = false
+	state.grounded = false
+	local oldPosition = state.position
+	local oldVelocity = state.velocity
+	local oldPosition_delta = vec3_scale(oldVelocity, movementScale)
+	local newPosition = vec3_add(oldPosition, oldPosition_delta)
+	local newVelocity = {x=oldVelocity.x, y=oldVelocity.y, z=oldVelocity.z}
+	local position = {x=oldPosition.x, y=oldPosition.y, z=oldPosition.z}
+	-- Construct bounding volume vertices.
+	local startingPoints = {}
+	local aabb = state.aabb
+	local extremeNames = {"mins", "maxs"}
+	for z = 1,2,1 do
+		extreme_z = aabb[extremeNames[z]].z
+		for y = 1,2,1 do
+			extreme_y = aabb[extremeNames[y]].y
+			for x = 1,2,1 do
+				extreme_x = aabb[extremeNames[x]].x
+				startingPoints[#startingPoints+1] = {x=extreme_x, y=extreme_y, z=extreme_z}
+			end
+		end
+	end
+	-- Do collision per-axis.
+	components = {'x', 'y', 'z'}
+	for componentIndex = 1,3,1 do
+		component = components[componentIndex]
+		local minEndComponent = newPosition[component]
+		local tracesCollided = false
+		-- Trace from each corner of the cube (so 8 points), but we only need to check the points on the leading side (so 4 points).
+		for j = 1,8,1 do
+			-- But cull the points on the trailing face of the cube.
+			if startingPoints[j][component] * (newPosition[component] - position[component]) >= 0 then
+				-- Shift position to cube corner.
+				local startingPoint = startingPoints[j]
+				-- Trace.
+				local traceCollided, endComponent = traceComponent(newPosition[component] + startingPoint[component],
+																   component,
+																   vec3_add(position, startingPoints[j]),
+																   0,
+																   0)
+				endComponent = endComponent - startingPoint[component]
+				if traceCollided then
+					if oldVelocity[component] > 0 and endComponent < minEndComponent then
+						minEndComponent = endComponent
+					elseif oldVelocity[component] < 0 and endComponent > minEndComponent then
+						minEndComponent = endComponent
+					end
+					tracesCollided = true
+				end
+			end
+		end
+		if tracesCollided then
+			state.collided = true
+			if component == 'z' and oldVelocity.z < 0 then
+				state.grounded = true
+			end
+			-- newVelocity[component] = -0.001 * newVelocity[component]
+			newVelocity[component] = 0.0
+		end
+		position[component] = minEndComponent
+	end
+	local delta = vec3_subtract(position, oldPosition)
+	state.position = position
+	state.velocity = newVelocity
+	return state
+end
+
+
+function createBoxEntry(box_index, point)
+	point = snapToGrid(point)
+	local bt_xyz = g_boxTable
+	local bt_yz = bt_xyz[point.x]
+	if bt_yz == nil then
+		bt_xyz[point.x] = {}
+		bt_yz = bt_xyz[point.x]
+		bt_yz.entries = 0
+	end
+	local bt_z = bt_yz[point.y]
+	if bt_z == nil then
+		bt_yz[point.y] = {}
+		bt_z = bt_yz[point.y]
+		bt_z.entries = 0
+		bt_yz.entries = bt_yz.entries + 1
+	end
+	local spot = bt_z[point.z]
+	if spot ~= nil then
+		error("moveBox", "Box is already occupied.")
+		return
+	end
+	bt_z[point.z] = box_index
+	bt_z.entries = bt_z.entries + 1
+end
+
+-- Returns the index of the box at that point, or nil if a box doesn't exist there.
+function getBoxEntry(point)
+	point = snapToGrid(point)
+	-- Check if spot contains a box.
+	local bt_xyz = g_boxTable
+	local bt_yz = bt_xyz[point.x]
+	if bt_yz == nil then return nil end
+	local bt_z = bt_yz[point.y]
+	if bt_z == nil then return nil end
+	local spot = bt_z[point.z]
+	if spot == nil then return nil end
+	-- Success.
+	local box_index = spot
+	return box_index
+end
+
+function moveBox(box_index, newPosition, oldPosition)
+	oldPosition = snapToGrid(oldPosition)
+	newPosition = snapToGrid(newPosition)
+	if oldPosition.x == newPosition.x and oldPosition.y == newPosition.y and oldPosition.z == newPosition.z then
+		return false
+	end
+
+	-- Find the current box entry.
+	local bt_xyz = g_boxTable
+	local bt_yz = bt_xyz[oldPosition.x]
+	if bt_yz == nil then
+		warning("moveBox", "Box does not have x-axis entry.")
+		return false
+	end
+	local bt_z = bt_yz[oldPosition.y]
+	if bt_z == nil then
+		warning("moveBox", "Box does not have y-axis entry.")
+		return false
+	end
+	local spot = bt_z[oldPosition.z]
+	if spot == nil then
+		warning("moveBox", "Box does not have z-axis entry.")
+		return false
+	end
+	local box_index = spot
+
+	-- Double check that we are moving the right box.
+	if box_index ~= box_index then
+		warning("moveBox", "The box being moved is not the box that is at this point.")
+		return false
+	end
+
+	-- Delete existing entry.
+	bt_z[oldPosition.z] = nil
+	bt_z.entries = bt_z.entries - 1
+	if bt_z.entries == 0 then
+		bt_z.entries = nil
+
+		bt_yz[oldPosition.y] = nil
+		bt_yz.entries = bt_yz.entries - 1
+		if bt_yz.entries == 0 then
+			bt_yz.entries = nil
+
+			bt_xyz[oldPosition.x] = nil
+		end
+	end
+
+	-- Create new entry.
+	createBoxEntry(box_index, newPosition)
+
+	-- if G_SERVER then
+	-- 	sendEvent('move box', {oldPosition=oldPosition, newPosition=newPosition})
+	-- end
+
+	return true
+end
+
+function checkIfBoxNeedsUpdate(position, limit)
+	local centerPosition = snapToGrid(position)
+	-- Doubt these are the correct directions. What is important is that they are all different cardinal directions.
+	local d = vec3_copy(centerPosition)
+	d.z = d.z - g_gridSpacing
+	local n = vec3_copy(centerPosition)
+	n.x = n.x + g_gridSpacing
+	local s = vec3_copy(centerPosition)
+	s.x = s.x - g_gridSpacing
+	local e = vec3_copy(centerPosition)
+	e.y = e.y + g_gridSpacing
+	local w = vec3_copy(centerPosition)
+	w.y = w.y - g_gridSpacing
+	local directions = {n, s, e, w}
+	local directions_length = #directions
+	local occupied, _ = isOccupied(d)
+	if occupied then return false end
+	local box_count = 0
+	for i = 1,directions_length,1 do
+		local direction = directions[i]
+		local box_index = getBoxEntry(direction)
+		if box_index then
+			box_count = box_count + 1
+		end
+	end
+	return box_count < limit
+end
+
+function updateNeighborBoxes(position, limit)
+	local centerPosition = snapToGrid(position)
+	-- Doubt these are the correct directions. What is important is that they are all different cardinal directions.
+	local u = vec3_copy(centerPosition)
+	u.z = u.z + g_gridSpacing
+	local n = vec3_copy(centerPosition)
+	n.x = n.x + g_gridSpacing
+	local s = vec3_copy(centerPosition)
+	s.x = s.x - g_gridSpacing
+	local e = vec3_copy(centerPosition)
+	e.y = e.y + g_gridSpacing
+	local w = vec3_copy(centerPosition)
+	w.y = w.y - g_gridSpacing
+	local directions = {u, n, s, e, w}
+	local directions_length = #directions
+	local box_count = 0
+	for i = 1,directions_length,1 do
+		local direction = directions[i]
+		if checkIfBoxNeedsUpdate(direction, limit) then
+			local box_index = getBoxEntry(direction)
+			if box_index then
+				g_boxes[box_index].needsUpdate = true
+				g_boxes[box_index].velocity.z = 0
+			end
+		end
+	end
+end
+
+-- function processBoxes(boxes, movementScale, limit)
+-- 	for i = 1,g_boxes_length,1 do
+-- 		if boxes[i].needsUpdate then
+-- 			puts("Update: "..toString(boxes[i].position.x).." "..toString(boxes[i].position.y).." "..toString(boxes[i].position.z))
+-- 			boxes[i].velocity.z = boxes[i].velocity.z + G_GRAVITY * movementScale
+-- 			local oldPosition = boxes[i].position
+-- 			boxes[i] = boxMoveAndCollide(boxes[i])
+-- 			local newPosition = boxes[i].position
+-- 			if vec3_equal(oldPosition, newPosition) then
+-- 				boxes[i].needsUpdate = false
+-- 			end
+-- 			local moved = moveBox(i, newPosition, oldPosition)
+-- 			if moved then
+-- 				updateNeighborBoxes(oldPosition, limit)
+-- 			end
+-- 			if G_SERVER and moved then
+-- 				local id = boxes[i].id
+-- 				local n = snapToGrid(newPosition)
+-- 				n.z = n.z + g_backOff
+-- 				sqlite_exec(g_db, "UPDATE boxes SET x = "..n.x..", y = "..n.y..", z = "..n.z.." WHERE id == "..id..";")
+-- 			end
+-- 			entity_setPosition(boxes[i].entity, boxes[i].position)
+-- 		end
+-- 	end
+-- end
+
+
+function createBox(id, position, materialName, angle, visible)
+	local box = {}
+	local e = nil
+	local boxEntity
+	if visible then
+		boxEntity, e = entity_createEntity(g_entity_type_model)
+		e = entity_linkChild(g_cameraEntity, boxEntity)
+		if G_CLIENT then
+			model = g_modelForMaterial[materialName]
+		else
+			model = g_boxModel
+		end
+		e = entity_linkChild(boxEntity, model)
+		box.entity = boxEntity
+	end
+	box.id = id
+	-- Enable gravity. Bug?
+	box.needsUpdate = false
+
+	if visible then
+		entity_setScale(boxEntity, g_boxes_scale)
+	end
+	box.position = position
+	if visible then
+		entity_setPosition(boxEntity, box.position)
+	end
+	box.orientation_base = aaToQuat({w=G_PI/2, x=1, y=0, z=0})
+	box.angle = angle
+	local o = hamiltonProduct(box.orientation_base, aaToQuat({w=angle, x=0, y=1, z=0}))
+	if visible then
+		entity_setOrientation(boxEntity, o)
+	end
+
+	box.velocity = {x=0, y=0, z=0}
+	box.aabb = G_BOX_BB
+
+	box.materialName = materialName
+
+	if G_CLIENT and visible then
+		e = entity_linkMaterial(boxEntity, g_materials[materialName])
+	end
+
+	return box, e
+end
+
+function deleteBox(box)
+	local e = nil
+	local boxEntity = box.entity
+	if boxEntity then
+		e = entity_deleteEntity(entity)
+		e = entity_unlinkChild(g_cameraEntity, entity)
+	end
+end
+
+-- function changeBoxMaterial(box, materialName)
+-- 	-- Delete.
+-- 	local e = 0
+-- 	local box_entity = box.entity
+-- 	if G_CLIENT then
+-- 		if not g_materials[materialName] then return 0 end
+-- 		e = entity_deleteEntity(box_entity)
+-- 		if e ~= 0 then return e end
+-- 		e = entity_unlinkChild(g_cameraEntity, box_entity)
+-- 		if e ~= 0 then return e end
+
+-- 		-- Create.
+-- 		box_entity, e = entity_createEntity(g_entity_type_model)
+-- 		if e ~= 0 then return e end
+-- 		box.entity = box_entity
+-- 		e = entity_linkChild(g_cameraEntity, box_entity)
+-- 		if e ~= 0 then return e end
+-- 		e = entity_linkChild(box_entity, g_modelForMaterial[materialName])
+-- 		if e ~= 0 then return e end
+-- 		entity_setScale(box_entity, g_boxes_scale)
+-- 		entity_setPosition(box_entity, box.position)
+-- 		entity_setOrientation(box_entity, {w=1, x=1, y=0, z=0})
+-- 	end
+
+-- 	-- Set material.
+-- 	box.materialName = materialName
+-- 	if G_CLIENT then
+-- 		e = entity_linkMaterial(box_entity, g_materials[materialName])
+-- 	end
+-- 	return e
+-- end
+
+
+function calculateCursorPosition(position, orientation)
+	return snapToGrid(vec3_add(position, vec3_rotate(g_cursorOffset, orientation)))
+end

@@ -31,6 +31,10 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = l_common_abs,              .name = "abs"},
 	{.func = l_common_sqrt,             .name = "sqrt"},
 	{.func = l_common_random,           .name = "random"},
+	{.func = l_common_hash,             .name = "hash"},
+	{.func = l_common_hash3d,           .name = "hash3d"},
+	{.func = l_common_perlin,           .name = "perlin"},
+	{.func = l_common_gridColor,        .name = "gridColor"},
 	{.func = l_log_info,                .name = "info"},
 	{.func = l_log_warning,             .name = "warning"},
 	{.func = l_log_error,               .name = "error"},
@@ -60,6 +64,208 @@ luaCFunc_t luaCommonFunctions[] = {
 	{.func = NULL,                  .name = NULL}
 };
 
+uint64_t hash(uint64_t k) {
+	k = (k ^ (k >> 30)) * 0xbf58476d1ce4e5b9;
+	k = (k ^ (k >> 27)) * 0x94d049bb133111eb;
+	k = k ^ (k > 31);
+	return k % 4294967311;
+}
+
+uint64_t hash3d(uint32_t x, uint32_t y, uint32_t z) {
+	return hash((((uint64_t) z) << 32) + (((uint64_t) y) << 16) + x);
+}
+
+uint32_t worleyDistance(uint32_t x0, uint32_t y0, uint32_t z0, uint32_t gridScale, uint32_t x1, uint32_t y1, uint32_t z1) {
+	uint32_t ox = x0 / gridScale;
+	uint32_t oy = y0 / gridScale;
+	uint32_t oz = z0 / gridScale;
+	uint64_t hashZYX = hash3d(ox + x1, oy + y1, oz + z1);
+	uint32_t hashX = (hashZYX & 0xFFFF) % gridScale;
+	uint32_t hashY = ((hashZYX >> 16) & 0xFFFF) % gridScale;
+	uint32_t hashZ = ((hashZYX >> 32) & 0xFFFF) % gridScale;
+	uint32_t dx = gridScale*(ox + x1) + hashX - x0;
+	uint32_t dy = gridScale*(oy + y1) + hashY - y0;
+	uint32_t dz = gridScale*(oz + z1) + hashZ - z0;
+	uint32_t d2 = dx*dx + dy*dy + dz*dz;
+	return d2;
+}
+
+uint32_t gridColor(uint32_t x, uint32_t y, uint32_t z) {
+	const uint32_t gridScale = 30;
+	{
+		const uint64_t blendScale = 10;
+		uint64_t offset = hash3d(x, y, z);
+		/* offset = 0; */
+		x += offset % blendScale;
+		y += (offset >> 16) % blendScale;
+		z += (offset >> 32) % blendScale;
+	}
+	uint8_t min_distance_x = 0;
+	uint8_t min_distance_y = 0;
+	uint8_t min_distance_z = 0;
+	uint32_t min_distance = worleyDistance(x, y, z, gridScale, 0, 0, 0);
+	for (uint8_t iz = -2; iz <= 2; iz++) {
+		for (uint8_t iy = -2; iy <= 2; iy++) {
+			for (uint8_t ix = -2; ix <= 2; ix++) {
+				uint32_t d2 = worleyDistance(x, y, z, gridScale, ix, iy, iz);
+				if (d2 < min_distance) {
+					min_distance = d2;
+					min_distance_x = ix;
+					min_distance_y = iy;
+					min_distance_z = iz;
+				}
+			}
+		}
+	}
+	uint32_t color = hash3d(x/gridScale + min_distance_x, y/gridScale + min_distance_y, z/gridScale + min_distance_z);
+	/* { */
+	/* 	uint32_t brightness = 0; */
+	/* 	for (uint32_t i = 0; i < 3; i++) { */
+	/* 		brightness += 0xFF & (color >> 8*i); */
+	/* 	} */
+	/* 	const uint32_t threshold = 0x30; */
+	/* 	if (brightness < threshold) { */
+	/* 		uint32_t compensation = threshold / 3; */
+	/* 		for (uint32_t i = 0; i < 3; i++) { */
+	/* 			color += compensation << 8*i; */
+	/* 		} */
+	/* 	} */
+	/* } */
+	return color;// & 0xFFFFFF;
+}
+
+
+int l_common_gridColor(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 3) {
+		error("`gridColor` accepts three arguments.", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 1)) {
+		error("`gridColor` accepts an integer as its first argument.", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 2)) {
+		error("`gridColor` accepts an integer as its second argument.", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 3)) {
+		error("`gridColor` accepts an integer as its third argument.", "");
+		lua_error(l);
+	}
+
+	uint32_t x = lua_tointeger(l, 1);
+	uint32_t y = lua_tointeger(l, 2);
+	uint32_t z = lua_tointeger(l, 3);
+	uint32_t v = gridColor(x, y, z);
+
+	lua_pushinteger(l, v);
+
+	return 1;
+}
+
+int l_common_perlin(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 3) {
+		error("`perlin` accepts three arguments.", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 1)) {
+		error("`perlin` accepts an integer as its first argument.", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 2)) {
+		error("`perlin` accepts an integer as its second argument.", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 3)) {
+		error("`perlin` accepts an integer as its third argument.", "");
+		lua_error(l);
+	}
+
+	uint32_t x = lua_tointeger(l, 1);
+	uint32_t y = lua_tointeger(l, 2);
+	uint32_t z = lua_tointeger(l, 3);
+	uint32_t v;
+	{
+		const uint32_t gridScale = 40;
+		const uint32_t perlinScale = 256;
+		uint32_t gx = x / gridScale;
+		uint32_t gy = y / gridScale;
+		uint32_t gz = z / gridScale;
+		int32_t fraction_x = (x - gridScale*gx);
+		int32_t fraction_y = (y - gridScale*gy);
+		int32_t fraction_z = (z - gridScale*gz);
+		int32_t value = 0;
+		for (uint8_t iz = 0; iz < 2; iz++) {
+			for (uint8_t iy = 0; iy < 2; iy++) {
+				for (uint8_t ix = 0; ix < 2; ix++) {
+					int32_t offset_x = (int32_t) ((int64_t)x - (int64_t)(gridScale*(gx + ix)));
+					int32_t offset_y = (int32_t) ((int64_t)y - (int64_t)(gridScale*(gy + iy)));
+					int32_t offset_z = (int32_t) ((int64_t)z - (int64_t)(gridScale*(gz + iz)));
+					uint64_t h = hash((((uint64_t) (gz + iz)) << 32) + (((uint64_t) (gy + iy)) << 16) + (gx + ix));
+					int64_t normal_x = (int64_t) (h & 0xFFFF) - 0x8000;
+					int64_t normal_y = (int64_t) ((h >> 16) & 0xFFFF) - 0x8000;
+					int64_t normal_z = (int64_t) ((h >> 32) & 0xFFFF) - 0x8000;
+					int64_t interpolated = ((ix ? fraction_x : gridScale - fraction_x)
+											* (iy ? fraction_y : gridScale - fraction_y)
+											* (iz ? fraction_z : gridScale - fraction_z));
+					int64_t dot = offset_x * normal_x + offset_y * normal_y + offset_z * normal_z;
+					value += (perlinScale/2 * dot * interpolated / 0x8000 / (int64_t)(gridScale/2) / ((int64_t)gridScale*(int64_t)gridScale*(int64_t)gridScale) / 3);
+				}
+			}
+		}
+		v = value + perlinScale/2;
+	}
+
+	lua_pushinteger(l, v);
+
+	return 1;
+}
+
+int l_common_hash(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 1) {
+		error("`hash` accepts one argument.", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 1)) {
+		error("`hash` accepts an integer as its argument.", "");
+		lua_error(l);
+	}
+	lua_Unsigned k = lua_tointeger(l, 1);
+	k = hash(k);
+	(void) lua_pushinteger(l, k);
+
+	return 1;
+}
+
+int l_common_hash3d(lua_State *l) {
+	int argc = lua_gettop(l);
+	if (argc != 3) {
+		error("`hash3d` accepts three arguments.", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 1)) {
+		error("`hash3d` accepts an integer as its first argument.", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 2)) {
+		error("`hash3d` accepts an integer as its second argument.", "");
+		lua_error(l);
+	}
+	if (!lua_isinteger(l, 3)) {
+		error("`hash3d` accepts an integer as its third argument.", "");
+		lua_error(l);
+	}
+	uint32_t x = lua_tointeger(l, 1);
+	uint32_t y = lua_tointeger(l, 2);
+	uint32_t z = lua_tointeger(l, 3);
+	uint64_t k = hash3d(x, y, z);
+	(void) lua_pushinteger(l, k);
+
+	return 1;
+}
 
 int l_common_random(lua_State *l) {
 	int argc = lua_gettop(l);
