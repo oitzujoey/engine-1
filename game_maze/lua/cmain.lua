@@ -486,6 +486,7 @@ function mainGame()
 			if #g_inventory > 0 and not occupied then
 				local cached = g_inventory[#g_inventory]
 				cached.position = cursorPosition
+				g_taken[key] = nil
 				g_placed[key] = cached
 				g_inventory[#g_inventory] = nil
 				puts("Place: "..key)
