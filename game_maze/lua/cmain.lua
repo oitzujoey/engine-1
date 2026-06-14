@@ -465,7 +465,7 @@ function mainGame()
 		if vec3_equal(white, cursorPosition) then
 			special = white
 		end
-		if vec3_distance2(white, cursorPosition) < 9*g_gridSpacing*g_gridSpacing then
+		if vec3_distance2(white, cursorPosition) < 4*g_gridSpacing*g_gridSpacing then
 			cursorNearWhite = true
 		end
 	end
