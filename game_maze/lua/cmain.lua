@@ -317,9 +317,13 @@ function cache_set(key, v)
 	cache.cache[key] = v
 end
 function cache_fetch(key)
-	cache.marks[key] = true
-	cache.keys[#cache.keys+1] = key
-	return cache.cache[key]
+	local cached = cache.cache[key]
+	local marks = cache.marks
+	marks[key] = true
+	if not cached then
+		cache.keys[#cache.keys+1] = key
+	end
+	return cached
 end
 function cache_gc()
 	local keys_new = {}
