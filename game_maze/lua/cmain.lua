@@ -525,10 +525,10 @@ function mainGame()
 							local threshold = (range*calibration * (hash(color) & 0xFFFF) + (1.0-calibration)*range/10) / 0x20000
 							local space = nil
 							local bucket = h3 % range
-							if (color + pa_z) % 6 ~= 0 then
-								space = bucket > threshold
-							else
+							if (color + pa_z) % 6 == 0 and color % 4 ~= 0 then
 								space = bucket < threshold
+							else
+								space = bucket > threshold
 							end
 							if space then
 								local placed = g_placed[key]
