@@ -202,6 +202,8 @@ function startup()
 
 	g_cursorMaterial, e = loadMaterial(defaultShader, "cursor.png")
 	if e ~= 0 then quit() end
+	g_cursorLightMaterial, e = loadMaterial(defaultShader, "cursor_light.png")
+	if e ~= 0 then quit() end
 
 	g_selectionMaterial, e = loadMaterial(defaultShader, "selection.png")
 	if e ~= 0 then quit() end
@@ -482,7 +484,7 @@ function mainGame()
 				for ix = -dimension,dimension do
 					local r = sqrt(ix*ix + iy*iy + iz*iz)
 					local visible = pd_x*ix + pd_y*iy + pd_z*iz > 0.7*r - 1.0
-					if (visible and r < dimension) or r < 3 then
+					if (visible and r < dimension) or r < 4 then
 						local pa_x = p_x + ix
 						local pa_y = p_y + iy
 						local pa_z = p_z + iz
@@ -525,7 +527,7 @@ function mainGame()
 							local threshold = (range*calibration * (hash(color) & 0xFFFF) + (1.0-calibration)*range/10) / 0x20000
 							local space = nil
 							local bucket = h3 % range
-							if (color + pa_z) % 6 == 0 and color % 4 ~= 0 then
+							if (color + pa_z) % ((color % 10) + 1) == 0 and color % 4 ~= 0 then
 								space = bucket < threshold
 							else
 								space = bucket > threshold
@@ -609,63 +611,23 @@ function mainGame()
 		end
 	end
 
-	-- -- Change box color
-	-- if Keys.color then
-	-- 	local color = g_materialNames[Keys.color]
-	-- 	if color then
-	-- 		client_sendEvent("change box color", {position=cursorPosition, color=color})
-	-- 	end
-	-- end
-	-- Keys.color = nil
-
-	-- -- Move box
-	-- if g_selectCube then
-	-- 	g_selectCube = false
-	-- 	local occupied = getBoxEntry(cursorPosition)
-	-- 	if g_selectedPosition and not occupied then
-	-- 		e = modelEntity_delete(g_selectionEntity)
-	-- 		if e ~= 0 then quit() end
-	-- 		puts("white position: "..toString(g_selectedPosition.x).." "..toString(g_selectedPosition.y).." "..toString(g_selectedPosition.z))
-	-- 		-- client_sendEvent("move box",
-	-- 		--                  {start_position=g_selectedPosition,
-	-- 		--                   end_position={x=cursorPosition.x, y=cursorPosition.y, z=cursorPosition.z + g_backOff},
-	-- 		--                   angle=0})
-	-- 		g_selectedPosition = nil
-
-	-- 		e = modelEntity_delete(g_cursorEntity)
-	-- 		if e ~= 0 then quit() end
-	-- 		g_cursorEntity = modelEntity_create(cursorPosition, {w=1, x=0, y=0, z=0}, g_boxes_scale * g_cursorScale)
-	-- 		e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
-	-- 		if e ~= 0 then quit() end
-	-- 	elseif not g_selectedPosition and occupied then
-	-- 		g_selectedPosition = cursorPosition
-	-- 		g_selectionEntity = modelEntity_create(g_selectedPosition,
-	-- 											   {w=1, x=0, y=0, z=0},
-	-- 											   g_boxes_scale * g_selectionScale)
-	-- 		e = entity_linkMaterial(g_selectionEntity, g_selectionMaterial)
-	-- 	elseif g_selectedPosition and occupied and vec3_equal(cursorPosition, g_selectedPosition) then
-	-- 		e = modelEntity_delete(g_selectionEntity)
-	-- 		if e ~= 0 then quit() end
-	-- 		g_selectedPosition = nil
-	-- 	end
-	-- end
-
 	-- Cursor
+	if g_cursorEntity then
+		modelEntity_delete(g_cursorEntity)
+		g_cursorEntity = nil
+	end
 	if cursorNearWhite or (#g_inventory > 0 and not cursorPosition_occupied) then
 		if g_cursorEntity then
 			entity_setPosition(g_cursorEntity, cursorPosition)
 		else
 			g_cursorEntity = modelEntity_create(cursorPosition, {w=1, x=0, y=0, z=0}, g_boxes_scale * g_cursorScale)
-			e = entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
-			if e ~= 0 then quit() end
-		end
-	else
-		if g_cursorEntity then
-			modelEntity_delete(g_cursorEntity)
-			g_cursorEntity = nil
+			if cursorNearWhite then
+				entity_linkMaterial(g_cursorEntity, g_cursorMaterial)
+			else
+				entity_linkMaterial(g_cursorEntity, g_cursorLightMaterial)
+			end
 		end
 	end
-		
 
 	-- Show inventory.
 	for i = 1,#g_inventory_boxes do
@@ -690,10 +652,25 @@ function mainGame()
 
 	-- processBoxes(g_boxes, movementScale, 3)
 
+	local magnetism = {x=0, y=0, z=0}
+	for white_index = 1,#whites do
+		local white = whites[white_index]
+		local white_displacement = vec3_subtract(white, g_playerState.position)
+		local white_distance2 = vec3_norm2(white_displacement)
+		local white_direction = vec3_normalize(white_displacement)
+		magnetism = vec3_add(magnetism, vec3_scale(white_direction, g_gridSpacing*g_gridSpacing/white_distance2))
+	end
+	magnetism = vec3_add(magnetism, {x=0, y=1, z=0})
+	local player_normal = vec3_rotate({x=0, y=0, z=-1}, g_playerState.orientation)
+	magnetism = vec3_add(magnetism, vec3_scale(player_normal, #g_inventory))
+	local cosines = vec3_crossProduct(player_normal, magnetism)
+	local sine = vec3_dotProduct(player_normal, magnetism)
+	local angle = atan2(cosines.z, sine)
+
 	local position = vec3_rotate({x=-10, y=5, z=-12}, g_playerState.orientation)
 	entity_setPosition(g_compassEntity, position)
 	local orientation = hamiltonProduct(g_playerState.orientation, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
-	local orientation = hamiltonProduct(orientation, aaToQuat({w=g_playerState.euler.yaw, x=0, y=1, z=0}))
+	local orientation = hamiltonProduct(orientation, aaToQuat({w=angle, x=0, y=1, z=0}))
 	entity_setOrientation(g_compassEntity, orientation)
 
 	local position = vec3_rotate({x=-10, y=5, z=-12}, g_playerState.orientation)

@@ -112,6 +112,8 @@ set(additional_assets
   game_maze/shaders/cube.vert
   game_maze/shaders/cube.frag
   game_maze/textures/compass_diamond.png
+  game_maze/textures/cursor.png
+  game_maze/textures/cursor_light.png
 )
 add_custom_command(
   OUTPUT ${PROJECT_BINARY_DIR}/game.zip ${PROJECT_SOURCE_DIR}/src/common/pak.s
