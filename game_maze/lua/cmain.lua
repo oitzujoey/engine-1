@@ -567,6 +567,7 @@ function mainGame()
 	local special = false
 	local cursorNearWhite = false
 	local cursorPosition = calculateCursorPosition(g_playerState.position, g_playerState.orientation)
+	local cursorPosition_occupied = getBoxEntry(cursorPosition)
 	for white_index = 1,#whites do
 		local white = whites[white_index]
 		if vec3_equal(white, cursorPosition) then
@@ -589,8 +590,7 @@ function mainGame()
 			-- cache_set(key, nil)
 			puts("Take: "..key)
 		else
-			local occupied = getBoxEntry(cursorPosition)
-			if #g_inventory > 0 and not occupied then
+			if #g_inventory > 0 and not cursorPosition_occupied then
 				local cached = g_inventory[#g_inventory]
 				cached.position = cursorPosition
 				g_taken[key] = nil
@@ -651,7 +651,7 @@ function mainGame()
 	-- end
 
 	-- Cursor
-	if cursorNearWhite or #g_inventory > 0 then
+	if cursorNearWhite or (#g_inventory > 0 and not cursorPosition_occupied) then
 		if g_cursorEntity then
 			entity_setPosition(g_cursorEntity, cursorPosition)
 		else
