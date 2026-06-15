@@ -22,7 +22,6 @@ g_modelForMaterial = {}
 
 g_frame = 1
 
-g_cursorOffset = {x=0, y=0, z=-75}
 g_backOff = 0.001
 
 Vec3_xn = {x=-1, y=0, z=0}
@@ -218,7 +217,10 @@ G_STANDARD_FRAMERATE = 60
 
 g_worldOrientation = {w=1.0, x=0.0, y=0.0, z=0.0}
 
-g_gridSpacing = 40
+g_gridSpacing = 50
+
+-- -75@40, 93.75@50
+g_cursorOffset = {x=0, y=0, z=-1.875*g_gridSpacing}
 
 g_boxes_length = 0
 g_boxes_scale = g_gridSpacing/2
