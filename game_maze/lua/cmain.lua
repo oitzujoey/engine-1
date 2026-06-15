@@ -117,6 +117,12 @@ function startup()
 	g_boxModel, e = mesh_load("blender/cube")
 	if e ~= 0 then quit() end
 
+	g_planeModel, e = mesh_load("blender/plane")
+	if e ~= 0 then quit() end
+
+	g_circleModel, e = mesh_load("blender/circle")
+	if e ~= 0 then quit() end
+
 	-- g_frogModel, e = mesh_load("blender/frogcube")
 	-- if e ~= 0 then quit() end
 
@@ -307,6 +313,22 @@ function startup()
 
 	info("startup", "Starting game")
 
+	g_compassNMaterial, e = loadMaterial(defaultShader, "n.png")
+	if e ~= 0 then quit() end
+	g_compassNEntity = entity_createEntity(g_entity_type_model)
+	entity_linkChild(g_worldEntity, g_compassNEntity)
+	entity_linkChild(g_compassNEntity, g_circleModel)
+	entity_linkMaterial(g_compassNEntity, g_compassNMaterial)
+	entity_setScale(g_compassNEntity, 0.2)
+
+	g_compassMaterial, e = loadMaterial(defaultShader, "compass_diamond.png")
+	if e ~= 0 then quit() end
+	g_compassEntity = entity_createEntity(g_entity_type_model)
+	entity_linkChild(g_worldEntity, g_compassEntity)
+	entity_linkChild(g_compassEntity, g_planeModel)
+	entity_linkMaterial(g_compassEntity, g_compassMaterial)
+	entity_setScale(g_compassEntity, 0.5)
+
 	-- g_loadingScreen = aaToQuat({w=-1*G_PI/4, x=0, y=0, z=1})
 	-- g_loadingEntity = modelEntity_create({x=0, y=0, z=-100}, g_loadingScreen, g_boxes_scale)
 	-- e = entity_linkMaterial(g_loadingEntity, g_loadingMaterial)
@@ -451,9 +473,10 @@ function mainGame()
 		local pd_x = player_direction.x
 		local pd_y = player_direction.y
 		local pd_z = player_direction.z
-		local p_x = truncate(round(g_playerState.position.x/g_gridSpacing))
-		local p_y = truncate(round(g_playerState.position.y/g_gridSpacing))
-		local p_z = truncate(round(g_playerState.position.z/g_gridSpacing))
+		local player_position = g_playerState.position
+		local p_x = truncate(round(player_position.x/g_gridSpacing))
+		local p_y = truncate(round(player_position.y/g_gridSpacing))
+		local p_z = truncate(round(player_position.z/g_gridSpacing))
 		for iz = -dimension,dimension do
 			for iy = -dimension,dimension do
 				for ix = -dimension,dimension do
@@ -666,6 +689,17 @@ function mainGame()
 	end
 
 	-- processBoxes(g_boxes, movementScale, 3)
+
+	local position = vec3_rotate({x=-10, y=5, z=-12}, g_playerState.orientation)
+	entity_setPosition(g_compassEntity, position)
+	local orientation = hamiltonProduct(g_playerState.orientation, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
+	local orientation = hamiltonProduct(orientation, aaToQuat({w=g_playerState.euler.yaw, x=0, y=1, z=0}))
+	entity_setOrientation(g_compassEntity, orientation)
+
+	local position = vec3_rotate({x=-10, y=5, z=-12}, g_playerState.orientation)
+	entity_setPosition(g_compassNEntity, position)
+	local orientation = hamiltonProduct(g_playerState.orientation, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
+	entity_setOrientation(g_compassNEntity, orientation)
 end
 
 -- function loadingScreen()

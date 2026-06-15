@@ -69,6 +69,8 @@ set(models
   game_opensauce26/models/circle
 
   game_maze/blender/cube
+  game_maze/blender/plane
+  game_maze/blender/circle
 )
 foreach(model ${models})
   add_custom_command(
@@ -109,6 +111,7 @@ set(additional_assets
   game_maze/shaders/default.frag
   game_maze/shaders/cube.vert
   game_maze/shaders/cube.frag
+  game_maze/textures/compass_diamond.png
 )
 add_custom_command(
   OUTPUT ${PROJECT_BINARY_DIR}/game.zip ${PROJECT_SOURCE_DIR}/src/common/pak.s
