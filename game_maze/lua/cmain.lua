@@ -359,6 +359,86 @@ function mainGame()
 
 	local movementScale = G_STANDARD_FRAMERATE * deltaT
 
+	-- Movement
+
+	-- Friction
+	local scale = 1.0 - (1.0 - 0.90) * movementScale
+	g_playerState.velocity.x = g_playerState.velocity.x * scale
+	g_playerState.velocity.y = g_playerState.velocity.y * scale
+	if g_fly or g_noclip then
+		g_playerState.velocity.z = g_playerState.velocity.z * scale
+	end
+
+	if g_fly or g_noclip then
+		-- Move up.
+		if g_jump then
+			g_playerState.velocity.z = g_playerState.velocity.z + movementScale
+		end
+		-- Move down.
+		if g_crouch then
+			g_playerState.velocity.z = g_playerState.velocity.z - movementScale
+		end
+	else
+		-- Jumping
+		if g_playerState.grounded then
+			if g_jump then
+				g_playerState.velocity.z = g_playerState.velocity.z + G_JUMPVELOCITY
+			end
+		end
+	end
+
+	-- Horizontal movement
+	local yaw_x, yaw_y = 0, 0
+	if g_forward then
+		yaw_x = yaw_x + sin(g_playerState.euler.yaw)
+		yaw_y = yaw_y - cos(g_playerState.euler.yaw)
+	end
+	if g_backward then
+		yaw_x = yaw_x - sin(g_playerState.euler.yaw)
+		yaw_y = yaw_y + cos(g_playerState.euler.yaw)
+	end
+	if g_strafeLeft then
+		yaw_x = yaw_x + cos(g_playerState.euler.yaw)
+		yaw_y = yaw_y + sin(g_playerState.euler.yaw)
+	end
+	if g_strafeRight then
+		yaw_x = yaw_x - cos(g_playerState.euler.yaw)
+		yaw_y = yaw_y - sin(g_playerState.euler.yaw)
+	end
+	g_playerState.velocity = vec3_add(g_playerState.velocity,
+	                                  vec3_scale({x=yaw_x, y=yaw_y, z=0}, movementScale * 0.5))
+
+	if (g_mouse.delta_y and g_mouse.delta_y ~= 0) then
+		g_playerState.euler.pitch = g_playerState.euler.pitch - g_mouse.delta_y/1000.0
+	end
+	if (g_mouse.delta_x and g_mouse.delta_x ~= 0) then
+		g_playerState.euler.yaw = g_playerState.euler.yaw - g_mouse.delta_x/1000.0
+	end
+
+	-- Constrain up-down view to not go past vertical.
+	if g_playerState.euler.pitch > G_PI/2 then g_playerState.euler.pitch = G_PI/2 end
+	if g_playerState.euler.pitch < -G_PI/2 then g_playerState.euler.pitch = -G_PI/2 end
+
+	if not g_fly and not g_noclip then
+		g_playerState.velocity.z = g_playerState.velocity.z + G_GRAVITY * movementScale
+	end
+
+	g_playerState.orientation = hamiltonProduct(eulerToQuat(g_playerState.euler), aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
+	if g_noclip then
+		g_playerState.position = vec3_add(g_playerState.position, g_playerState.velocity)
+	else
+		g_playerState = playerMoveAndCollide(g_playerState, movementScale)
+	end
+
+	-- Display self.
+	entity_setOrientation(g_worldEntity, {w=g_playerState.orientation.w,
+	                                      x=-g_playerState.orientation.x,
+	                                      y=-g_playerState.orientation.y,
+	                                      z=-g_playerState.orientation.z})
+	entity_setPosition(g_cameraEntity,
+	                   {x=-g_playerState.position.x, y=-g_playerState.position.y, z=-g_playerState.position.z})
+
+
 	-- -- Box manipulation
 
 	local whites = {}
@@ -563,86 +643,6 @@ function mainGame()
 		end
 	end
 		
-
-	-- Movement
-
-	-- Friction
-	local scale = 1.0 - (1.0 - 0.90) * movementScale
-	g_playerState.velocity.x = g_playerState.velocity.x * scale
-	g_playerState.velocity.y = g_playerState.velocity.y * scale
-	if g_fly or g_noclip then
-		g_playerState.velocity.z = g_playerState.velocity.z * scale
-	end
-
-	if g_fly or g_noclip then
-		-- Move up.
-		if g_jump then
-			g_playerState.velocity.z = g_playerState.velocity.z + movementScale
-		end
-		-- Move down.
-		if g_crouch then
-			g_playerState.velocity.z = g_playerState.velocity.z - movementScale
-		end
-	else
-		-- Jumping
-		if g_playerState.grounded then
-			if g_jump then
-				g_playerState.velocity.z = g_playerState.velocity.z + G_JUMPVELOCITY
-			end
-		end
-	end
-
-	-- Horizontal movement
-	local yaw_x, yaw_y = 0, 0
-	if g_forward then
-		yaw_x = yaw_x + sin(g_playerState.euler.yaw)
-		yaw_y = yaw_y - cos(g_playerState.euler.yaw)
-	end
-	if g_backward then
-		yaw_x = yaw_x - sin(g_playerState.euler.yaw)
-		yaw_y = yaw_y + cos(g_playerState.euler.yaw)
-	end
-	if g_strafeLeft then
-		yaw_x = yaw_x + cos(g_playerState.euler.yaw)
-		yaw_y = yaw_y + sin(g_playerState.euler.yaw)
-	end
-	if g_strafeRight then
-		yaw_x = yaw_x - cos(g_playerState.euler.yaw)
-		yaw_y = yaw_y - sin(g_playerState.euler.yaw)
-	end
-	g_playerState.velocity = vec3_add(g_playerState.velocity,
-	                                  vec3_scale({x=yaw_x, y=yaw_y, z=0}, movementScale * 0.5))
-
-	if (g_mouse.delta_y and g_mouse.delta_y ~= 0) then
-		g_playerState.euler.pitch = g_playerState.euler.pitch - g_mouse.delta_y/1000.0
-	end
-	if (g_mouse.delta_x and g_mouse.delta_x ~= 0) then
-		g_playerState.euler.yaw = g_playerState.euler.yaw - g_mouse.delta_x/1000.0
-	end
-
-	-- Constrain up-down view to not go past vertical.
-	if g_playerState.euler.pitch > G_PI/2 then g_playerState.euler.pitch = G_PI/2 end
-	if g_playerState.euler.pitch < -G_PI/2 then g_playerState.euler.pitch = -G_PI/2 end
-
-	if not g_fly and not g_noclip then
-		g_playerState.velocity.z = g_playerState.velocity.z + G_GRAVITY * movementScale
-	end
-
-	g_playerState.orientation = hamiltonProduct(eulerToQuat(g_playerState.euler), aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
-	if g_noclip then
-		g_playerState.position = vec3_add(g_playerState.position, g_playerState.velocity)
-	else
-		g_playerState = playerMoveAndCollide(g_playerState, movementScale)
-	end
-
-	-- Display self.
-	entity_setOrientation(g_worldEntity, {w=g_playerState.orientation.w,
-	                                      x=-g_playerState.orientation.x,
-	                                      y=-g_playerState.orientation.y,
-	                                      z=-g_playerState.orientation.z})
-	entity_setPosition(g_cameraEntity,
-	                   {x=-g_playerState.position.x, y=-g_playerState.position.y, z=-g_playerState.position.z})
-
 
 	-- Show inventory.
 	for i = 1,#g_inventory_boxes do
