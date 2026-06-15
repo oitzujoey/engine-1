@@ -687,5 +687,11 @@ end
 
 
 function calculateCursorPosition(position, orientation)
-	return snapToGrid(vec3_add(position, vec3_rotate(g_cursorOffset, orientation)))
+	local cursor_position = snapToGrid(vec3_add(position, vec3_rotate(g_cursorOffset, orientation)))
+	local position_snapped = snapToGrid(position)
+	local cursor_displacement = vec3_subtract(cursor_position, position_snapped)
+	if cursor_displacement.x == 0 and cursor_displacement.y == 0 and cursor_displacement.z < 0 then
+		cursor_position.z = position_snapped.z - g_gridSpacing
+	end
+	return cursor_position
 end
