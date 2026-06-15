@@ -446,7 +446,7 @@ function mainGame()
 		g_boxes = {}
 		g_boxTable = {}
 
-		local dimension = 10
+		local dimension = 13
 		local player_direction = vec3_rotate({x=0, y=0, z=-1.0}, g_playerState.orientation)
 		local pd_x = player_direction.x
 		local pd_y = player_direction.y
