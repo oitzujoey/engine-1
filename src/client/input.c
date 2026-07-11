@@ -480,7 +480,7 @@ int input_stringToKeybind(const char * const key, keybind_t *keybind) {
 	return error;
 }
 
-int input_bind(const uint8_t * const key, const uint8_t * const downCommand, const uint8_t * const upCommand) {
+int input_bind(const uint8_t *key, const uint8_t * const downCommand, const uint8_t * const upCommand) {
 	int error = ERR_CRITICAL;
 	
 	int index = 0;
@@ -531,7 +531,10 @@ int input_bind(const uint8_t * const key, const uint8_t * const downCommand, con
 		// memset(&g_keybinds.keys[g_keybinds.length - 1], 0, sizeof(keybind_t));
 		g_keybinds.keys[g_keybinds.length - 1] = keybind;
 	}
-	
+	else {
+		--index;
+	}
+
 	// Bind command(s) to keys.
 	str3_copyMalloc(&g_keybinds.keys[index].keyDownCommand, downCommand);
 	if (upCommand == NULL) {

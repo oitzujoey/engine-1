@@ -1,10 +1,11 @@
 
 function keys_createFullBind(key, configVariable, callbackDown, callbackUp)
-	cfg2_setVariable("create command +" .. configVariable)
-	cfg2_setVariable("create command -" .. configVariable)
+	-- cfg2_setVariable("create command +" .. configVariable)
+	-- cfg2_setVariable("create command -" .. configVariable)
 	cfg2_setCallback("+" .. configVariable, callbackDown)
 	cfg2_setCallback("-" .. configVariable, callbackUp)
-	cfg2_setVariable("bind " .. key .. " +" .. configVariable .. " -" .. configVariable)
+    -- puts("bind " .. key .. " +" .. configVariable .. " -" .. configVariable)
+	-- cfg2_setVariable("bind " .. key .. " +" .. configVariable .. " -" .. configVariable)
 end
 
 function keys_createHalfBind(key, configVariable, callback)

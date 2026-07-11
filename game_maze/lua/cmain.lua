@@ -430,7 +430,7 @@ function mainGame()
 		yaw_y = yaw_y - sin(g_playerState.euler.yaw)
 	end
 	g_playerState.velocity = vec3_add(g_playerState.velocity,
-	                                  vec3_scale({x=yaw_x, y=yaw_y, z=0}, movementScale * 0.5))
+	                                  vec3_scale({x=yaw_x, y=yaw_y, z=0}, movementScale * 0.25))
 
 	if (g_mouse.delta_y and g_mouse.delta_y ~= 0) then
 		g_playerState.euler.pitch = g_playerState.euler.pitch - g_mouse.delta_y/1000.0
