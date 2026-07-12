@@ -1,5 +1,7 @@
 G_CLIENT=true
 
+g_token_radius = 8.5
+
 include "../common/common.lua"
 include "../client/keys.lua"
 include "../generated/initial.lua"
@@ -74,7 +76,7 @@ function startup()
 	if e ~= 0 then quit() end
 	e = entity_linkChild(g_airliner_entity, g_cube_model)
 	if e ~= 0 then quit() end
-	g_airliner_scale = 0.25*7.5/3
+	g_airliner_scale = g_token_radius/12
 	entity_setScale(g_airliner_entity, g_airliner_scale)
 	entity_setPosition(g_airliner_entity, {x=0, y=0, z=0})
 	entity_setOrientation(g_airliner_entity, {w=1, x=1, y=1, z=1})
@@ -83,6 +85,7 @@ function startup()
 
 	-- Load dots for dotted lines.
 	g_dot_red_material, e = loadMaterial(defaultShader, "red.png")
+	g_dot_blue_material, e = loadMaterial(defaultShader, "blue.png")
 	-- g_dot_purple_material, e = loadMaterial(defaultShader, "purple.png")
 	g_dot_orange_material, e = loadMaterial(defaultShader, "orange.png")
 
@@ -98,6 +101,19 @@ function startup()
 	-- entity_setOrientation(g_map_entity, {w=1, x=1, y=1, z=1})
 	entity_setOrientation(g_map_entity, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
 	e = entity_linkMaterial(g_map_entity, g_map_material)
+	if e ~= 0 then quit() end
+
+	g_head_entity, e = entity_createEntity(g_entity_type_model)
+	e = entity_linkChild(g_cameraEntity, g_head_entity)
+	if e ~= 0 then quit() end
+	e = entity_linkChild(g_head_entity, g_circle_model)
+	if e ~= 0 then quit() end
+	g_head_scale = g_token_radius
+	entity_setScale(g_head_entity, g_head_scale)
+	entity_setPosition(g_head_entity, {x=0, y=0, z=0})
+	-- entity_setOrientation(g_head_entity, {w=1, x=1, y=1, z=1})
+	entity_setOrientation(g_head_entity, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
+	e = entity_linkMaterial(g_head_entity, g_dot_blue_material)
 	if e ~= 0 then quit() end
 
 	-- g_overlay_material, e = loadMaterial(transparentShader, "Static Line.gif")
@@ -363,7 +379,7 @@ function mainGame()
 						-- e = entity_linkChild(aircraft_entity, g_airliner_model)
 						-- if e ~= 0 then quit() end
 						-- entity_setScale(aircraft_entity, g_airliner_scale)
-            	        local aircraft_position = {x=g_head_position['x'], y=g_head_position['y'], z=g_head_position['z'] + 2.0}
+						local aircraft_position = {x=g_head_position['x'], y=g_head_position['y'], z=g_head_position['z'] + 2.0}
 						entity_setPosition(aircraft_entity, aircraft_position)
 
 						local aircraft_heading_normal = vec3_normalize(aircraft_displacement)

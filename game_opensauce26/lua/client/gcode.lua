@@ -46,7 +46,7 @@ end
 
 function gcode.resetState()
 	gcode.buffer = ""
-	gcode.commands_ignored = {"EXCLUDE_OBJECT_DEFINE", "M73", "M190", "M109", "PRINT_START", "G90", "G21", "M83", "M106", "SET_VELOCITY_LIMIT", "EXCLUDE_OBJECT_START", "EXCLUDE_OBJECT_END", "M400", "SET_KINEMATIC_POSITION"}
+	gcode.commands_ignored = {"EXCLUDE_OBJECT_DEFINE", "M73", "M190", "M109", "PRINT_START", "G90", "G21", "M83", "M106", "SET_VELOCITY_LIMIT", "EXCLUDE_OBJECT_START", "EXCLUDE_OBJECT_END", "M400", "SET_KINEMATIC_POSITION", "GCODE"}
 end
 gcode.resetState()
 
