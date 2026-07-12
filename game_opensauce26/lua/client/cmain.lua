@@ -338,6 +338,7 @@ function mainGame()
 				local X = parse_double(command.X)
 				local Y = parse_double(command.Y)
 				local Z = parse_double(command.Z)
+				entity_setPosition(g_head_entity, {x=X, y=Y, z=Z})
 				local head_position_last = g_head_position
 				g_head_position = {x=X, y=Y, z=Z}
 				-- puts(parse_double(command.X)..", "..parse_double(command.Y)..", "..parse_double(command.Z))

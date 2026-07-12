@@ -1,0 +1,3 @@
+I have a pathfinding function. I have a collision handling function. I have limited instancing. Might as well make an RTS?
+
+Make it like chess, where each player waits for his turn to make a move? Or make it simultaneous, but only one move may happen at a time? Pair this with a move planner.
