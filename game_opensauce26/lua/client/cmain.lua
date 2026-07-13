@@ -84,10 +84,12 @@ function startup()
 	if e ~= 0 then quit() end
 
 	-- Load dots for dotted lines.
-	g_dot_red_material, e = loadMaterial(defaultShader, "red.png")
-	g_dot_blue_material, e = loadMaterial(defaultShader, "blue.png")
+	g_red_material, e = loadMaterial(defaultShader, "red.png")
+	g_green_material, e = loadMaterial(defaultShader, "green.png")
+	g_blue_material, e = loadMaterial(defaultShader, "blue.png")
 	-- g_dot_purple_material, e = loadMaterial(defaultShader, "purple.png")
 	g_dot_orange_material, e = loadMaterial(defaultShader, "orange.png")
+	g_black_material, e = loadMaterial(defaultShader, "black.png")
 
 	g_map_material, e = loadMaterial(defaultShader, "SanFran_2_scaled.png")
 	g_map_entity, e = entity_createEntity(g_entity_type_model)
@@ -113,7 +115,7 @@ function startup()
 	entity_setPosition(g_head_entity, {x=0, y=0, z=0})
 	-- entity_setOrientation(g_head_entity, {w=1, x=1, y=1, z=1})
 	entity_setOrientation(g_head_entity, aaToQuat({w=G_PI/2, x=1, y=0, z=0}))
-	e = entity_linkMaterial(g_head_entity, g_dot_blue_material)
+	e = entity_linkMaterial(g_head_entity, g_black_material)
 	if e ~= 0 then quit() end
 
 	-- g_overlay_material, e = loadMaterial(transparentShader, "Static Line.gif")
@@ -313,7 +315,7 @@ function mainGame()
 				e = entity_linkMaterial(new_entity, g_airliner_material)
 				if e ~= 0 then quit() end
 				g_tokens_entity[#g_tokens_entity+1] = new_entity
-				g_dots_entities_length_max = g_dots_entities_length_max + 500
+				g_dots_entities_length_max = g_dots_entities_length_max + 100
 			elseif command.opcode == "M42" then
 				local S = parse_double(command.S)
 				if S ~= 0.0 then
@@ -334,6 +336,32 @@ function mainGame()
 					end
 					puts(g_moveMode)
 				end
+			elseif command.opcode == "SET_LED" then
+				local RED = parse_double(command.RED)
+				local GREEN = parse_double(command.GREEN)
+				local BLUE = parse_double(command.BLUE)
+				puts(RED)
+				puts(GREEN)
+				puts(BLUE)
+				local isRed = RED > 0.0
+				local isGreen = GREEN > 0.0
+				local isBlue = BLUE > 0.0
+				puts(toString(isRed))
+				puts(toString(isGreen))
+				puts(toString(isBlue))
+				local material = g_black_material
+				if isRed and not isGreen and not isBlue then
+					material = g_red_material
+				end
+				if not isRed and isGreen and not isBlue then
+					material = g_green_material
+				end
+				if not isRed and not isGreen and isBlue then
+					material = g_blue_material
+				end
+				puts(material)
+				local e = entity_linkMaterial(g_head_entity, material)
+				if e ~= 0 then quit() end
 			elseif command.opcode == "G1" then
 				local X = parse_double(command.X)
 				local Y = parse_double(command.Y)
@@ -411,7 +439,7 @@ function mainGame()
 							local dot_x = l_X + dot_iteration * dot_heading_normal.x
 							local dot_y = l_Y + dot_iteration * dot_heading_normal.y
 							local dot_position = {x=dot_x, y=dot_y, z=-0.99}
-							local dot_material = g_dot_red_material
+							local dot_material = g_red_material
 							dot(dot_position, 0.2, dot_material)
 							-- if aircraft_distance <= 25 then
 							-- 	-- dot_material = g_dot_purple_material
