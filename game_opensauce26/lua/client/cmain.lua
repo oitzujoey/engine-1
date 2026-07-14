@@ -356,7 +356,7 @@ function mainGame()
 				if not isRed and isGreen and not isBlue then
 					material = g_green_material
 				end
-				if not isRed and not isGreen and isBlue then
+				if isBlue then
 					material = g_blue_material
 				end
 				puts(material)
